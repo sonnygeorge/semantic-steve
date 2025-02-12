@@ -270,10 +270,6 @@ def equip(item: Item):
     """
     pass
 
-###########
-## Misc. ##
-###########
-
 QuantityOfItem = tuple[Item, int]
 
 def retrieve_from_chest(
@@ -357,7 +353,7 @@ def build(
     pass
 
 def take_screenshot(of: Entity):
-    """Employing logic to make sure to ensure a clear, comprehensinve vantage point, takes
+    """Employing logic to make sure to ensure a clear, comprehensive vantage point, takes
     a screenshot of the specified entity.
 
     Note:

@@ -41,10 +41,10 @@ class SemanticSteve:
         """Pathfinds to nearest of something from somewhat nearby (digging/bridging as needed), stopping once the "something" is in the immediate vicinity."""
         ...
 
-    def enter_structure(self, structure=""):  # Are these necessary?
-        """"""
+    def enter_structure(self, structure=""):
+        """Enters a structure in the immediate vicinity."""
         ...
 
-    def exit_structure(self):  # Are these necessary?
+    def exit_structure(self):  # Is this necessary?
         """"""
         ...

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-steve"
+version = "0.0.1"
+description = "A semantic wrapper for controlling Minecraft 'Steve'"
+readme = "README.md"
+authors = [{ name = "Sonny George" }]
+license = { file = "LICENSE" }
+dependencies = []

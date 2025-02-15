@@ -10,3 +10,4 @@ readme = "README.md"
 authors = [{ name = "Sonny George" }]
 license = { file = "LICENSE" }
 dependencies = []
+keywords = ["minecraft", "bot", "mineflayer", "wrapper"]

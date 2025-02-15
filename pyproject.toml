@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "semantic-steve"
 version = "0.0.1"
+authors = [{ name = "Sonny George" }]
 description = "A semantic wrapper for controlling Minecraft 'Steve'"
 readme = "README.md"
-authors = [{ name = "Sonny George" }]
-license = { file = "LICENSE" }
-dependencies = []
-keywords = ["minecraft", "bot", "mineflayer", "wrapper"]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/sonnygeorge/semantic-steve"

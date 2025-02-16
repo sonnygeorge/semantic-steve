@@ -38,7 +38,7 @@ E.g., in order of priority:
 ...into a **_semantically intuitive_** [textworld](https://www.microsoft.com/en-us/research/project/textworld/) **API designed for LLM comprehension & usage**, e.g.:
 
 ```python
-"""High-level semantic API for controlling Minecraft 'Steve' with text alone—e.g., only observing:
+"""High-level semantic API for controlling Minecraft 'Steve' with a purely text-based interface—e.g., only observing:
 INVENTORY: ...
 (hunger, health, weather, etc.)
 IMMEDIATE_SURROUNDINGS: ...

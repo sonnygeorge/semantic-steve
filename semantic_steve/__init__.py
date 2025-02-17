@@ -321,6 +321,7 @@ class SemanticSteve:
 ################################
 
 
-def cli(controller: SemanticSteve):  # TODO: This is just a placeholder for now.
+# TODO: This is just a placeholder for now. If semantic Steve ends up as a module and not a class, you could maybe run the CLI w/ `python -m semantic_steve` or something
+def cli(controller: SemanticSteve):
     """Command-line interface for controlling Minecraft from the command line like a textworld game via the Semantic Steve API."""
     ...

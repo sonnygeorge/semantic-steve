@@ -262,8 +262,10 @@ class SemanticSteve:
 
     def unequip_item(self, item: str) -> tuple[WorldState, ActionResultInfo]: ...
 
-    # TODO: What to call this? Is "right click" the best semantically expressive name? "activate"? Right click "thing" or "block"?
-    def right_click_thing(): ...  # E.g., button, bed, etc.
+    # TODO: What to call this? Is "right click" the best semantically expressive name?
+    # "activate"? Right click "thing" or "block"?
+    # "interact_with_thing"?
+    def right_click_thing(): ...  # E.g., button, bed, get on horse, sit in minecart, etc.
 
     def craft_items(
         self, items_to_craft: QuantitiesOfItems
@@ -286,6 +288,12 @@ class SemanticSteve:
     def kill_mob(self, mob: str) -> tuple[WorldState, ActionResultInfo]:
         """Pathfinds to and, auto-equipping best gear for the job, employs combat AI to kill a mob (assuming it is "nearby") and loot it drops."""
         ...  # NOTE: This is the only "acting upon something" function that doesn't require the "something" to be in immediate surroundings. This is because mobs move &, e.g., you wouldn't want to approach a skeleton before initiating combat AI (it will already have shot you multiple times)
+
+    # TODO: What's the most semantically intuitive interface for block placing?
+    # With target coordinates? "onto" other blocks? Or both?
+    def place_block(
+        self, target_coordinates: tuple[int, int, int], block: str
+    ) -> tuple[WorldState, ActionResultInfo]: ...
 
     #################
     #### Special ####

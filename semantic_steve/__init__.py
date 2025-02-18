@@ -243,9 +243,19 @@ class SemanticSteve:
         something_coordinates: Optional[tuple[int, int, int]] = None,
     ) -> tuple[WorldState, ActionResultInfo]:
         """Applies an item to something in the immediate surroundings, disambiguating which "something" via the optional `something_coordinates` argument."""
-        ...  # E.g. flint_and_steel to nether_portal, bonemeal to crops, eye_of_ender to portal etc.
+        ...
 
-    def throw_item(
+    # flint_and_steel to nether_portal
+    # bonemeal to crops
+    # eye_of_ender to portal
+    # bucket to water/lava
+    # saddle to pig/horse
+    # name_tag to mob
+    # lead to mob
+    # lead to fence
+    # item to item frame
+
+    def use_or_throw_item(
         self,
         item: str,
         direction: Optional[Direction] = None,
@@ -253,6 +263,12 @@ class SemanticSteve:
     ) -> tuple[WorldState, ActionResultInfo]:
         """Throws an item that has a "throwing" mechanic/effect, e.g., eye_of_ender or ender_pearl"""
         ...
+
+    # eye of ender
+    # ender pearl
+    # splash potion
+    # egg
+    # firework rocket
 
     def eat_or_consume_items(
         self, items: QuantitiesOfItems
@@ -262,10 +278,27 @@ class SemanticSteve:
 
     def unequip_item(self, item: str) -> tuple[WorldState, ActionResultInfo]: ...
 
-    # TODO: What to call this? Is "right click" the best semantically expressive name?
-    # "activate"? Right click "thing" or "block"?
-    # "interact_with_thing"?
-    def right_click_thing(): ...  # E.g., button, bed, get on horse, sit in minecart, etc.
+    def right_click_interact_with_block_or_mob() -> (
+        tuple[WorldState, ActionResultInfo]
+    ): ...
+
+    # sit down a dog/cat/mob
+    # bed
+    # button
+    # lever
+    # door
+    # trapdoor
+    # change repeater state
+    # bell
+
+    def mount_rideable(to_mount: str) -> tuple[WorldState, ActionResultInfo]:
+        """Mounts a rideable thing, assuming, if the rideable thing is a mob, it is nearby, else (e.g., if it is a boat), it is in the immediate surroundings."""
+        ...
+
+    # getting in Minecart/boat
+    # sitting on horse/other rideable mob
+
+    def dismount_rideable() -> tuple[WorldState, ActionResultInfo]: ...
 
     def craft_items(
         self, items_to_craft: QuantitiesOfItems
@@ -287,12 +320,11 @@ class SemanticSteve:
 
     def kill_mob(self, mob: str) -> tuple[WorldState, ActionResultInfo]:
         """Pathfinds to and, auto-equipping best gear for the job, employs combat AI to kill a mob (assuming it is "nearby") and loot it drops."""
-        ...  # NOTE: This is the only "acting upon something" function that doesn't require the "something" to be in immediate surroundings. This is because mobs move &, e.g., you wouldn't want to approach a skeleton before initiating combat AI (it will already have shot you multiple times)
+        ...  # NOTE: This and mount_rideable are the only functions that don't (always) require the acted-upon thing to be in immediate surroundings. This is because mobs move &, e.g., you wouldn't want to approach a skeleton before initiating combat AI (it will already have shot you multiple times)
 
-    # TODO: What's the most semantically intuitive interface for block placing?
-    # With target coordinates? "onto" other blocks? Or both?
+    # TODO: Placed block orientation?
     def place_block(
-        self, target_coordinates: tuple[int, int, int], block: str
+        self, block: str, target_coordinates: tuple[int, int, int]
     ) -> tuple[WorldState, ActionResultInfo]: ...
 
     #################
@@ -315,14 +347,16 @@ class SemanticSteve:
     ) -> tuple[WorldState, ActionResultInfo]: ...
 
 
-# NOTE: Game interactions I haven't considered how they might fit into the above (if we care about them at all):
-# - Trading with villagers  # NOTE: I probably care about this one
+# TODO: (maybe/hopefully)
+# - Trading with villagers
 # - Enchanting items
-# - Brewing potions
-# - Taming animals
-# - Riding animals
-# - Item frames
-# - Following a map for a structure/buried treasure
+# - Fishing
+# - Villager workbench interactions (highest priority = anvil)
+
+# Misc.
+# - Following a map for a structure/buried treasure = once 'map to something' acquired, just return coords of the 'something' so it can be pathfound to?
+# - Breeding function? (breeding might hard with fast appy + fast-moving mobs)
+# - Removing a saddle = remove item from container? unequip item?
 
 ################################
 #### Command Line Interface ####

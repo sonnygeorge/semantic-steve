@@ -349,6 +349,7 @@ class SemanticSteve:
 
 # TODO: (maybe/hopefully)
 # - Trading with villagers
+# - Leading animals w/ food
 # - Enchanting items
 # - Fishing
 # - Villager workbench interactions (highest priority = anvil)

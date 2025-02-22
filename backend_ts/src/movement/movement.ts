@@ -40,12 +40,15 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
     const bCheck = () => {
       if (stopIfFound.blocks == null) return false;
       
-      const blocks = this.bot.findBlocks({
+      const bPos = this.bot.findBlocks({
         matching: (block) => stopIfFound.blocks?.types.includes(block.type) ?? false,
         maxDistance: stopIfFound.blocks?.radius ?? 0, // should always exist, but just in case
       });
 
-      return blocks.map((b) => this.bot.blockAt(b)!);
+      const blocks = bPos.map((b) => this.bot.blockAt(b)!);
+
+      const visible = blocks.filter((b) => this.bot.canSeeBlock(b));
+      return visible
     }
 
     const moveListener = (lastMove: Vec3) => {
@@ -63,7 +66,7 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
       // check if there is a block in the way
       if (stopIfFound.blocks != null) {
         const res = bCheck(); // uses current pos, not last pos, so no need to pass this in.
-        if (res !== false) {
+        if (res !== false && res.length > 0) {
           cleanup();
           this.emit('blockCancel', res);
         }

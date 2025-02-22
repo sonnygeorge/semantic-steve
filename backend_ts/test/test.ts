@@ -1,18 +1,28 @@
 import { createPlugin } from "../src";
 import { Bot, createBot } from "mineflayer";
 import { Vec3 } from "vec3";
+import { PathfinderStopConditions } from "../src/movement/types";
 
 const bot = createBot({
   username: "test",
 });
 
-bot.on("spawn", () => {
+bot.once("spawn", () => {
   const semanticSteve = createPlugin({ immediateRadius: 5, nearbyRadius: 128 });
   bot.loadPlugin(semanticSteve);
+
+  bot.pathfinderAbstract.on("mobCancel", (e) => {
+    console.log("cancelled pathfinding due to mob: ", e);
+  });
+
+  bot.pathfinderAbstract.on("blockCancel", (b) => {
+    console.log("cancelled pathfinding due to block: ", b);
+  });
 });
 
-const prefix = "!";
+const prefix = "";
 bot.on("chat", (username, message) => {
+  if (!message.startsWith(prefix)) return;
   const [cmd, ...args] = message.replace(prefix, "").split(" ");
   let author = bot.players[username].entity;
 
@@ -29,16 +39,21 @@ bot.on("chat", (username, message) => {
 
     case "come": {
       const { x, y, z } = author.position;
-
       const entitiesToCancel = [bot.registry.entitiesByName["zombie"].id];
+      const blocksToCancel = [bot.registry.blocksByName["iron_ore"].id];
 
-      const cancelOpts = {
+      const cancelOpts: PathfinderStopConditions = {
         entities: {
           ids: entitiesToCancel,
           radius: 10,
         },
+        blocks: {
+          types: blocksToCancel,
+          radius: 10,
+        },
       };
 
+      console.log(cancelOpts);
       bot.pathfinderAbstract.pathfindToCoordinate(new Vec3(x, y, z), cancelOpts);
       break;
     }
@@ -48,15 +63,23 @@ bot.on("chat", (username, message) => {
       const mdBlock = bot.registry.blocksByName[args[0]];
       if (mdBlock == null) return bot.chat(`Invalid block name`);
 
-      const faceDir = bot.nearbySurroundings.getFacingDirection();
-      const blocks = bot.nearbySurroundings.findBlocks(faceDir, { matching: mdBlock.id });
+      const faceDir = bot.semanticWorld.getFacingDirection();
+      const blocks = bot.semanticWorld.findBlocks(faceDir, { matching: mdBlock.id });
 
       console.log(blocks.map((b) => b));
       break;
     }
 
     case "info": {
-      const immEntities = bot.immediateSurroundings.entities;
+      const immEntities = bot.semanticWorld.immediateSurroundings.entities;
+      const faceDir = bot.semanticWorld.getFacingDirection();
+      const nearbyEntities = bot.semanticWorld.nearbySurroundings.players(faceDir);
+
+
+      // basic world info
+      console.log(bot.semanticWorld.toString());
+
+      // immedidate entity info, formatted to be nice to read
       console.log(
         immEntities.map((e) => {
           return {
@@ -69,10 +92,7 @@ bot.on("chat", (username, message) => {
         })
       );
 
-      const faceDir = bot.nearbySurroundings.getFacingDirection();
-      console.log(faceDir);
-      const nearbyEntities = bot.nearbySurroundings.players(faceDir);
-
+      // nearby entity info, formatted to be nice to read
       console.log(
         nearbyEntities.map((e) => {
           return {

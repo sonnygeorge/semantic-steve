@@ -10,6 +10,8 @@ import type { Block as PBlock } from "prismarine-block";
 import { DIRECTION_ANGLES, Direction } from "../constants";
 import { ImmediateSurroundingsConfig, NearbySurroundingsConfig, PCChunkCoordinateAndColumn } from "./types";
 import { Entity } from "prismarine-entity";
+import { SemanticOptions } from "../types";
+import { offsetIsWithinDirection } from "./utils";
 
 export class ImmediateSurroundings {
   private _radius: number;
@@ -73,33 +75,6 @@ export class NearbySurroundings {
     this._blockRadius = options.blockRadius;
   }
 
-  public getFacingDirection(): Direction {
-    // base this off of bot's yaw
-    let yaw = (Math.PI - this.bot.entity.yaw) * (180 / Math.PI);
-
-    console.log(yaw);
-
-    for (const [dir, [min, max]] of Object.entries(DIRECTION_ANGLES)) {
-      if (min < max) {
-        // Normal case (min to max is continuous)
-        if (yaw >= min && yaw < max) return dir as Direction;
-      } else {
-        // Wrapping case (e.g., WEST spans from 157.5 to -157.5)
-        if (yaw >= min || yaw < max) return dir as Direction;
-      }
-    }
-    console.log("fuck?");
-    return Direction.NORTH; // default to north
-  }
-
-  private offsetIsWithinDirection(target: Vec3, src: Vec3, direction: Direction): boolean {
-    const [minAngle, maxAngle] = DIRECTION_ANGLES[direction];
-    const dx = target.x - src.x;
-    const dz = target.z - src.z;
-    let angle = (Math.atan2(-dz, dx) * 180) / Math.PI; // Normalize to [0, 360]
-    return minAngle <= angle && angle < maxAngle;
-  }
-
   getRadiusChunks(targetDirection: Direction): PCChunkCoordinateAndColumn[] {
     const chunks = this.bot.world.getColumns();
     const currentPos = this.bot.entity.position;
@@ -115,7 +90,7 @@ export class NearbySurroundings {
 
         // Ensure chunk is within the defined direction
         const chunkCenter = new Vec3(blockChunkX + 8, 0, blockChunkZ + 8);
-        return this.offsetIsWithinDirection(chunkCenter, currentPos, targetDirection);
+        return offsetIsWithinDirection(chunkCenter, currentPos, targetDirection);
       })
       .map(({ chunkX, chunkZ, column }) => ({ chunkX, chunkZ, column: column as PCChunk }));
   }
@@ -153,7 +128,7 @@ export class NearbySurroundings {
       if (entity.position.distanceTo(curPos) > this._blockRadius) {
         continue;
       }
-      if (!this.offsetIsWithinDirection(entity.position, curPos, dir)) continue;
+      if (!offsetIsWithinDirection(entity.position, curPos, dir)) continue;
 
       entities.push(entity);
     }
@@ -169,7 +144,7 @@ export class NearbySurroundings {
       if (entity.position.distanceTo(curPos) > this._blockRadius) {
         continue;
       }
-      if (!this.offsetIsWithinDirection(entity.position, curPos, dir)) continue;
+      if (!offsetIsWithinDirection(entity.position, curPos, dir)) continue;
 
       entities.push(entity);
     }
@@ -186,64 +161,27 @@ export class NearbySurroundings {
         continue;
       }
 
-      if (!this.offsetIsWithinDirection(entity.position, curPos, dir)) continue;
+      if (!offsetIsWithinDirection(entity.position, curPos, dir)) continue;
       entities.push(entity);
     }
     return entities;
   }
-
-  public findBlocks(dir: Direction, search: FindBlockOptions): PBlock[] {
-    const search1: FindBlockOptions = { ...search, maxDistance: Math.min(search.maxDistance ?? Infinity, this._blockRadius), count: Infinity };
-    const blocks = this.bot.findBlocks(search1);
-    const curPos = this.bot.entity.position;
-    return blocks.filter((block) => {
-      if (block.distanceTo(curPos) > this._blockRadius) return false;
-      return this.offsetIsWithinDirection(block, curPos, dir);
-    }).map((block) => this.bot.world.getBlock(block)!);
-  }
-
-  // NAIVE CHECK
-  public isBlockVisible(blockPos: Vec3, raycast = false) {
-    // check if block shapes are full blocks, if so return false.
-    let failures = 0;
-    for (const offset of NEARBY_BLOCK_VIS_OFFSETS) {
-      const block = this.bot.blockAt(blockPos.plus(offset));
-      if (block === null) return false;
-
-      // this will only flag a failure for blocks w/ one shape, or full blocks.
-      // stairs will not flag this check.
-      for (const shape of block.shapes) {
-        const fullX = shape[0] === 0 && shape[3] === 1;
-        const fullY = shape[1] === 0 && shape[4] === 1;
-        const fullZ = shape[2] === 0 && shape[5] === 1;
-        if (fullX && fullY && fullZ) failures++;
-      }
-    }
-    // all blocks have a full shape.
-    if (failures === NEARBY_BLOCK_VIS_OFFSETS.length) return false;
-    if (!raycast) return true;
-
-    // TODO: this is not a fully accurate raycast check! to be sure, check multiple points on the block!
-    const block = this.bot.world.getBlock(blockPos);
-    if (block === null) return false; // should never happen.
-
-    // TODO: this is not accurate! Mineflayer does not correctly update pose.
-    // TODO: This also does not handle entity intersection!
-    return this.bot.canSeeBlock(block);
-  }
 }
 
-export class WorldState {
+export class SemanticWorld {
   // TODO: add priorities for the notes?
   private _notepad: Map<string, any> = new Map<string, any>();
 
   // TODO: properly implement?
-  private immediateSurroundings!: ImmediateSurroundings;
+  public immediateSurroundings!: ImmediateSurroundings;
 
   // TODO: properly implement?
-  private nearbySurroundings!: NearbySurroundings;
+  public nearbySurroundings!: NearbySurroundings;
 
-  public constructor(private readonly bot: Bot) {}
+  public constructor(private readonly bot: Bot, opts: SemanticOptions) {
+    this.immediateSurroundings = new ImmediateSurroundings(bot, { radius: opts.immediateRadius });
+    this.nearbySurroundings = new NearbySurroundings(bot, { blockRadius: opts.nearbyRadius });
+  }
 
   public get coordinates(): Vec3 {
     return this.bot.entity.position;
@@ -285,5 +223,77 @@ export class WorldState {
   /**
    * @override
    */
-  public toString() {}
+  public toString() {
+    return `{
+      coordinates: ${this.coordinates},
+      health: ${this.health},
+      hunger: ${this.hunger},
+      timeOfDay: ${this.timeOfDay},
+      inventory: ${JSON.stringify(this.inventory, null, 2)},
+      equipped: ${JSON.stringify(this.equipped, null, 2)},
+      notepad: ${JSON.stringify(this.notepad, null, 2)}
+    }`
+    
+
+  }
+
+
+  // ========================
+  // Utility functions
+  // ========================
+
+  public getFacingDirection(): Direction {
+    // base this off of bot's yaw
+    let yaw = (Math.PI - this.bot.entity.yaw) * (180 / Math.PI);
+
+    for (const [dir, [min, max]] of Object.entries(DIRECTION_ANGLES)) {
+      if (min < max) {
+        // Normal case (min to max is continuous)
+        if (yaw >= min && yaw < max) return dir as Direction;
+      } else {
+        // Wrapping case (e.g., WEST spans from 157.5 to -157.5)
+        if (yaw >= min || yaw < max) return dir as Direction;
+      }
+    }
+    return Direction.NORTH; // default to north
+  }
+
+  public findBlocks(dir: Direction, search: FindBlockOptions): PBlock[] {
+    const search1: FindBlockOptions = { ...search, count: Infinity };
+    const blocks = this.bot.findBlocks(search1);
+    const curPos = this.bot.entity.position;
+    return blocks.filter((block) => {
+      return offsetIsWithinDirection(block, curPos, dir);
+    }).map((block) => this.bot.world.getBlock(block)!);
+  }
+
+  // NAIVE CHECK
+  public isBlockVisible(blockPos: Vec3, raycast = false) {
+    // check if block shapes are full blocks, if so return false.
+    let failures = 0;
+    for (const offset of NEARBY_BLOCK_VIS_OFFSETS) {
+      const block = this.bot.blockAt(blockPos.plus(offset));
+      if (block === null) return false;
+
+      // this will only flag a failure for blocks w/ one shape, or full blocks.
+      // stairs will not flag this check.
+      for (const shape of block.shapes) {
+        const fullX = shape[0] === 0 && shape[3] === 1;
+        const fullY = shape[1] === 0 && shape[4] === 1;
+        const fullZ = shape[2] === 0 && shape[5] === 1;
+        if (fullX && fullY && fullZ) failures++;
+      }
+    }
+    // all blocks have a full shape.
+    if (failures === NEARBY_BLOCK_VIS_OFFSETS.length) return false;
+    if (!raycast) return true;
+
+    // TODO: this is not a fully accurate raycast check! to be sure, check multiple points on the block!
+    const block = this.bot.world.getBlock(blockPos);
+    if (block === null) return false; // should never happen.
+
+    // TODO: this is not accurate! Mineflayer does not correctly update pose.
+    // TODO: This also does not handle entity intersection!
+    return this.bot.canSeeBlock(block);
+  }
 }

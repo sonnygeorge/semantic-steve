@@ -6,6 +6,7 @@ import type { Entity } from "prismarine-entity";
 import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter"
 import type {Block as PBlock} from "prismarine-block"
+import { Direction } from "../constants";
 
 
 // TODO: this should REALLY be in a state machine implementation, but for phase 1 I'll do this instead.
@@ -37,7 +38,7 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
       return dist <= stopIfFound.entities.radius;
     };
 
-    const bCheck = () => {
+    const blCheck = () => {
       if (stopIfFound.blocks == null) return false;
       
       const bPos = this.bot.findBlocks({
@@ -46,9 +47,20 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
       });
 
       const blocks = bPos.map((b) => this.bot.blockAt(b)!);
-
       const visible = blocks.filter((b) => this.bot.canSeeBlock(b));
       return visible
+    }
+
+    const biCheck = () => {
+      if (stopIfFound.biomes == null) return false;
+
+      const biomes = this.bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL, stopIfFound.biomes.radius);
+      for (const b of biomes) {
+        if (stopIfFound.biomes.types.includes(b)) {
+          return b;
+        }
+      }
+      return false;
     }
 
     const moveListener = (lastMove: Vec3) => {
@@ -65,10 +77,18 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
 
       // check if there is a block we want to stop for
       if (stopIfFound.blocks != null) {
-        const res = bCheck(); // uses current pos, not last pos, so no need to pass this in.
+        const res = blCheck(); // uses current pos, not last pos, so no need to pass this in.
         if (res !== false && res.length > 0) {
           cleanup();
           this.emit('blockCancel', res);
+        }
+      }
+
+      if (stopIfFound.biomes != null) {
+        const b = biCheck()
+        if (b !== false) {
+          cleanup();
+          this.emit('biomeCancel', b)
         }
       }
     };

@@ -6,6 +6,7 @@ import type {Block as PBlock }from "prismarine-block"
 export type PathfinderAbstractionEvents = {
     mobCancel: (e: Entity) => void;
     blockCancel: (b: PBlock[]) => void;
+    biomeCancel: (b: number) => void; // TODO: add positional data?
   }
 
 export interface PathfinderAbstractionOptions {
@@ -28,4 +29,8 @@ export interface PathfinderStopConditions {
       }
     | { ids: number[] }
   );
+  biomes?: {
+    types: number[];
+    radius: number;
+  }
 }

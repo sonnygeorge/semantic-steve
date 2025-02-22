@@ -76,7 +76,7 @@ export class NearbySurroundings {
     this._blockRadius = options.blockRadius;
   }
 
-  getRadiusChunks(targetDirection: Direction): PCChunkCoordinateAndColumn[] {
+  getRadiusChunks(targetDirection: Direction, distance = this._blockRadius): PCChunkCoordinateAndColumn[] {
     const chunks = this.bot.world.getColumns();
     const currentPos = this.bot.entity.position;
 
@@ -86,7 +86,7 @@ export class NearbySurroundings {
         const blockChunkZ = chunkZ << 4;
 
         // Ensure chunk is within the defined radius
-        if (Math.abs(blockChunkX - currentPos.x) > this._blockRadius || Math.abs(blockChunkZ - currentPos.z) > this._blockRadius)
+        if (Math.abs(blockChunkX - currentPos.x) > distance || Math.abs(blockChunkZ - currentPos.z) > distance)
           return false;
 
         // Ensure chunk is within the defined direction
@@ -96,9 +96,9 @@ export class NearbySurroundings {
       .map(({ chunkX, chunkZ, column }) => ({ chunkX, chunkZ, column: column as PCChunk }));
   }
 
-  public biomes(direction: Direction): Set<number> {
+  public biomes(direction: Direction, distance = this._blockRadius): Set<number> {
     const biomes = new Set<number>();
-    for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction)) {
+    for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction, distance)) {
       // iterate over blocks in chunk
       // console.log((column as any).biomes, Object.keys(column))
 

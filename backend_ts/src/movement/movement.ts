@@ -63,7 +63,7 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
         }
       }
 
-      // check if there is a block in the way
+      // check if there is a block we want to stop for
       if (stopIfFound.blocks != null) {
         const res = bCheck(); // uses current pos, not last pos, so no need to pass this in.
         if (res !== false && res.length > 0) {

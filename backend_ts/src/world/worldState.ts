@@ -212,9 +212,6 @@ export class NearbySurroundings {
         itemEntities: itemEntities
       });
     }
-
-    console.log(full)
-
     return JSON.stringify(full, null, 2);
   }
 }
@@ -247,7 +244,7 @@ export class SemanticWorld {
   }
 
   public get timeOfDay(): number {
-    return this.bot.time.age;
+    return this.bot.time.timeOfDay;
   }
 
   // Assume java edition.

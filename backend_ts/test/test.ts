@@ -19,7 +19,38 @@ bot.once("spawn", () => {
   bot.pathfinderAbstract.on("blockCancel", (b) => {
     console.log("cancelled pathfinding due to block: ", b);
   });
+
+  bot.pathfinderAbstract.on("biomeCancel", (b, pos) => {
+    console.log("cancelled pathfinding due to biome: ", b, pos);
+  });
 });
+
+
+
+function pathfindToCoordinate(bot: Bot, coords: Vec3) {
+
+  const entitiesToCancel = [bot.registry.entitiesByName["zombie"].id];
+  const blocksToCancel = [bot.registry.blocksByName["iron_ore"].id];
+  const biomesToCancel = [bot.registry.biomesByName['minecraft:jungle'].id]
+
+  const cancelOpts: PathfinderStopConditions = {
+    entities: {
+      ids: entitiesToCancel,
+      radius: 10,
+    },
+    blocks: {
+      types: blocksToCancel,
+      radius: 10,
+    },
+    biomes: {
+      types: biomesToCancel,
+      radius: 32
+    }
+  };
+
+  bot.pathfinderAbstract.pathfindToCoordinate(coords, cancelOpts);
+}
+
 
 const prefix = "";
 bot.on("chat", (username, message) => {
@@ -34,28 +65,13 @@ bot.on("chat", (username, message) => {
       if (args.length < 3) return bot.chat(`Invalid coordinates`);
       const [x, y, z] = args.map(Number);
       if (x == null || y == null || z == null) return bot.chat(`Invalid coordinates`);
-      bot.pathfinderAbstract.pathfindToCoordinate(new Vec3(x, y, z));
+      pathfindToCoordinate(bot, new Vec3(x, y, z));
       break;
     }
 
     case "come": {
       const { x, y, z } = author.position;
-      const entitiesToCancel = [bot.registry.entitiesByName["zombie"].id];
-      const blocksToCancel = [bot.registry.blocksByName["iron_ore"].id];
-
-      const cancelOpts: PathfinderStopConditions = {
-        entities: {
-          ids: entitiesToCancel,
-          radius: 10,
-        },
-        blocks: {
-          types: blocksToCancel,
-          radius: 10,
-        },
-      };
-
-      console.log(cancelOpts);
-      bot.pathfinderAbstract.pathfindToCoordinate(new Vec3(x, y, z), cancelOpts);
+      pathfindToCoordinate(bot, new Vec3(x, y, z));
       break;
     }
 
@@ -72,8 +88,11 @@ bot.on("chat", (username, message) => {
     }
 
     case "biomes": {
-      const biomes = bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL);
-      console.log(biomes);
+      const biomes1 = bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL);
+      for (const [num, pt] of biomes1.entries()) {
+        const biome = bot.registry.biomes[num];
+        console.log(num, pt, biome.displayName);
+      }
       break;
     }
 
@@ -84,7 +103,9 @@ bot.on("chat", (username, message) => {
 
 
       // basic world info
-      console.log(bot.semanticWorld.toString());
+      // console.log(bot.semanticWorld.toString());
+      console.log(bot.semanticWorld.nearbySurroundings.toString())
+      return;
 
       // immedidate entity info, formatted to be nice to read
       console.log(

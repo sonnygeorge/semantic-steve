@@ -51,13 +51,18 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
       return visible
     }
 
+    // TODO: temporary fix to make the biome check work (TOO LAGGY, NEEDS A FIX)
+    let lastCheck = this.bot.entity.position.clone();
     const biCheck = () => {
       if (stopIfFound.biomes == null) return false;
 
+      if (lastCheck.distanceTo(this.bot.entity.position) < 1) return false;
+      lastCheck = this.bot.entity.position.clone();
+
       const biomes = this.bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL, stopIfFound.biomes.radius);
-      for (const b of biomes) {
-        if (stopIfFound.biomes.types.includes(b)) {
-          return b;
+      for (const [num, pt] of biomes.entries()) {
+        if (stopIfFound.biomes.types.includes(num)) {
+          return {id: num, position: pt};
         }
       }
       return false;
@@ -84,11 +89,11 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
         }
       }
 
-      if (stopIfFound.biomes != null) {
+      if (stopIfFound.biomes != null) { 
         const b = biCheck()
         if (b !== false) {
           cleanup();
-          this.emit('biomeCancel', b)
+          this.emit('biomeCancel', b.id, b.position)
         }
       }
     };

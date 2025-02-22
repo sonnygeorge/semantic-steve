@@ -1,12 +1,12 @@
 import type { Entity, EntityType } from "prismarine-entity";
 import type {Block as PBlock }from "prismarine-block"
-
+import type {Vec3} from 'vec3'
 
 
 export type PathfinderAbstractionEvents = {
     mobCancel: (e: Entity) => void;
     blockCancel: (b: PBlock[]) => void;
-    biomeCancel: (b: number) => void; // TODO: add positional data?
+    biomeCancel: (b: number, pos: Vec3) => void; // TODO: add positional data?
   }
 
 export interface PathfinderAbstractionOptions {

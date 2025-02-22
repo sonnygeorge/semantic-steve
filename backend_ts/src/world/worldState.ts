@@ -84,11 +84,11 @@ export class NearbySurroundings {
       .filter(({ chunkX, chunkZ }) => {
         const blockChunkX = chunkX << 4;
         const blockChunkZ = chunkZ << 4;
+      
 
         // Ensure chunk is within the defined radius
         if (Math.abs(blockChunkX - currentPos.x) > distance || Math.abs(blockChunkZ - currentPos.z) > distance)
           return false;
-
         // Ensure chunk is within the defined direction
         const chunkCenter = new Vec3(blockChunkX + 8, 0, blockChunkZ + 8);
         return offsetIsWithinDirection(chunkCenter, currentPos, targetDirection);
@@ -96,29 +96,38 @@ export class NearbySurroundings {
       .map(({ chunkX, chunkZ, column }) => ({ chunkX, chunkZ, column: column as PCChunk }));
   }
 
-  public biomes(direction: Direction, distance = this._blockRadius): Set<number> {
-    const biomes = new Set<number>();
-    for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction, distance)) {
-      // iterate over blocks in chunk
-      // console.log((column as any).biomes, Object.keys(column))
 
-      // loop down from max to min height
-      const cursor = new Vec3(0, 0, 0)
+  public biomes(direction: Direction, distance = this._blockRadius): Map<number, Vec3> {
+    const found = new Map<number, Vec3>(); // biomeID -> closest block position
+    const closestDists = new Map<number, number>(); // biomeID -> closest distance
+    const botPos = this.bot.entity.position;
+  
+    for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction, distance)) {
+      const cursor = new Vec3(0, 0, 0);
+  
+      // TODO: make faster.
       for (cursor.y = (this.bot.game as any).height; cursor.y >= (this.bot.game as any).minY; cursor.y--) {
         for (cursor.x = 0; cursor.x < 16; cursor.x++) {
           for (cursor.z = 0; cursor.z < 16; cursor.z++) {
             const biome = column.getBiome(cursor);
-            biomes.add(biome);
+            const blockPos = new Vec3((chunkX << 4) + cursor.x, cursor.y, (chunkZ << 4) + cursor.z);
+            const distanceFromBot = botPos.distanceTo(blockPos);
+  
+            if (!found.has(biome) || distanceFromBot < (closestDists.get(biome) ?? Infinity)) {
+              found.set(biome, blockPos);
+              closestDists.set(biome, distanceFromBot);
+            }
           }
         }
       }
     }
-    return biomes;
+    
+    return found; // Returns biome -> closest block mapping
   }
-
-  public blockEntities(direction: Direction): any[] {
+  
+  public blockEntities(direction: Direction): Map<string, any> {
     // pull from chunk data instead of bot
-    const blockEntities = [];
+    const blockEntities = new Map<string, any>();
 
     for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction)) {
       // we are assuming java edition chunks here. should be fine.
@@ -126,7 +135,10 @@ export class NearbySurroundings {
       // NOTE: this is here because older versions did not store blockEntities in this manner.
       // In fact, I do not know the exact way they were stored.
       if (column.hasOwnProperty("blockEntities")) {
-        blockEntities.push(...(column as any).blockEntities); // TODO: this may not be what I want.
+        for (const [posStr, item] of Object.entries((column as any).blockEntities)) {
+          blockEntities.set(posStr, item);
+        }
+        // blockEntities.push(...(column as any).blockEntities); // TODO: this may not be what I want.
       }
     }
     return blockEntities;
@@ -178,6 +190,33 @@ export class NearbySurroundings {
     }
     return entities;
   }
+
+  /**
+   * @override
+   */
+  public toString() {
+    // We need to return a string representation of the nearby surroundings, for EACH direction.
+    const full = [];
+    for (const [what, dir] of Object.entries(Direction)) {
+      const biomes = this.biomes(dir);
+      const blockEntities = this.blockEntities(dir);
+      const mobs = this.mobs(dir);
+      const players = this.players(dir);
+      const itemEntities = this.itemEntities(dir);
+      full.push({
+        direction: dir,
+        biomes: [...biomes.entries()],
+        blockEntities: [...blockEntities.entries()],
+        mobs: mobs,
+        players:players,
+        itemEntities: itemEntities
+      });
+    }
+
+    console.log(full)
+
+    return JSON.stringify(full, null, 2);
+  }
 }
 
 export class SemanticWorld {
@@ -209,6 +248,12 @@ export class SemanticWorld {
 
   public get timeOfDay(): number {
     return this.bot.time.age;
+  }
+
+  // Assume java edition.
+  public get biome(): number {
+    const currentColumn = this.bot.world.getColumnAt(this.bot.entity.position);
+    return currentColumn.getBiome(this.bot.entity.position) as number;
   }
 
   public get inventory(): PItem[] {

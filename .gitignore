@@ -1,3 +1,8 @@
+backend_ts/node_modules
+backend_ts/build
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

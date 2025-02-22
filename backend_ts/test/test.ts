@@ -2,6 +2,7 @@ import { createPlugin } from "../src";
 import { Bot, createBot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { PathfinderStopConditions } from "../src/movement/types";
+import { Direction } from "../src/constants";
 
 const bot = createBot({
   username: "test",
@@ -67,6 +68,12 @@ bot.on("chat", (username, message) => {
       const blocks = bot.semanticWorld.findBlocks(faceDir, { matching: mdBlock.id });
 
       console.log(blocks.map((b) => b));
+      break;
+    }
+
+    case "biomes": {
+      const biomes = bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL);
+      console.log(biomes);
       break;
     }
 

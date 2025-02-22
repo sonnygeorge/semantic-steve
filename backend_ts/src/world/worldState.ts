@@ -7,11 +7,12 @@ import { PCChunk } from "prismarine-chunk";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
 
 import type { Block as PBlock } from "prismarine-block";
-import { DIRECTION_ANGLES, Direction } from "../constants";
+import { DIRECTION_ANGLES, Direction, findDir } from "../constants";
 import { ImmediateSurroundingsConfig, NearbySurroundingsConfig, PCChunkCoordinateAndColumn } from "./types";
 import { Entity } from "prismarine-entity";
 import { SemanticOptions } from "../types";
 import { offsetIsWithinDirection } from "./utils";
+
 
 export class ImmediateSurroundings {
   private _radius: number;
@@ -95,11 +96,22 @@ export class NearbySurroundings {
       .map(({ chunkX, chunkZ, column }) => ({ chunkX, chunkZ, column: column as PCChunk }));
   }
 
-  public biomes(direction: Direction): number[] {
-    const biomes: number[] = [];
+  public biomes(direction: Direction): Set<number> {
+    const biomes = new Set<number>();
     for (const { chunkX, chunkZ, column } of this.getRadiusChunks(direction)) {
       // iterate over blocks in chunk
-      biomes.push(...column.dumpBiomes());
+      // console.log((column as any).biomes, Object.keys(column))
+
+      // loop down from max to min height
+      const cursor = new Vec3(0, 0, 0)
+      for (cursor.y = (this.bot.game as any).height; cursor.y >= (this.bot.game as any).minY; cursor.y--) {
+        for (cursor.x = 0; cursor.x < 16; cursor.x++) {
+          for (cursor.z = 0; cursor.z < 16; cursor.z++) {
+            const biome = column.getBiome(cursor);
+            biomes.add(biome);
+          }
+        }
+      }
     }
     return biomes;
   }
@@ -232,11 +244,8 @@ export class SemanticWorld {
       inventory: ${JSON.stringify(this.inventory, null, 2)},
       equipped: ${JSON.stringify(this.equipped, null, 2)},
       notepad: ${JSON.stringify(this.notepad, null, 2)}
-    }`
-    
-
+    }`;
   }
-
 
   // ========================
   // Utility functions
@@ -246,25 +255,18 @@ export class SemanticWorld {
     // base this off of bot's yaw
     let yaw = (Math.PI - this.bot.entity.yaw) * (180 / Math.PI);
 
-    for (const [dir, [min, max]] of Object.entries(DIRECTION_ANGLES)) {
-      if (min < max) {
-        // Normal case (min to max is continuous)
-        if (yaw >= min && yaw < max) return dir as Direction;
-      } else {
-        // Wrapping case (e.g., WEST spans from 157.5 to -157.5)
-        if (yaw >= min || yaw < max) return dir as Direction;
-      }
-    }
-    return Direction.NORTH; // default to north
+    return findDir(yaw);
   }
 
   public findBlocks(dir: Direction, search: FindBlockOptions): PBlock[] {
     const search1: FindBlockOptions = { ...search, count: Infinity };
     const blocks = this.bot.findBlocks(search1);
     const curPos = this.bot.entity.position;
-    return blocks.filter((block) => {
-      return offsetIsWithinDirection(block, curPos, dir);
-    }).map((block) => this.bot.world.getBlock(block)!);
+    return blocks
+      .filter((block) => {
+        return offsetIsWithinDirection(block, curPos, dir);
+      })
+      .map((block) => this.bot.world.getBlock(block)!);
   }
 
   // NAIVE CHECK

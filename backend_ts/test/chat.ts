@@ -27,7 +27,7 @@ bot.once("spawn", () => {
 
 
 
-function pathfindToCoordinate(bot: Bot, coords: Vec3) {
+async function pathfindToCoordinate(bot: Bot, coords: Vec3) {
 
   const entitiesToCancel = [bot.registry.entitiesByName["zombie"].id];
   const blocksToCancel = [bot.registry.blocksByName["iron_ore"].id];
@@ -48,7 +48,8 @@ function pathfindToCoordinate(bot: Bot, coords: Vec3) {
     }
   };
 
-  bot.pathfinderAbstract.pathfindToCoordinate(coords, cancelOpts);
+  const res = await bot.pathfinderAbstract.pathfindToCoordinate(coords, cancelOpts);
+  console.log('RETURNED VALUE:', res)
 }
 
 

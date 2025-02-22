@@ -113,13 +113,37 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
     this.bot.on('path_stop', cleanup); // handle cancelling/interrupt
   }
 
-  // TODO: figure out what to do with stopIfFound
-  public pathfindToCoordinate(coords: Vec3, stopIfFound: PathfinderStopConditions = {}) {
+  // TODO: make return typing more concise so both LLM (string format) and CLI (basic/no output) can use this.
+  public async pathfindToCoordinate(coords: Vec3, stopIfFound: PathfinderStopConditions = {}) {
 
     // this will break the block if it is inside a block
     const goal = new goals.GoalBlock(coords.x, coords.y, coords.z); 
     this.bot.pathfinder.setGoal(goal);
 
     this.setupListeners(goal, stopIfFound)
+
+    const res = await new Promise<void | string>((resolve) => {
+      this.bot.on('goal_reached', () => {
+        resolve();
+      });
+
+      this.bot.on('path_stop', () => {
+        resolve(`cancelled pathfinding`);
+      });
+
+      this.on('mobCancel', (e) => {
+        resolve(`cancelled pathfinding due to mob: ${e}`);
+      })
+
+      this.on('blockCancel', (b) => {
+        resolve(`cancelled pathfinding due to block: ${b}`);
+      })
+
+      this.on('biomeCancel', (b, pos) => {
+        resolve(`cancelled pathfinding due to biome: ${b} at ${pos}`);
+      })
+    });
+
+    return res;
   }
 }

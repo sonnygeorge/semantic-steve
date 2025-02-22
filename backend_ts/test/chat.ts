@@ -1,8 +1,5 @@
 import { createPlugin } from "../src";
 import { Bot, createBot } from "mineflayer";
-import { Vec3 } from "vec3";
-import { PathfinderStopConditions } from "../src/movement/types";
-import { Direction } from "../src/constants";
 import { handleCommand } from "./common";
 
 const bot = createBot({

@@ -4,6 +4,7 @@ import { Vec3 } from "vec3";
 import { PathfinderStopConditions } from "../src/movement/types";
 import { Direction } from "../src/constants";
 import readline from "readline";
+import { handleCommand } from "./common";
 
 const bot = createBot({
   username: "test",
@@ -48,64 +49,13 @@ function generatePrompt(bot: Bot) {
   [${bot.username}] > `;
 }
 
-async function handleCommand(line: string) {
-  const [cmd, ...args] = line.trim().split(" ");
-
-  switch (cmd) {
-    case "goto":
-      if (args.length < 3) return console.log("Invalid coordinates");
-      const [x, y, z] = args.map(Number);
-      if (isNaN(x) || isNaN(y) || isNaN(z)) return console.log("Invalid coordinates");
-      await pathfindToCoordinate(new Vec3(x, y, z));
-      break;
-
-    case "come":
-      const { x: cx, y: cy, z: cz } = bot.entity.position;
-      await pathfindToCoordinate(new Vec3(cx, cy, cz));
-      break;
-
-    case "dirBlock":
-      if (args.length < 1) return console.log("Invalid block name");
-      const mdBlock = bot.registry.blocksByName[args[0]];
-      if (!mdBlock) return console.log("Invalid block name");
-      const faceDir = bot.semanticWorld.getFacingDirection();
-      const blocks = bot.semanticWorld.findBlocks(faceDir, { matching: mdBlock.id });
-      console.log(blocks);
-      break;
-
-    case "biomes":
-      const biomes = bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL);
-      for (const [num, pt] of biomes.entries()) {
-        const biome = bot.registry.biomes[num];
-        console.log(num, pt, biome.displayName);
-      }
-      break;
-
-    case "info":
-      const immEntities = bot.semanticWorld.immediateSurroundings.entities;
-      const faceDirInfo = bot.semanticWorld.getFacingDirection();
-      const nearbyEntities = bot.semanticWorld.nearbySurroundings.players(faceDirInfo);
-      console.log("Immediate Entities:", immEntities);
-      console.log("Nearby Entities:", nearbyEntities);
-      break;
-
-    case "exit":
-      console.log("Exiting CLI...");
-      rl.close();
-      process.exit(0);
-      break;
-
-    default:
-      console.log("Unknown command");
-  }
-}
 
 function startCLI() {
   rl.setPrompt(generatePrompt(bot));
   rl.prompt();
 
   rl.on("line", async (line) => {
-    await handleCommand(line);
+    await handleCommand(bot, line);
     rl.setPrompt(generatePrompt(bot));
     rl.prompt();
   });
@@ -114,5 +64,5 @@ function startCLI() {
 bot.on("chat", (username, message) => {
   if (username === bot.username) return;
   console.log(`Chat message from ${username}: ${message}`);
-  handleCommand(message);
+  handleCommand(bot, message);
 });

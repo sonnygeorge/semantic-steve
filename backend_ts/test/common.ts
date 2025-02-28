@@ -28,28 +28,6 @@ async function pathfindToCoordinate(bot: Bot, coords: Vec3) {
   console.log("RETURNED VALUE:", res);
 }
 
-
-// NOTE (sonny): This doesn't work bc I'm dumb and don't understand JS
-export async function handleFunctionCall(bot: Bot, functionCallStr: string) {
-  // NOTE: Hotfix while we figure out naming conventions
-  // We should bind the bod to th Semantic Steve functions so that the function call strings don't need to include the bot object
-  let boundpathfindToCoordinate = pathfindToCoordinate.bind(null, bot);
-  functionCallStr = "await bound" + functionCallStr;
-
-  let result: any;  // Openly typed for now
-  try {
-    console.log("Evaluating:", functionCallStr);
-    result = await eval(functionCallStr);
-    console.log("Done evaluating");
-  } catch (e) {
-    console.log("Error caught during evaluation");
-    result = e;
-  }
-  return result;
-}
-
-
-// NOTE (sonny): Deprecated in favor of handleFunctionCall
 export async function handleCommand(bot: Bot, line: string, author?: Entity) {
   const [cmd, ...args] = line.trim().split(" ");
 

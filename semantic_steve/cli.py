@@ -4,12 +4,34 @@ import re
 import time
 import subprocess
 import sys
+import traceback
 from typing import Optional
 
 import zmq
-from termcolor import colored
 
-BACKEND_PROCESS_CONSOLE_COLOR = "cyan"
+ANSII_WHITE = "\033[97m"
+ANSII_CYAN = "\033[36m"
+
+
+uncolored_print = print
+
+
+def print(*args):  # Overwrite the built-in `print` function so all output is colored
+    colored_args = []
+    for arg in args:
+        colored_args.append(f"{ANSII_WHITE}{arg}{ANSII_CYAN}")
+    uncolored_print(*colored_args)
+
+
+def custom_excepthook(exc_type, exc_value, exc_traceback):
+    uncolored_print(f"{ANSII_WHITE}Traceback (most recent call last):{ANSII_CYAN}")
+    tb_lines = traceback.format_tb(exc_traceback)
+    for line in tb_lines:
+        uncolored_print(f"{ANSII_WHITE}{line}{ANSII_CYAN}")
+    uncolored_print(f"{ANSII_WHITE}{exc_type.__name__}: {exc_value}{ANSII_CYAN}")
+
+
+sys.excepthook = custom_excepthook  # Override the default excepthook
 
 
 def parse_function_call_str(
@@ -71,17 +93,16 @@ def parse_function_call_str(
     return function_name, args, kwargs
 
 
-def run_textworld_cli():
-    """Runs Semantic Steve as a TextWorld CLI game."""
+def run_textworld_cli(rebuild_backend: bool = False):
+    print("Running Semantic Steve as a TextWorld CLI game...")
 
     def check_backend_process():
-        stdout, stderr = backend_process.communicate()
+        _, stderr = backend_process.communicate()
         if backend_process.returncode != 0:
-            print(colored(stderr, BACKEND_PROCESS_CONSOLE_COLOR))
+            uncolored_print(stderr)
             raise subprocess.CalledProcessError(
                 returncode=backend_process.returncode,
                 cmd=backend_process_command,
-                output=stdout,
                 stderr=stderr,
             )
 
@@ -99,11 +120,19 @@ def run_textworld_cli():
         else:
             print("`cleanup_backend_process_gracefully` was called but not needed.")
 
+    
+    # Rebuild backend if requested
+    if rebuild_backend is True:
+        print("Rebuilding backend...")
+        subprocess.run(["npm", "run", "build"], cwd="backend_ts", check=True)
+        
+    
+    
+    
     # Start backend
     backend_process_command = ["node", "backend_ts/build/backend.js"]
     backend_process = subprocess.Popen(
         backend_process_command,
-        stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )

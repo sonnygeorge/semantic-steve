@@ -31,7 +31,7 @@ interface BackendMessage {
 }
 
 // Where we register functions that can be called by the frontend
-const functionRegistry: Record<string, (...args: any[]) => any> = {
+const functionRegistry: Record<string, (...args: any[]) => any> = {  // TODO: move to a functionRegistry.ts file
     pathfindToCoordinate: async (coords: number[], stopIfFound: string[]) => {
         const entitiesToCancel = [bot.registry.entitiesByName["zombie"].id];
         const blocksToCancel = [bot.registry.blocksByName["iron_ore"].id];
@@ -55,7 +55,7 @@ const functionRegistry: Record<string, (...args: any[]) => any> = {
         const res = await bot.pathfinderAbstract.pathfindToCoordinate(new Vec3(coords[0], coords[1], coords[2]), cancelOpts);
         console.log("RETURNED VALUE:", res);
       }
-    // ...
+    // TODO: Add other functions...
 };
 
 

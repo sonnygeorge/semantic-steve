@@ -3,9 +3,13 @@ import json
 import re
 import time
 import subprocess
+import sys
 from typing import Optional
 
 import zmq
+from termcolor import colored
+
+BACKEND_PROCESS_CONSOLE_COLOR = "cyan"
 
 
 def parse_function_call_str(
@@ -69,43 +73,103 @@ def parse_function_call_str(
 
 def run_textworld_cli():
     """Runs Semantic Steve as a TextWorld CLI game."""
+
+    def check_backend_process():
+        stdout, stderr = backend_process.communicate()
+        if backend_process.returncode != 0:
+            print(colored(stderr, BACKEND_PROCESS_CONSOLE_COLOR))
+            raise subprocess.CalledProcessError(
+                returncode=backend_process.returncode,
+                cmd=backend_process_command,
+                output=stdout,
+                stderr=stderr,
+            )
+
+    def cleanup_backend_process_gracefully():
+        if backend_process.poll() is None:  # If the backend process is still running
+            print("Attempting to gracefully terminate the backend process...")
+            try:
+                backend_process.terminate()
+                backend_process.wait(timeout=5)
+                print("Backend process terminated gracefully.")
+            except subprocess.TimeoutExpired:
+                print("Backend process did not terminate in time. Forcing...")
+                backend_process.kill()
+                print("Backend process killed forcefully.")
+        else:
+            print("`cleanup_backend_process_gracefully` was called but not needed.")
+
     # Start backend
+    backend_process_command = ["node", "backend_ts/build/backend.js"]
     backend_process = subprocess.Popen(
-        ["node", "backend_ts/build/backend.js"],  # Command to run the compiled JS
-        stdout=subprocess.PIPE,  # Capture stdout
-        stderr=subprocess.PIPE,  # Capture stderr (for errors)
-        text=True,  # Get strings instead of bytes
-        bufsize=1,  # Line-buffered
+        backend_process_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
     )
+    # Check immediately if the backend process started successfully
+    check_backend_process()  # This will raise the appropriate exception if not
 
-    context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.connect("tcp://localhost:5555")  # Connect to the backend server
+    try:  # This try-except ensures cleanup of backend process
+        # Setup ZMQ socket/context
+        context = zmq.Context()
+        socket = context.socket(zmq.PAIR)
+        socket.connect("tcp://localhost:5555")
+        socket.setsockopt(zmq.RCVTIMEO, 100)
 
-    ts_message = socket.recv_json()  # Wait for initial message from ts backend
+        try:  # This try-except ensures cleanup of ZMQ socket/context
+            # Wait for initial environment state message from backend
+            message_from_backend = None
+            while message_from_backend is None:
+                try:
+                    message_from_backend = socket.recv_json()
+                except zmq.Again:
+                    time.sleep(0.04)
 
-    for _ in range(1000):  # TODO: Add a proper exit condition
-        print(ts_message["env_state"])
-        if ts_message["result"] is not None:
-            print(ts_message["result"])
+            # Main loop for CLI
+            while True:
+                # Print the environment state and result of the last function call
+                print(message_from_backend["env_state"])
+                if message_from_backend["result"] is not None:
+                    print(message_from_backend["result"])
 
-        function_call_str = input("Enter function call: ")
+                # Get function call from user
+                input_prompt = "Enter function call (or 'exit' to quit): "
+                function_call_str = input(input_prompt)
+                if function_call_str.lower() == "exit":
+                    break
 
-        try:
-            function_name, args, kwargs = parse_function_call_str(function_call_str)
-        except ValueError as e:
-            ts_message = {"result": e, "env_state": ts_message["env_state"]}
-            continue
+                # Parse `function_call_str` & handle invalid syntax
+                try:
+                    fnc_name, args, kwargs = parse_function_call_str(function_call_str)
+                except ValueError as e:
+                    # Go back to the start of the loop to give the user another chance
+                    # Updating the "result" (of their function call) to communicate their syntax error
+                    message_from_backend["result"] = str(e)
+                    continue
 
-        socket.send_json(  # Send function call to ts backend
-            {
-                "function": function_name,
-                "args": args,
-                "kwargs": kwargs,
-            }
-        )
-        ts_message = socket.recv_json()  # Wait for response from ts backend
+                # Invoke the function within the backend
+                outgoing_message = {
+                    "function": fnc_name,
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+                socket.send_json(outgoing_message)
 
-    # Clean up
-    socket.close()
-    context.term()
+                # Wait for the results, continually checking if the backend has died
+                message_from_backend = None
+                while message_from_backend is None:
+                    try:
+                        message_from_backend = socket.recv_json()
+                    except zmq.Again:
+                        check_backend_process()
+                        time.sleep(0.04)
+
+        except BaseException as e:
+            socket.close()
+            context.term()
+            raise e
+    except BaseException as e:
+        if e is not subprocess.CalledProcessError:  # I.e., backend hasn't already died
+            cleanup_backend_process_gracefully()
+        raise e

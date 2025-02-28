@@ -2,14 +2,10 @@
 
 This library leverages mineflayer, a Javascript library, to manage the connected bot instance to a server.
 
-In order to run SemanticsSteve, the required dependencies for this code must be installed.
-
-
-## Installation
+## Prerequisite Steps
 
 ### Requirements
 - Node.js (v22.x)
-
 
 ### Steps
 1. Clone the repository
@@ -17,8 +13,12 @@ In order to run SemanticsSteve, the required dependencies for this code must be 
 3. Install the required dependencies via a package manager.
    1. `npm install`
    2. `yarn install`
+4. Also install this package: `yarn add @nxg-org/mineflayer-util-plugin` (if it didn't install already)
+5. Open a Minecraft singleplayer world to LAN on port: `25565`
 
-Now that everything is installed, there are few things to note before running the code.
+## Running The Code
+
+A few things to note before running the code.
 All of the provided scripts within `package.json` will run different portions of the project.
 
 To see them, run `npm run` or `yarn run` to see the available scripts.

@@ -115,7 +115,6 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
 
   // TODO: make return typing more concise so both LLM (string format) and CLI (basic/no output) can use this.
   public async pathfindToCoordinate(coords: Vec3, stopIfFound: PathfinderStopConditions = {}) {
-
     // this will break the block if it is inside a block
     const goal = new goals.GoalBlock(coords.x, coords.y, coords.z); 
     this.bot.pathfinder.setGoal(goal);

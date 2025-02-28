@@ -9,6 +9,8 @@ from typing import Optional
 
 import zmq
 
+# TODO: Separate run_textworld_cli into appropriately atomic functions
+
 ANSII_WHITE = "\033[97m"
 BACKEND_CONSOLE_COLOR = "\033[36m"
 
@@ -32,8 +34,8 @@ def custom_excepthook(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = custom_excepthook  # Override the default excepthook
 
-# Since the above above functions make any output between Python output colored,
-# the old (regular) print function is now a colored print function
+# Since the above above functions make any console output between Python outputs colored,
+# the old (regular) print function is now a colored print function!
 print_backend_console_output = _print
 
 

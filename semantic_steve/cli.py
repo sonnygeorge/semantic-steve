@@ -10,28 +10,31 @@ from typing import Optional
 import zmq
 
 ANSII_WHITE = "\033[97m"
-ANSII_CYAN = "\033[36m"
+BACKEND_CONSOLE_COLOR = "\033[36m"
 
-
-uncolored_print = print
+_print = print
 
 
 def print(*args):  # Overwrite the built-in `print` function so all output is colored
     colored_args = []
     for arg in args:
-        colored_args.append(f"{ANSII_WHITE}{arg}{ANSII_CYAN}")
-    uncolored_print(*colored_args)
+        colored_args.append(f"{ANSII_WHITE}{arg}{BACKEND_CONSOLE_COLOR}")
+    _print(*colored_args)
 
 
 def custom_excepthook(exc_type, exc_value, exc_traceback):
-    uncolored_print(f"{ANSII_WHITE}Traceback (most recent call last):{ANSII_CYAN}")
+    _print(f"{ANSII_WHITE}Traceback (most recent call last):{BACKEND_CONSOLE_COLOR}")
     tb_lines = traceback.format_tb(exc_traceback)
     for line in tb_lines:
-        uncolored_print(f"{ANSII_WHITE}{line}{ANSII_CYAN}")
-    uncolored_print(f"{ANSII_WHITE}{exc_type.__name__}: {exc_value}{ANSII_CYAN}")
+        _print(f"{ANSII_WHITE}{line}{BACKEND_CONSOLE_COLOR}")
+    _print(f"{ANSII_WHITE}{exc_type.__name__}: {exc_value}{BACKEND_CONSOLE_COLOR}")
 
 
 sys.excepthook = custom_excepthook  # Override the default excepthook
+
+# Since the above above functions make any output between Python output colored,
+# the old (regular) print function is now a colored print function
+print_backend_console_output = _print
 
 
 def parse_function_call_str(
@@ -99,7 +102,7 @@ def run_textworld_cli(rebuild_backend: bool = False):
     def check_backend_process():
         _, stderr = backend_process.communicate()
         if backend_process.returncode != 0:
-            uncolored_print(stderr)
+            print_backend_console_output(stderr)
             raise subprocess.CalledProcessError(
                 returncode=backend_process.returncode,
                 cmd=backend_process_command,
@@ -120,20 +123,27 @@ def run_textworld_cli(rebuild_backend: bool = False):
         else:
             print("`cleanup_backend_process_gracefully` was called but not needed.")
 
-    
     # Rebuild backend if requested
     if rebuild_backend is True:
         print("Rebuilding backend...")
-        subprocess.run(["npm", "run", "build"], cwd="backend_ts", check=True)
-        
-    
-    
-    
+        try:
+            subprocess.run(
+                ["npx", "tsc"],
+                cwd=os.path.dirname(os.path.realpath(__file__)) + "/../backend_ts",
+                check=True,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except subprocess.CalledProcessError as e:
+            print_backend_console_output(e.stderr)
+            raise e
+
     # Start backend
     backend_process_command = ["node", "backend_ts/build/backend.js"]
     backend_process = subprocess.Popen(
         backend_process_command,
         stderr=subprocess.PIPE,
+        cwd=os.path.dirname(os.path.realpath(__file__)) + "/../",
         text=True,
     )
     # Check immediately if the backend process started successfully

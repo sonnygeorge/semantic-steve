@@ -1,3 +1,4 @@
+import ast
 import os
 import json
 import re
@@ -9,10 +10,14 @@ from typing import Optional
 
 import zmq
 
-# TODO: Separate run_textworld_cli into appropriately atomic functions
 
-ANSII_WHITE = "\033[97m"
-BACKEND_CONSOLE_COLOR = "\033[36m"
+# TODO: Split things up into seperate files
+
+FRONTEND_CONSOLE_ESC_SEQUENCE = "\033[35m"
+BACKEND_CONSOLE_ESC_SEQUENCE = "\033[0m"
+
+
+# Overwrite the built-in `print` function so all output is not colored (but colors anything that follows)
 
 _print = print
 
@@ -20,98 +25,156 @@ _print = print
 def print(*args):  # Overwrite the built-in `print` function so all output is colored
     colored_args = []
     for arg in args:
-        colored_args.append(f"{ANSII_WHITE}{arg}{BACKEND_CONSOLE_COLOR}")
+        colored_args.append(
+            f"{FRONTEND_CONSOLE_ESC_SEQUENCE}{arg}{BACKEND_CONSOLE_ESC_SEQUENCE}"
+        )
     _print(*colored_args)
 
 
+# Override the default excepthook console output is not colored (but colors anything that follows)
+
+
 def custom_excepthook(exc_type, exc_value, exc_traceback):
-    _print(f"{ANSII_WHITE}Traceback (most recent call last):{BACKEND_CONSOLE_COLOR}")
+    _print(
+        f"{FRONTEND_CONSOLE_ESC_SEQUENCE}Traceback (most recent call last):{BACKEND_CONSOLE_ESC_SEQUENCE}"
+    )
     tb_lines = traceback.format_tb(exc_traceback)
     for line in tb_lines:
-        _print(f"{ANSII_WHITE}{line}{BACKEND_CONSOLE_COLOR}")
-    _print(f"{ANSII_WHITE}{exc_type.__name__}: {exc_value}{BACKEND_CONSOLE_COLOR}")
+        _print(f"{FRONTEND_CONSOLE_ESC_SEQUENCE}{line}{BACKEND_CONSOLE_ESC_SEQUENCE}")
+    _print(
+        f"{FRONTEND_CONSOLE_ESC_SEQUENCE}{exc_type.__name__}: {exc_value}{BACKEND_CONSOLE_ESC_SEQUENCE}"
+    )
 
 
-sys.excepthook = custom_excepthook  # Override the default excepthook
+sys.excepthook = custom_excepthook
+
+
+# Overwrite the built-in `input` function so it's not colored (but colors anything that follows)
+_input = input
+
+
+def input(
+    prompt: Optional[str] = None,
+):  # Overwrite the built-in `input` function so it's not colored
+    if prompt is not None:
+        _print(
+            f"{FRONTEND_CONSOLE_ESC_SEQUENCE}{prompt}{BACKEND_CONSOLE_ESC_SEQUENCE}",
+            end="",
+        )
+    return _input()
+
 
 # Since the above above functions make any console output between Python outputs colored,
 # the old (regular) print function is now a colored print function!
 print_backend_console_output = _print
 
 
-def parse_function_call_str(
-    function_call_str: str,
-) -> tuple[str, list[str], dict[str, str]]:
-    """
-    Parse a Python function call string using regex and extract the function name,
-    positional arguments, and keyword arguments.
+def parse_function_call_str(function_call_str: str) -> tuple[str, list, dict[str, any]]:
+    # Remove leading/trailing whitespace
+    function_call_str = function_call_str.strip()
 
-    Args:
-        function_call_str (str): A string representing a Python function call
-                           e.g., "my_func(1, 2, name='John', age=30)"
+    # Split into function name and arguments part
+    if "(" not in function_call_str or ")" not in function_call_str:
+        raise ValueError("Invalid function call string: missing parentheses")
 
-    Returns:
-        tuple: (function_name, args, kwargs) where:
-               - function_name (str): The name of the function
-               - args (list): List of positional arguments as strings
-               - kwargs (dict): Dictionary of keyword arguments as strings
-    """
-    # Extract function name and content inside parentheses
-    match = re.match(r"(\w+(?:\.\w+)*)\s*\((.*)\)$", function_call_str.strip())
-    if not match:
-        raise ValueError(f"Invalid function call format: {function_call_str}")
+    name_part, args_part = function_call_str.split("(", 1)
+    args_part = args_part.rsplit(")", 1)[0]
 
-    function_name = match.group(1)
-    args_str = match.group(2).strip()
+    function_name = name_part.strip()
+    if not function_name:
+        raise ValueError("Invalid function call string: missing function name")
+
+    # If no arguments, return empty lists/dicts
+    if not args_part.strip():
+        return function_name, [], {}
 
     args = []
     kwargs = {}
 
-    if not args_str:  # Empty parentheses case
-        return function_name, args, kwargs
-
-    # Parse the arguments
-    in_quotes = False
-    in_brackets = 0
+    # Split arguments while handling nested structures
     current_arg = ""
-    for char in args_str + ",":  # Add trailing comma to process the last argument
-        if char == "," and not in_quotes and in_brackets == 0:
-            current_arg = current_arg.strip()
-            if current_arg:
-                if "=" in current_arg and re.match(r"^\w+\s*=", current_arg):
+    paren_count = 0
+    bracket_count = 0
+    in_quotes = False
+
+    for char in args_part:
+        if char == "'" and not in_quotes:
+            in_quotes = True
+        elif char == "'" and in_quotes:
+            in_quotes = False
+        elif char == "(" and not in_quotes:
+            paren_count += 1
+        elif char == ")" and not in_quotes:
+            paren_count -= 1
+        elif char == "[" and not in_quotes:
+            bracket_count += 1
+        elif char == "]" and not in_quotes:
+            bracket_count -= 1
+        elif char == "," and not in_quotes and paren_count == 0 and bracket_count == 0:
+            if current_arg.strip():
+                if "=" in current_arg:
                     key, value = current_arg.split("=", 1)
-                    kwargs[key.strip()] = value.strip()
+                    # Convert value to appropriate type
+                    try:
+                        parsed_value = ast.literal_eval(value.strip())
+                    except (ValueError, SyntaxError):
+                        parsed_value = value.strip()  # Keep as string if can't parse
+                    kwargs[key.strip()] = parsed_value
                 else:
-                    args.append(current_arg)
+                    # Convert positional arg to appropriate type
+                    try:
+                        parsed_arg = ast.literal_eval(current_arg.strip())
+                    except (ValueError, SyntaxError):
+                        parsed_arg = (
+                            current_arg.strip()
+                        )  # Keep as string if can't parse
+                    args.append(parsed_arg)
             current_arg = ""
+            continue
+        current_arg += char
+
+    # Handle the last argument
+    if current_arg.strip():
+        if "=" in current_arg:
+            key, value = current_arg.split("=", 1)
+            try:
+                parsed_value = ast.literal_eval(value.strip())
+            except (ValueError, SyntaxError):
+                parsed_value = value.strip()
+            kwargs[key.strip()] = parsed_value
         else:
-            current_arg += char
-            # Track quotes (simple handling, doesn't account for escaped quotes)
-            if char == '"' or char == "'":
-                in_quotes = not in_quotes
-            # Track brackets/parentheses level
-            elif char in "([{":
-                in_brackets += 1
-            elif char in ")]}":
-                in_brackets -= 1
+            try:
+                parsed_arg = ast.literal_eval(current_arg.strip())
+            except (ValueError, SyntaxError):
+                parsed_arg = current_arg.strip()
+            args.append(parsed_arg)
 
     return function_name, args, kwargs
 
 
+SEMANTIC_STEVE_ASCII_ART = r"""  ____                             _   _        ____  _                 
+ / ___|  ___ _ __ ___   __ _ _ __ | |_(_) ___  / ___|| |_ _____   _____ 
+ \___ \ / _ \ '_ ` _ \ / _` | '_ \| __| |/ __| \___ \| __/ _ \ \ / / _ \
+  ___) |  __/ | | | | | (_| | | | | |_| | (__   ___) | ||  __/\ V /  __/
+ |____/ \___|_| |_| |_|\__,_|_| |_|\__|_|\___| |____/ \__\___| \_/ \___|"""
+
+
+# TODO: Separate run_textworld_cli into appropriately atomic functions
 def run_textworld_cli(rebuild_backend: bool = False):
-    print("Running Semantic Steve as a TextWorld CLI game...")
 
     def check_backend_process():
-        _, stderr = backend_process.communicate()
-        if backend_process.returncode != 0:
-            print_backend_console_output(stderr)
-            raise subprocess.CalledProcessError(
-                returncode=backend_process.returncode,
-                cmd=backend_process_command,
-                stderr=stderr,
-            )
+        return_code = backend_process.poll()
+        if return_code is not None:
+            _, stderr = backend_process.communicate()
+            if return_code != 0:
+                print_backend_console_output(stderr)
+                raise subprocess.CalledProcessError(
+                    returncode=return_code,
+                    cmd=backend_process_command,
+                    stderr=stderr,
+                )
 
-    def cleanup_backend_process_gracefully():
+    def cleanup_backend_process_if_needed():
         if backend_process.poll() is None:  # If the backend process is still running
             print("Attempting to gracefully terminate the backend process...")
             try:
@@ -122,8 +185,6 @@ def run_textworld_cli(rebuild_backend: bool = False):
                 print("Backend process did not terminate in time. Forcing...")
                 backend_process.kill()
                 print("Backend process killed forcefully.")
-        else:
-            print("`cleanup_backend_process_gracefully` was called but not needed.")
 
     # Rebuild backend if requested
     if rebuild_backend is True:
@@ -157,6 +218,7 @@ def run_textworld_cli(rebuild_backend: bool = False):
         socket = context.socket(zmq.PAIR)
         socket.connect("tcp://localhost:5555")
         socket.setsockopt(zmq.RCVTIMEO, 100)
+        print("Frontend connected to tcp://localhost:5555.")
 
         try:  # This try-except ensures cleanup of ZMQ socket/context
             # Wait for initial environment state message from backend
@@ -168,16 +230,27 @@ def run_textworld_cli(rebuild_backend: bool = False):
                     time.sleep(0.04)
 
             # Main loop for CLI
+
             while True:
-                # Print the environment state and result of the last function call
-                print(message_from_backend["env_state"])
+                # Print the result of the last function call and the (updated) env state
+                print(SEMANTIC_STEVE_ASCII_ART)
+                print("\nENV STATE:\n", message_from_backend["env_state"])
                 if message_from_backend["result"] is not None:
-                    print(message_from_backend["result"])
+                    print(
+                        "\nRESULTS FROM LAST FUNCTION CALL:\n",
+                        message_from_backend["result"],
+                    )
 
                 # Get function call from user
-                input_prompt = "Enter function call (or 'exit' to quit): "
+                input_prompt = "\nEnter function call (or 'exit' to quit): "
+                sys.stdout.write(FRONTEND_CONSOLE_ESC_SEQUENCE)
                 function_call_str = input(input_prompt)
+                sys.stdout.write(BACKEND_CONSOLE_ESC_SEQUENCE)
                 if function_call_str.lower() == "exit":
+                    print("Closing Semantic Steve CLI...")
+                    socket.close()
+                    context.term()
+                    cleanup_backend_process_if_needed()
                     break
 
                 # Parse `function_call_str` & handle invalid syntax
@@ -190,6 +263,7 @@ def run_textworld_cli(rebuild_backend: bool = False):
                     continue
 
                 # Invoke the function within the backend
+                print("\nInvoking function in backend...")
                 outgoing_message = {
                     "function": fnc_name,
                     "args": args,
@@ -211,6 +285,5 @@ def run_textworld_cli(rebuild_backend: bool = False):
             context.term()
             raise e
     except BaseException as e:
-        if e is not subprocess.CalledProcessError:  # I.e., backend hasn't already died
-            cleanup_backend_process_gracefully()
+        cleanup_backend_process_if_needed()
         raise e

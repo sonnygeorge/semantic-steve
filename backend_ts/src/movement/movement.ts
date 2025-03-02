@@ -121,9 +121,9 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
 
     this.setupListeners(goal, stopIfFound)
 
-    const res = await new Promise<void | string>((resolve) => {
+    const res = await new Promise<string>((resolve) => {
       this.bot.on('goal_reached', () => {
-        resolve();
+        resolve('completed goal');
       });
 
       this.bot.on('path_stop', () => {

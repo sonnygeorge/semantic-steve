@@ -3,13 +3,21 @@ import { createPlugin } from "./";
 import { createBot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { PathfinderStopConditions } from "./movement/types";
+import {mineflayer as mfViewer} from 'prismarine-viewer'
+
+
+
 
 // Initialize bot
 const bot = createBot({ username: "SemanticSteve" });
 
 bot.once("spawn", async () => {
     bot.loadPlugin(createPlugin({ immediateRadius: 5, nearbyRadius: 80 }));
+
+
     console.log("Bot spawned and ready!");
+    mfViewer(bot, {port: 3000})
+
     await startBackend();
 });
 
@@ -19,6 +27,12 @@ interface BackendMessage { env_state: string; result: any; }
 const functionRegistry: Record<string, (...args: any[]) => Promise<string>> = {
     tempExample: async () => "This is a dummy test result example to show how these outputs should look.",
     
+    testWorld: async () => {
+        const res = await bot.semanticWorld.surroundings.getSurroundings();
+        console.log(res)
+        return 'worked?'
+    },
+
     pathfindToCoordinate: async (coords: number[], stopIfFound: string[]) => {
         const cancelOpts: PathfinderStopConditions = {
             entities: { ids: [bot.registry.entitiesByName["zombie"].id], radius: 10 },
@@ -45,7 +59,9 @@ async function startBackend() {
             try {
                 result = await functionRegistry[message.function](...message.args);
             } catch (error) {
-                result = `Function execution error: ${(error instanceof Error) ? error.message : 'Unknown error'}`;
+                // capture entire traceback
+                const stack = 
+                result = `Function execution error: ${(error instanceof Error) ? `${error.message}:\n${error.stack?.split('\n').map((line: string) => line.trim()).join('\n')}` : 'Unknown error'}`;
             }
         }
         

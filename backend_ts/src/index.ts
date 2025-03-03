@@ -2,7 +2,7 @@ import { pathfinder } from "mineflayer-pathfinder";
 import type { Bot, BotOptions } from "mineflayer";
 import { PathfinderAbstraction } from "./movement/movement";
 import { PathfinderAbstractionOptions } from "./movement/types";
-import { ImmediateSurroundings, NearbySurroundings, SemanticWorld } from "./world/worldState";
+import { SemanticWorld } from "./world/worldState1";
 import { SemanticOptions } from "./types";
 
 declare module "mineflayer" {

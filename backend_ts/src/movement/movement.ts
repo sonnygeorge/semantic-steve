@@ -1,5 +1,5 @@
-import { goals } from "mineflayer-pathfinder";
-import type { Bot } from "mineflayer";
+import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
+import type { Bot, BotEvents } from "mineflayer";
 import { Vec3 } from "vec3";
 import { PathfinderAbstractionEvents, PathfinderAbstractionOptions, PathfinderStopConditions } from "./types";
 import type { Entity } from "prismarine-entity";
@@ -53,20 +53,20 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
 
     // TODO: temporary fix to make the biome check work (TOO LAGGY, NEEDS A FIX)
     let lastCheck = this.bot.entity.position.clone();
-    const biCheck = () => {
-      if (stopIfFound.biomes == null) return false;
+    // const biCheck = () => {
+    //   if (stopIfFound.biomes == null) return false;
 
-      if (lastCheck.distanceTo(this.bot.entity.position) < 1) return false;
-      lastCheck = this.bot.entity.position.clone();
+    //   if (lastCheck.distanceTo(this.bot.entity.position) < 1) return false;
+    //   lastCheck = this.bot.entity.position.clone();
 
-      const biomes = this.bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL, stopIfFound.biomes.radius);
-      for (const [num, pt] of biomes.entries()) {
-        if (stopIfFound.biomes.types.includes(num)) {
-          return {id: num, position: pt};
-        }
-      }
-      return false;
-    }
+    //   const biomes = this.bot.semanticWorld.nearbySurroundings.biomes(Direction.ALL, stopIfFound.biomes.radius);
+    //   for (const [num, pt] of biomes.entries()) {
+    //     if (stopIfFound.biomes.types.includes(num)) {
+    //       return {id: num, position: pt};
+    //     }
+    //   }
+    //   return false;
+    // }
 
     const moveListener = (lastMove: Vec3) => {
       // sanity check
@@ -89,19 +89,30 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
         }
       }
 
-      if (stopIfFound.biomes != null) { 
-        const b = biCheck()
-        if (b !== false) {
-          cleanup();
-          this.emit('biomeCancel', b.id, b.position)
-        }
-      }
+      // if (stopIfFound.biomes != null) { 
+      //   const b = biCheck()
+      //   if (b !== false) {
+      //     cleanup();
+      //     this.emit('biomeCancel', b.id, b.position)
+      //   }
+      // }
     };
+
+    const updateListener = (path: PartiallyComputedPath) => {
+      if (path.status === 'noPath') {
+        cleanup();
+      }
+      if (path.status === "timeout") {
+        cleanup();
+      }
+
+    }
 
     const cleanup = () => {
       this.bot.off("goal_reached", cleanup);
       this.bot.off("path_stop", cleanup);
       this.bot.off("move", moveListener);
+      this.bot.off('path_update', updateListener);
 
       if (goal === this.bot.pathfinder.goal) {
         this.bot.pathfinder.stop()
@@ -111,6 +122,7 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
     this.bot.on('move', moveListener); // handle intermittent movement // lol spelled that wrong probably
     this.bot.on('goal_reached', cleanup); // handle completion
     this.bot.on('path_stop', cleanup); // handle cancelling/interrupt
+    this.bot.on('path_update', updateListener); // handle pathfinding updates
   }
 
   // TODO: make return typing more concise so both LLM (string format) and CLI (basic/no output) can use this.
@@ -121,11 +133,22 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
 
     this.setupListeners(goal, stopIfFound)
 
-    const res = await new Promise<void | string>((resolve) => {
+    const res = await new Promise<string>((resolve) => {
       this.bot.on('goal_reached', () => {
-        resolve();
+        resolve('completed goal');
       });
 
+      this.bot.on('path_update', (path) => {
+        if (path.status === 'noPath') resolve('no path found');
+        if (path.status === "timeout") resolve('pathfinding timeout, couldn\'t find a path in time');
+      })
+
+      this.bot.on('path_update', (path) => {
+        if (path.status === 'noPath') resolve('no path found');
+        if (path.status === "timeout") resolve('pathfinding timeout, couldn\'t find a path in time');
+      })
+
+      
       this.bot.on('path_stop', () => {
         resolve(`cancelled pathfinding`);
       });

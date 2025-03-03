@@ -16,7 +16,7 @@ bot.once("spawn", async () => {
 
 
     console.log("Bot spawned and ready!");
-    mfViewer(bot, {port: 3000})
+    mfViewer(bot, {port: 3000, firstPerson: true})
 
     await startBackend();
 });
@@ -34,7 +34,7 @@ const functionRegistry: Record<string, (...args: any[]) => Promise<string>> = {
     },
 
     pathfindToCoordinate: async (coords: number[], stopIfFound: string[]) => {
-        const cancelOpts: PathfinderStopConditions = {
+        const cancelOpts: PathfinderStopConditions = {  // TODO: parse stopIfFound instead
             entities: { ids: [bot.registry.entitiesByName["zombie"].id], radius: 10 },
             blocks: { types: [bot.registry.blocksByName["iron_ore"].id], radius: 10 },
             biomes: { types: [bot.registry.biomesByName["minecraft:jungle"].id], radius: 32 },

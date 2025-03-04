@@ -139,30 +139,30 @@ export class PathfinderAbstraction extends (EventEmitter as new () => TypedEmitt
       });
 
       this.bot.on('path_update', (path) => {
-        if (path.status === 'noPath') resolve('no path found');
-        if (path.status === "timeout") resolve('pathfinding timeout, couldn\'t find a path in time');
+        if (path.status === 'noPath') resolve('No path found');
+        if (path.status === "timeout") resolve('Pathfinding timeout, couldn\'t find a path in time');
       })
 
       this.bot.on('path_update', (path) => {
-        if (path.status === 'noPath') resolve('no path found');
-        if (path.status === "timeout") resolve('pathfinding timeout, couldn\'t find a path in time');
+        if (path.status === 'noPath') resolve('No path found');
+        if (path.status === "timeout") resolve('Pathfinding timeout, couldn\'t find a path in time');
       })
 
       
       this.bot.on('path_stop', () => {
-        resolve(`cancelled pathfinding`);
+        resolve(`Pathfinding completed`);
       });
 
       this.on('mobCancel', (e) => {
-        resolve(`cancelled pathfinding due to mob: ${e}`);
+        resolve(`Terminated pathfinding due to found mob: ${e}`);
       })
 
       this.on('blockCancel', (b) => {
-        resolve(`cancelled pathfinding due to block: ${b}`);
+        resolve(`Terminated pathfinding due to found block: ${b}`);
       })
 
       this.on('biomeCancel', (b, pos) => {
-        resolve(`cancelled pathfinding due to biome: ${b} at ${pos}`);
+        resolve(`Terminated pathfinding due to found biome: ${b} at ${pos}`);
       })
     });
 

@@ -217,7 +217,7 @@ def run_textworld_cli(rebuild_backend: bool = False):
         context = zmq.Context()
         socket = context.socket(zmq.PAIR)
         socket.connect("tcp://localhost:5555")
-        socket.setsockopt(zmq.RCVTIMEO, 100)
+        socket.setsockopt(zmq.RCVTIMEO, -1)
         print("Frontend connected to tcp://localhost:5555.")
 
         try:  # This try-except ensures cleanup of ZMQ socket/context

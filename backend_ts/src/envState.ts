@@ -542,9 +542,9 @@ export class EnvState {
     const equipSimplified: Record<string, any> = {};
     for (const [place, item] of Object.entries(this.equipped)) {
       equipSimplified[place] = {
-        name: item.name,
+        name: item?.name ?? null,
       };
-      if (item.maxDurability !== undefined) {
+      if (item?.maxDurability !== undefined) {
         equipSimplified[place].durabilityLeft = item.maxDurability - item.durabilityUsed;
         equipSimplified[place].maxDurability = item.maxDurability;
       }

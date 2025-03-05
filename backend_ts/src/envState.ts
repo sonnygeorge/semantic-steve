@@ -238,12 +238,12 @@ export class Surroundings {
     const bbs = block.shapes.map((s) => AABB.fromShape(s, block.position));
 
     for (const bb of bbs) {
-      const vertices = bb.expand(-1e-7, -1e-7, -1e-7).toVertices();
+      const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
       for (const vertex of vertices) {
-        const dir = vertex.minus(eyePos).normalize().scale(0.1); // make unit vector smaller for more precise calcs.
+        const dir = vertex.minus(eyePos).normalize().scale(0.3); // make unit vector smaller for more precise calcs.
         const hit = this.bot.world.raycast(eyePos, dir, 256 * 10);
         if (hit != null && hit.position) {
-          if (hit.position === block.position) return true;
+          if (hit.position.equals(block.position)) return true;
         }
       }
     }

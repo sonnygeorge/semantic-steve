@@ -59,12 +59,9 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
         console.warn(`WARNING: Couldn't recognize '${thingName}'. Make sure you are only passing valid blocks, or biomes!`);
       }
     }
-
-    console.log(this.stopBlocksIdsToNames)
   }
 
   attachListeners = (): void => {
-    console.log('sup')
     this.bot.on("move", this.checkSurroundings);
   };
 
@@ -80,8 +77,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
 
     // Get surroundings
     const [immediate, distant] = this.bot.envState.surroundings.getSurroundings(this.scanThrottleSeconds);
-
-    console.log(immediate)
+    
     // Check for blocks in immediate surroundings
     for (const [blockId, blockName] of this.stopBlocksIdsToNames) {
       if (immediate.blocks?.get(blockName) !== null && immediate.blocks?.get(blockName) !== undefined) {

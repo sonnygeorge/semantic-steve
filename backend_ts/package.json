@@ -16,6 +16,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@nxg-org/mineflayer-static-statemachine": "^0.3.4",
     "@nxg-org/mineflayer-util-plugin": "^1.8.3",
     "canvas": "^3.1.0",
     "mineflayer": "^4.26.0",

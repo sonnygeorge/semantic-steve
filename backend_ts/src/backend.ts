@@ -45,6 +45,7 @@ async function startBackend() {
     console.log('Backend connected on tcp://*:5555');
     
     console.log("Getting initial environment state...");
+    await bot.waitForChunksToLoad()
     // TODO: (fixme) Not working this first time around because this.bot.world.getColumns() comes back empty
     bot.envState.surroundings.getSurroundings();
 

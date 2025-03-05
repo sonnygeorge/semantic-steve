@@ -38,7 +38,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
   private lastScanTime: number = 0;
   private scanThrottleSeconds: number;
 
-  constructor(bot: Bot, scanThrottleSeconds: number = 3) {
+  constructor(bot: Bot, scanThrottleSeconds: number = 0.3) {
     super();
     this.bot = bot;
     this.scanThrottleSeconds = scanThrottleSeconds;
@@ -59,9 +59,12 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
         console.warn(`WARNING: Couldn't recognize '${thingName}'. Make sure you are only passing valid blocks, or biomes!`);
       }
     }
+
+    console.log(this.stopBlocksIdsToNames)
   }
 
   attachListeners = (): void => {
+    console.log('sup')
     this.bot.on("move", this.checkSurroundings);
   };
 
@@ -78,6 +81,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
     // Get surroundings
     const [immediate, distant] = this.bot.envState.surroundings.getSurroundings(this.scanThrottleSeconds);
 
+    console.log(immediate)
     // Check for blocks in immediate surroundings
     for (const [blockId, blockName] of this.stopBlocksIdsToNames) {
       if (immediate.blocks?.get(blockName) !== null && immediate.blocks?.get(blockName) !== undefined) {
@@ -213,9 +217,9 @@ class BehaviorPathfindToCoords extends StateBehavior {
   }
 }
 
-// State for handling found item
+// State for handling interrupt
 class BehaviorThingInterrupt extends StateBehavior {
-  static stateName = "TargetFound";
+  static stateName = "ThingSeen";
 
   constructor(bot: Bot, data: StateMachineData) {
     super(bot, data);
@@ -270,8 +274,8 @@ class BehaviorPathFailed extends StateBehavior {
 
 // Create the pathfinder state machine
 export async function pathfindTo(bot: Bot, wantedPos: Vec3, stopIfFound: string[] = []) {
-  // Create shared data object
 
+  // Create shared data object
   const surroundChecker = new SurroundingsChecker(bot);
   const data: StateMachineData = {
     result: null,
@@ -287,7 +291,7 @@ export async function pathfindTo(bot: Bot, wantedPos: Vec3, stopIfFound: string[
 
   // Define pathfinder state machine transitions
   const pathfinderTransitions = [
-    // If we find what we're looking for
+    // If we're interrupted by an object
     getTransition("pathfindToThingInterrupt", BehaviorPathfindToCoords, BehaviorThingInterrupt)
       .setShouldTransition((state) => state.isFinished() && state.thingWasFound())
       .build(),
@@ -313,6 +317,7 @@ export async function pathfindTo(bot: Bot, wantedPos: Vec3, stopIfFound: string[
   // starts root machine immediately upon creation.
   const root = new BotStateMachine({ bot, root: pathfinderMachine, data, autoStart: true });
 
+  // await resolution of this state machine.
   await new Promise<void>((resolve) => {
     root.on("stateEntered", (mType, machine, state) => {
       if (state === BehaviorPathFailed || state === BehaviorPathComplete || state === BehaviorThingInterrupt) {

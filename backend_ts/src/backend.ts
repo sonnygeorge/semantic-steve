@@ -29,6 +29,8 @@ type SemanticSteveFunction = (...args: any[]) => Promise<[EnvState | null, strin
 
 
 const functionRegistry: Record<string, SemanticSteveFunction> = {    
+    refreshEnv: async () => [null, `refreshing...`],
+
     testWorld: async () => {
         bot.envState.surroundings.getSurroundings();
         return [bot.envState, 'worked?']

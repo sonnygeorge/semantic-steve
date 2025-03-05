@@ -12,7 +12,7 @@ import {Vec3} from 'vec3'
 const bot = createBot({ username: "SemanticSteve" });
 
 bot.once("spawn", async () => {
-    bot.loadPlugin(createPlugin({ immediateSurroundingsRadius: 5, distantSurroundingsRadius: 64 }));
+    bot.loadPlugin(createPlugin({ immediateSurroundingsRadius: 3, distantSurroundingsRadius: 24 }));
 
 
     console.log("Bot spawned and ready!");
@@ -42,9 +42,9 @@ const functionRegistry: Record<string, SemanticSteveFunction> = {
         return [null, res]
     },
 
-    pathfindToCoordinates: async (coords: number[], stopIfFound: string[]) => {
-        return bot.pathfinderAbstract.pathfindToCoordinates(coords, stopIfFound);
-    }
+    // pathfindToCoordinates: async (coords: number[], stopIfFound: string[]) => {
+    //     return bot.pathfinderAbstract.pathfindToCoordinates(coords, stopIfFound);
+    // }
 };
 
 

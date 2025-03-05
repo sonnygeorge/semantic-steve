@@ -204,9 +204,9 @@ class BehaviorPathfindToCoords extends StateBehavior {
     this.data.thingFound = { name: thingName, vicinity: vicinity };
 
     if (vicinity === Vicinity.IMMEDIATE) {
-      this.data.result = `Pathfinding terminated early: '${thingName}' found in the immediate surroundings!`;
+      this.data.result = `Pathfinding terminated early: '${thingName}' found in the ${vicinity} surroundings!`;
     } else {
-      this.data.result = `Pathfinding terminated early: '${thingName}' found in the distant surroundings!`;
+      this.data.result = `Pathfinding terminated early: '${thingName}' found in (at least) the ${vicinity} direction!`;
     }
   };
 

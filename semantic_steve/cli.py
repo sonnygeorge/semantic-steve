@@ -234,7 +234,13 @@ def run_textworld_cli(rebuild_backend: bool = False):
             while True:
                 # Print the result of the last function call and the (updated) env state
                 print(SEMANTIC_STEVE_ASCII_ART)
-                print("\nENV STATE:\n", message_from_backend["env_state"])
+                # FIXME: This is a temp hotfix to account for JS stringifying nested object and producing doubly-escaped characters
+                env_state = (
+                    message_from_backend["env_state"]
+                    .replace(r"\"", '"')
+                    .replace(r"\n", "\n")
+                )
+                print("\nENV STATE:\n", env_state)
                 if message_from_backend["result"] is not None:
                     print(
                         "\nRESULTS FROM LAST FUNCTION CALL:\n",

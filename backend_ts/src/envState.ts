@@ -234,7 +234,6 @@ export class Surroundings {
     // return this.bot.canSeeBlock(block);
 
     // ok, now it's time to ACTUALLY raycast.
-
     const eyePos = this.bot.entity.position.offset(0, 1.62, 0); // this should be 1.62 IN MOST CASES, HANDLE SHIFTING
     const bbs = block.shapes.map((s) => AABB.fromShape(s, block.position));
 

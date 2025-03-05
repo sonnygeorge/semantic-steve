@@ -1,10 +1,8 @@
 import * as zmq from 'zeromq';
 import { createPlugin } from "./";
 import { createBot } from "mineflayer";
-import { Vec3 } from "vec3";
-import { PathfinderStopConditions } from "./movement/types";
 import {mineflayer as mfViewer} from 'prismarine-viewer'
-
+import { EnvState } from "./envState";
 
 
 
@@ -12,7 +10,7 @@ import {mineflayer as mfViewer} from 'prismarine-viewer'
 const bot = createBot({ username: "SemanticSteve" });
 
 bot.once("spawn", async () => {
-    bot.loadPlugin(createPlugin({ immediateRadius: 5, nearbyRadius: 80 }));
+    bot.loadPlugin(createPlugin({ immediateSurroundingsRadius: 5, distantSurroundingsRadius: 64 }));
 
 
     console.log("Bot spawned and ready!");
@@ -21,50 +19,63 @@ bot.once("spawn", async () => {
     await startBackend();
 });
 
+
 interface FrontendMessage { function: string; args: any[]; kwargs: Record<string, any>; }
 interface BackendMessage { env_state: string; result: any; }
 
-const functionRegistry: Record<string, (...args: any[]) => Promise<string>> = {
-    tempExample: async () => "This is a dummy test result example to show how these outputs should look.",
-    
+type SemanticSteveFunction = (...args: any[]) => Promise<[EnvState | null, string | null]>;
+
+
+const functionRegistry: Record<string, SemanticSteveFunction> = {    
     testWorld: async () => {
-        const res = await bot.semanticWorld.surroundings.getSurroundings();
-        console.log(res)
-        return 'worked?'
+        bot.envState.surroundings.getSurroundings();
+        return [bot.envState, 'worked?']
     },
 
-    pathfindToCoordinate: async (coords: number[], stopIfFound: string[]) => {
-        const cancelOpts: PathfinderStopConditions = {  // TODO: parse stopIfFound instead
-            entities: { ids: [bot.registry.entitiesByName["zombie"].id], radius: 10 },
-            blocks: { types: [bot.registry.blocksByName["iron_ore"].id], radius: 10 },
-            biomes: { types: [bot.registry.biomesByName["minecraft:jungle"].id], radius: 32 },
-        };
-        return bot.pathfinderAbstract.pathfindToCoordinate(new Vec3(coords[0], coords[1], coords[2]), cancelOpts);
+    pathfindToCoordinates: async (coords: number[], stopIfFound: string[]) => {
+        return bot.pathfinderAbstract.pathfindToCoordinates(coords, stopIfFound);
     }
 };
+
 
 async function startBackend() {
     console.log("Starting backend...");
     const socket = new zmq.Pair();
     await socket.bind('tcp://*:5555');
     console.log('Backend connected on tcp://*:5555');
-    await socket.send(JSON.stringify({ env_state: bot.semanticWorld.toString(), result: null }));
+    
+    console.log("Getting initial environment state...");
+    // TODO: (fixme) Not working this first time around because this.bot.world.getColumns() comes back empty
+    bot.envState.surroundings.getSurroundings();
+
+    await socket.send(JSON.stringify({ env_state: bot.envState.getReadableString(), result: null }));
 
     for await (const [msg] of socket) {
         const message: FrontendMessage = JSON.parse(msg.toString());
         console.log("Received message from frontend");
         
-        let result: any = `Error: Function '${message.function}' not found`;
+        let envState: EnvState | null = null;
+        let resultString: string | null = `Error: Function '${message.function}' not found`;
+
         if (message.function in functionRegistry) {
+            let envState: EnvState | null = null;
             try {
-                result = await functionRegistry[message.function](...message.args);
+                [envState, resultString] = await functionRegistry[message.function](...message.args);
             } catch (error) {
-                // capture entire traceback
-                const stack = 
-                result = `Function execution error: ${(error instanceof Error) ? `${error.message}:\n${error.stack?.split('\n').map((line: string) => line.trim()).join('\n')}` : 'Unknown error'}`;
+                resultString = `Function execution error: ${(error instanceof Error) ? `${error.message}:\n${error.stack?.split('\n').map((line: string) => line.trim()).join('\n')}` : 'Unknown error'}`;
+                envState = null;
             }
         }
-        
-        await socket.send(JSON.stringify({ env_state: bot.semanticWorld.toString(), result }));
+
+        // NOTE: The purpose of requiring an EnvState return value is essentially as a means of
+        // "flagging" whether or not the bot.EnvState has already been updated by the function call
+        // or if we need to update it manually here.
+        if (envState === null) {
+            // Update the environment stat to be up-to-date if the function didn't already take care of that
+            bot.envState.surroundings.getSurroundings();
+            envState = bot.envState;
+        }
+
+        await socket.send(JSON.stringify({ env_state: envState.getReadableString(), result: resultString }));
     }
 }

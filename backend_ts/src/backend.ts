@@ -3,6 +3,8 @@ import { createPlugin } from "./";
 import { createBot } from "mineflayer";
 import {mineflayer as mfViewer} from 'prismarine-viewer'
 import { EnvState } from "./envState";
+import { pathfindTo } from './testPathfind';
+import {Vec3} from 'vec3'
 
 
 
@@ -30,6 +32,12 @@ const functionRegistry: Record<string, SemanticSteveFunction> = {
     testWorld: async () => {
         bot.envState.surroundings.getSurroundings();
         return [bot.envState, 'worked?']
+    },
+
+    test: async (coords: number[], stopIfFound: string[]) => {
+        const coordVec = new Vec3(coords[0], coords[1], coords[2])
+        const res = await pathfindTo(bot, coordVec, stopIfFound)
+        return [null, res]
     },
 
     pathfindToCoordinates: async (coords: number[], stopIfFound: string[]) => {

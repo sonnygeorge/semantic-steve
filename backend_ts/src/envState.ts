@@ -205,7 +205,7 @@ export class Surroundings {
   
   // TODO: Write our own raycasting implementation?
   // (major problem in at least 1.21.1)
-  // this.bot.canSeeBlock(block) seems to be returning null for all blocks above (and below?) eye level, expect for if straight up.
+  // this.bot.canSeeBlock(block) seems to be returning null for all blocks above (and below?) eye level, except if block is straight up.
   private isBlockVisible(block: PBlock): boolean {
     // Check if surrounding blocks are full blocks
     let visibleSides = 0;

@@ -38,7 +38,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
   private lastScanTime: number = 0;
   private scanThrottleSeconds: number;
 
-  constructor(bot: Bot, scanThrottleSeconds: number = 0.3) {
+  constructor(bot: Bot, scanThrottleSeconds: number = 3) {
     super();
     this.bot = bot;
     this.scanThrottleSeconds = scanThrottleSeconds;
@@ -77,7 +77,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
 
     // Get surroundings
     const [immediate, distant] = this.bot.envState.surroundings.getSurroundings(this.scanThrottleSeconds);
-    
+
     // Check for blocks in immediate surroundings
     for (const [blockId, blockName] of this.stopBlocksIdsToNames) {
       if (immediate.blocks?.get(blockName) !== null && immediate.blocks?.get(blockName) !== undefined) {
@@ -124,6 +124,10 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
 }
 
 // State for actual pathfinding
+
+// Note: this has too many "things" going on in it. ("handleThingFound", etc.)
+// I kept it here because I'm rushing, but realistically this would be handled externally,
+// away from this class. This is an encapsulation of the pathfinding behavior.
 class BehaviorPathfindToCoords extends StateBehavior {
   static stateName = "PathfindToCoords";
   private movements: Movements;

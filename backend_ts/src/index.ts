@@ -1,6 +1,6 @@
 import { pathfinder } from "mineflayer-pathfinder";
 import type { Bot, BotOptions } from "mineflayer";
-import { PathfinderAbstraction } from "./pathfinding"
+import { PathfinderAbstraction } from "./oldPathfind"
 import { EnvState } from "./envState";
 import { SurroundingsOptions } from "./types";
 

@@ -12,6 +12,8 @@ import { Direction, Vicinity, EnvState } from "./envState";
 import { StateBehavior } from "@nxg-org/mineflayer-static-statemachine";
 import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter";
+// Import the SemanticSteve singleton to register functions
+import { SemanticSteveFunctionReturnObj } from "./types";
 
 // Import behaviors we need
 import {
@@ -228,7 +230,6 @@ class BehaviorThingInterrupt extends StateBehavior {
   onStateEntered(): void {
     if (this.data.thingFound) {
       const { name, vicinity } = this.data.thingFound;
-      // Could perform additional actions with the found thing here
       this.bot.chat(`Found ${name} in the ${vicinity} vicinity!`);
     }
   }
@@ -272,9 +273,7 @@ class BehaviorPathFailed extends StateBehavior {
   }
 }
 
-// Create the pathfinder state machine
-export async function pathfindTo(bot: Bot, wantedPos: Vec3, stopIfFound: string[] = []) {
-
+export async function pathfindToCoordinates(bot: Bot, wantedPos: Vec3, stopIfFound: string[] = []): Promise<SemanticSteveFunctionReturnObj> {
   // Create shared data object
   const surroundChecker = new SurroundingsChecker(bot);
   const data: StateMachineData = {
@@ -326,5 +325,9 @@ export async function pathfindTo(bot: Bot, wantedPos: Vec3, stopIfFound: string[
     });
   });
 
-  return data.result;
+  return {
+    resultString: data.result,
+    envStateIsUpToDate: data.thingFound !== null  // If stopIfFound thing was found, we're exiting at the same instant as the surroundings check
+};
 }
+

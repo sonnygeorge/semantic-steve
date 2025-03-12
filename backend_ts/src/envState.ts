@@ -575,7 +575,7 @@ export class EnvState {
 
       // Process biomes
       if (this.surroundings.lastObservedImmediateSurroundings.biomes) {
-        surroundings.immediateSurroundings.biomes = Array.from(this.surroundings.lastObservedImmediateSurroundings.biomes);
+        surroundings.immediateSurroundings.biomes = Array.from(this.surroundings.lastObservedImmediateSurroundings.biomes).map((b) => this.bot.registry.biomes[b].name);
       }
     }
 

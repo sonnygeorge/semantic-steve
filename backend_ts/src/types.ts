@@ -2,6 +2,9 @@ import { PCChunk } from "prismarine-chunk";
 import { EquipmentDestination } from "mineflayer";
 import {Item as PItem} from 'prismarine-item'
 
+export type SemanticSteveFunctionReturnObj = { resultString: string | null; envStateIsUpToDate: boolean; }
+export type SemanticSteveFunction = (...args: any[]) => Promise<SemanticSteveFunctionReturnObj>;
+
 export type SurroundingsOptions = {
   immediateSurroundingsRadius: number;
   distantSurroundingsRadius: number;

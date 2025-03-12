@@ -3,66 +3,39 @@ import { Vec3 } from "vec3";
 import type { Item as PItem } from "prismarine-item";
 import type { Block as PBlock } from "prismarine-block";
 import { Entity } from "prismarine-entity";
-import { EquipmentAndDestination, PCChunkCoordinateAndColumn } from "./types";
+import { Direction, EquipmentAndDestination, PCChunkCoordinateAndColumn, Vicinity } from "./types";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
 import { SurroundingsOptions } from "./types";
 
-export enum Direction {
-  UP = "up",
-  DOWN = "down",
-  NORTH = "north",
-  NORTHEAST = "northeast",
-  EAST = "east",
-  SOUTHEAST = "southeast",
-  SOUTH = "south",
-  SOUTHWEST = "southwest",
-  WEST = "west",
-  NORTHWEST = "northwest",
-}
-
-export enum Vicinity {
-  IMMEDIATE = "immediate",
-  UP = Direction.UP,
-  DOWN = Direction.DOWN,
-  NORTH = Direction.NORTH,
-  NORTHEAST = Direction.NORTHEAST,
-  EAST = Direction.EAST,
-  SOUTHEAST = Direction.SOUTHEAST,
-  SOUTH = Direction.SOUTH,
-  SOUTHWEST = Direction.SOUTHWEST,
-  WEST = Direction.WEST,
-  NORTHWEST = Direction.NORTHWEST,
-}
-
 export class ImmediateSurroundings {
-  blocks: Map<string, Vec3[]> | null = null; // k=block type, v=list of coords of this block type
-  biomes: Set<number> | null = null; // Set of biomes
-  // entities: Entity[] | null = null;
+  blocks: Map<string, Vec3[]>; // k=block type, v=list of coords of this block type
+  biomes: Set<number>; // Set of biomes
+  entities: Entity[];
 
   constructor() {
     this.blocks = new Map<string, Vec3[]>();
     this.biomes = new Set<number>();
-    // this.entities = [];
+    this.entities = [];
   }
 }
 
 export class DistantSurroundingsInADirection {
-  blocksToCounts: Map<string, number> | null = null; // k=block type, v=block type count
-  blocksToClosestCoords: Map<string, Vec3> | null = null; // k=block type, v=closest coords
-  biomesToClosestCoords: Map<number, Vec3> | null = null; // k=biome id, v=closest coords
-  // mobs: Entity[] | null = null;
-  // players: Entity[] | null = null;
-  // itemEntities: Entity[] | null = null;
-  // blockEntities: Map<string, any> | null = null;
+  blocksToCounts: Map<string, number>; // k=block type, v=block type count
+  blocksToClosestCoords: Map<string, Vec3>; // k=block type, v=closest coords
+  biomesToClosestCoords: Map<number, Vec3>; // k=biome id, v=closest coords
+  mobs: Entity[];
+  players: Map<string, Entity>;
+  itemEntities: Entity[];
+  blockEntities: Map<string, any>;
 
   constructor() {
     this.blocksToCounts = new Map<string, number>();
     this.blocksToClosestCoords = new Map<string, Vec3>();
     this.biomesToClosestCoords = new Map<number, Vec3>();
-    // this.mobs = [];
-    // this.players = [];
-    // this.itemEntities = [];
-    // this.blockEntities = new Map<string, any>();
+    this.mobs = [];
+    this.players = new Map<string, Entity>();
+    this.itemEntities = [];
+    this.blockEntities = new Map<string, any>();
   }
 }
 
@@ -322,14 +295,14 @@ export class Surroundings {
       const biome = block.biome.id;
       if (vicinity === Vicinity.IMMEDIATE) {
         // Add to immediate surroundings
-        if (!immediateResult.blocks!.has(block.name)) {
-          immediateResult.blocks!.set(block.name, []);
+        if (!immediateResult.blocks.has(block.name)) {
+          immediateResult.blocks.set(block.name, []);
         }
-        immediateResult.blocks!.get(block.name)!.push(block.position);
+        immediateResult.blocks.get(block.name)!.push(block.position);
 
         // Add biome
         if (biome !== -1) {
-          immediateResult.biomes!.add(biome as number);
+          immediateResult.biomes.add(biome as number);
         }
       } else {
         // Add to distant surroundings in the correct direction
@@ -337,14 +310,14 @@ export class Surroundings {
         const directionData = distantResult.get(direction)!;
 
         // Update blocks count
-        const currentCount = directionData.blocksToCounts!.get(block.name) || 0;
-        directionData.blocksToCounts!.set(block.name, currentCount + 1);
+        const currentCount = directionData.blocksToCounts.get(block.name) || 0;
+        directionData.blocksToCounts.set(block.name, currentCount + 1);
 
         // Update closest block if it's the closest for this direction
         const currentBlockDistance = closestBlockDistances.get(direction)!.get(block.name) || Infinity;
         if (distance < currentBlockDistance) {
           closestBlockDistances.get(direction)!.set(block.name, distance);
-          directionData.blocksToClosestCoords!.set(block.name, block.position);
+          directionData.blocksToClosestCoords.set(block.name, block.position);
         }
 
         // Update closest biome if it's the closest for this direction
@@ -352,43 +325,46 @@ export class Surroundings {
           const currentBiomeDistance = closestBiomeDistances.get(direction)!.get(biome) || Infinity;
           if (distance < currentBiomeDistance) {
             closestBiomeDistances.get(direction)!.set(biome, distance);
-            directionData.biomesToClosestCoords!.set(biome, block.position);
+            directionData.biomesToClosestCoords.set(biome, block.position);
           }
+        }
+
+        // directionData.blockEntities.set(block.)
+      }
+    }
+
+    // Process entities
+    const botPos = this.bot.entity.position;
+    for (const [id, entity] of Object.entries(this.bot.entities)) {
+      if (entity.id === this.bot.entity.id) continue; // Skip self
+
+      const distance = entity.position.distanceTo(botPos);
+      if (distance > this.distantRadius) continue; // Skip if too far
+
+      const [vicinity, _] = this.getVicinityAndDistance(entity.position);
+ 
+      if (!vicinity) continue; // Entity is too far
+
+      if (vicinity === Vicinity.IMMEDIATE) {
+        // Add to immediate surroundings
+        immediateResult.entities.push(entity);
+      } else {
+        // Add to distant surroundings in the correct direction
+        const direction = vicinity as unknown as Direction;
+        const directionData = distantResult.get(direction)!;
+
+        // Categorize entity
+        if (entity.type === "mob") {
+          directionData.mobs.push(entity);
+        } else if (entity.type === "player") {
+          directionData.players.set(entity.username!, entity);
+        } else if (entity.type === "object") {
+          directionData.itemEntities.push(entity);
         }
       }
     }
 
-    // // Process entities
-    // const botPos = this.bot.entity.position;
-    // for (const [id, entity] of Object.entries(this.bot.entities)) {
-    //   if (entity.id === this.bot.entity.id) continue; // Skip self
-
-    //   const distance = entity.position.distanceTo(botPos);
-    //   if (distance > this.distantRadius) continue; // Skip if too far
-
-    //   const [vicinity, _] = this.getVicinityAndDistance(entity.position);
-    //   if (!vicinity) continue; // Entity is too far
-
-    //   if (vicinity === Vicinity.IMMEDIATE) {
-    //     // Add to immediate surroundings
-    //     immediateResult.entities!.push(entity);
-    //   } else {
-    //     // Add to distant surroundings in the correct direction
-    //     const direction = vicinity as unknown as Direction;
-    //     const directionData = distantResult.get(direction)!;
-
-    //     // Categorize entity
-    //     if (entity.type === 'mob') {
-    //       directionData.mobs!.push(entity);
-    //     } else if (entity.type === 'player') {
-    //       directionData.players!.push(entity);
-    //     } else if (entity.type === 'object') {
-    //       directionData.itemEntities!.push(entity);
-    //     }
-    //   }
-    // }
-
-    // Process block entities
+    // // Process block entities
     // for (const dir of Object.values(Direction)) {
     //   const direction = dir as Direction;
     //   const directionData = distantResult.get(direction)!;
@@ -399,7 +375,7 @@ export class Surroundings {
     //     // Access block entities if they exist in this version
     //     if (column && (column as any).blockEntities) {
     //       for (const [posStr, entity] of Object.entries((column as any).blockEntities)) {
-    //         directionData.blockEntities!.set(posStr, entity);
+    //         directionData.blockEntities.set(posStr, entity);
     //       }
     //     }
     //   }
@@ -522,12 +498,18 @@ export class EnvState {
 
   public getReadableString(): string {
     // Basic information in plain text format
-    const basicInfo = [];
+    // const basicInfo = [];
+    const basicInfo: Record<string, any> = {};
 
-    basicInfo.push(`Coordinates: ${this.coordinates}`);
-    basicInfo.push(`Health: ${this.health}`);
-    basicInfo.push(`Hunger: ${this.hunger}`);
-    basicInfo.push(`Time of Day: ${this.timeOfDay}`);
+    // basicInfo.push(`Coordinates: ${this.coordinates}`);
+    // basicInfo.push(`Health: ${this.health}`);
+    // basicInfo.push(`Hunger: ${this.hunger}`);
+    // basicInfo.push(`Time of Day: ${this.timeOfDay}`);
+
+    basicInfo["coordinates"] = this.coordinates;
+    basicInfo["health"] = this.health;
+    basicInfo["hunger"] = this.hunger;
+    basicInfo["timeOfDay"] = this.timeOfDay;
 
     // Process inventory
     const inv = this.inventory;
@@ -537,7 +519,8 @@ export class EnvState {
       else invSimplified[item.name] += item.stackSize;
     }
     const invStr = JSON.stringify(invSimplified, null, 3);
-    basicInfo.push(`Inventory: ${invStr}`);
+    // basicInfo.push(`Inventory: ${invStr}`);
+    basicInfo["inventory"] = invSimplified;
 
     const equipSimplified: Record<string, any> = {};
     for (const [place, item] of Object.entries(this.equipped)) {
@@ -551,7 +534,8 @@ export class EnvState {
     }
 
     const equipStr = JSON.stringify(equipSimplified, null, 3);
-    basicInfo.push(`Equipped: ${equipStr}`);
+    // basicInfo.push(`Equipped: ${equipStr}`);
+    basicInfo["equipped"] = equipSimplified;
 
     // `Notepad: ...`,  // TODO
 
@@ -575,7 +559,9 @@ export class EnvState {
 
       // Process biomes
       if (this.surroundings.lastObservedImmediateSurroundings.biomes) {
-        surroundings.immediateSurroundings.biomes = Array.from(this.surroundings.lastObservedImmediateSurroundings.biomes).map((b) => this.bot.registry.biomes[b].name);
+        surroundings.immediateSurroundings.biomes = Array.from(this.surroundings.lastObservedImmediateSurroundings.biomes).map(
+          (b) => this.bot.registry.biomes[b].name
+        );
       }
     }
 
@@ -610,8 +596,9 @@ export class EnvState {
 
     // Format surroundings using JSON
     const surroundingsStr = JSON.stringify(surroundings, null, 3);
-    basicInfo.push(`Surroundings:\n${surroundingsStr}`);
+    basicInfo["surroundings"] = surroundings;
+    // basicInfo.push(`Surroundings:\n${surroundingsStr}`);
 
-    return basicInfo.join("\n");
+    return JSON.stringify(basicInfo, null, 4);
   }
 }

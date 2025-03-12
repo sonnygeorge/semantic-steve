@@ -1,9 +1,10 @@
 import { PCChunk } from "prismarine-chunk";
-import { EquipmentDestination } from "mineflayer";
+import { Bot, EquipmentDestination } from "mineflayer";
 import {Item as PItem} from 'prismarine-item'
 
 export type SemanticSteveFunctionReturnObj = { resultString: string | null; envStateIsUpToDate: boolean; }
-export type SemanticSteveFunction = (...args: any[]) => Promise<SemanticSteveFunctionReturnObj>;
+export type SemanticSteveFunction = (bot: Bot, ...args: any[]) => SemanticSteveFunctionReturnObj | Promise<SemanticSteveFunctionReturnObj>;
+export type FunctionRegistry = Record<string, SemanticSteveFunction>
 
 export type SurroundingsOptions = {
   immediateSurroundingsRadius: number;
@@ -18,5 +19,33 @@ export type EquipmentAndDestination = {
   feet: PItem
   "off-hand": PItem
 }
+
+export enum Direction {
+  UP = "up",
+  DOWN = "down",
+  NORTH = "north",
+  NORTHEAST = "northeast",
+  EAST = "east",
+  SOUTHEAST = "southeast",
+  SOUTH = "south",
+  SOUTHWEST = "southwest",
+  WEST = "west",
+  NORTHWEST = "northwest",
+}
+
+export enum Vicinity {
+  IMMEDIATE = "immediate",
+  UP = Direction.UP,
+  DOWN = Direction.DOWN,
+  NORTH = Direction.NORTH,
+  NORTHEAST = Direction.NORTHEAST,
+  EAST = Direction.EAST,
+  SOUTHEAST = Direction.SOUTHEAST,
+  SOUTH = Direction.SOUTH,
+  SOUTHWEST = Direction.SOUTHWEST,
+  WEST = Direction.WEST,
+  NORTHWEST = Direction.NORTHWEST,
+}
+
 
 export type PCChunkCoordinateAndColumn = { chunkX: number; chunkZ: number; column: PCChunk };

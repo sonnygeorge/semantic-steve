@@ -8,12 +8,12 @@ import {
   WebserverBehaviorPositions,
   StateMachineWebserver,
 } from "@nxg-org/mineflayer-static-statemachine";
-import { Direction, Vicinity, EnvState } from "./envState";
+import { EnvState } from "./envState";
 import { StateBehavior } from "@nxg-org/mineflayer-static-statemachine";
 import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter";
 // Import the SemanticSteve singleton to register functions
-import { SemanticSteveFunctionReturnObj } from "./types";
+import { Direction, SemanticSteveFunctionReturnObj, Vicinity } from "./types";
 
 // Import behaviors we need
 import {
@@ -142,7 +142,7 @@ class BehaviorPathfindToCoords extends StateBehavior {
 
   onStateEntered(): void {
     if (!this.bot.pathfinder) throw Error("Pathfinder is not loaded!");
-    if (!this.data.targetPos) throw Error("No target position defined!");
+    if (!this.data.targetGoal) throw Error("No target goal defined!");
 
     // Setup listeners for checking surroundings and path status
     this.bot.on("path_update", this.handlePathUpdate);
@@ -151,7 +151,7 @@ class BehaviorPathfindToCoords extends StateBehavior {
     this.data.surroundingsChecker.on("thingFound", this.handleThingFound);
 
     // Start pathfinding
-    this.startMoving(this.data.targetPos);
+    this.startMoving(this.data.targetGoal);
   }
 
   update(): void {
@@ -183,12 +183,12 @@ class BehaviorPathfindToCoords extends StateBehavior {
 
   handlePathUpdate = (path: any): void => {
     if (path.status === "noPath") {
-      this.data.result = `No feasible path to ${this.data.targetPos} found. Are the coordinates reachable?`;
+      this.data.result = `No feasible path to ${this.data.targetGoal} found. Are the coordinates reachable?`;
       this.data.pathFailed = true;
     }
 
     if (path.status === "timeout") {
-      this.data.result = `Pathfinding timeout, couldn't find a path to ${this.data.targetPos} in time.`;
+      this.data.result = `Pathfinding timeout, couldn't find a path to ${this.data.targetGoal} in time.`;
       this.data.pathFailed = true;
     }
   };
@@ -212,8 +212,8 @@ class BehaviorPathfindToCoords extends StateBehavior {
     }
   };
 
-  private async startMoving(pos: Vec3): Promise<void> {
-    this.goal = new goals.GoalNear(pos.x, pos.y, pos.z, 2);
+  private async startMoving(goal: goals.Goal): Promise<void> {
+    this.goal = goal // new goals.GoalNear(pos.x, pos.y, pos.z, 2);
     this.bot.pathfinder.setMovements(this.movements);
     this.bot.pathfinder.setGoal(this.goal);
   }
@@ -248,7 +248,7 @@ class BehaviorPathComplete extends StateBehavior {
   }
 
   onStateEntered(): void {
-    this.bot.chat(`Reached coordinates ${this.data.targetPos}`);
+    this.bot.chat(`Reached coordinates ${this.data.targetGoal}`);
   }
 
   isFinished(): boolean {
@@ -273,12 +273,12 @@ class BehaviorPathFailed extends StateBehavior {
   }
 }
 
-export async function pathfindToCoordinates(bot: Bot, wantedPos: Vec3, stopIfFound: string[] = []): Promise<SemanticSteveFunctionReturnObj> {
+export async function pathfindToCoordinates(bot: Bot, wantedGoal: goals.Goal, stopIfFound: string[] = []): Promise<SemanticSteveFunctionReturnObj> {
   // Create shared data object
   const surroundChecker = new SurroundingsChecker(bot);
   const data: StateMachineData = {
     result: null,
-    targetPos: wantedPos,
+    targetGoal: wantedGoal,
     stopIfFound: stopIfFound,
     thingFound: null,
     pathComplete: false,

@@ -4,20 +4,27 @@ import { createBot } from "mineflayer";
 import {mineflayer as mfViewer} from 'prismarine-viewer'
 import { EnvState } from "./envState";
 import { pathfindToCoordinates } from './pathfind';
-import { SemanticSteveFunction, SemanticSteveFunctionReturnObj } from './types';
+import { Direction, SemanticSteveFunction, SemanticSteveFunctionReturnObj, Vicinity } from './types';
 import {Vec3} from 'vec3'
+import approach from './modules/approach';
+import { buildFunctionRegistry } from './modules';
 
 
 
 // Initialize bot
 const bot = createBot({ username: "SemanticSteve" });
 
+console.log('initializing backend')
+
 bot.once("spawn", async () => {
     bot.loadPlugin(createPlugin({ immediateSurroundingsRadius: 3, distantSurroundingsRadius: 24 }));
 
-    await bot.waitForChunksToLoad()
 
-    console.log("Bot spawned and ready!");
+
+    console.log("Bot spawned!");
+    await bot.waitForChunksToLoad()
+    console.log("Chunks loaded!");
+
     mfViewer(bot, {port: 3000, firstPerson: true})
 
     await startBackend();
@@ -28,22 +35,7 @@ interface FrontendMessage { function: string; args: any[]; kwargs: Record<string
 interface BackendMessage { env_state: string; result: any; }
 
 
-const semanticSteveFunctionRegistry: Record<string, SemanticSteveFunction> = { 
-    // Sonny: Idk what this is so just commenting for now -> Is this junk we can remove?
-    // refreshEnv: async () => [null, `refreshing...`],
-
-    pathfindToCoordinates: async (coords: number[], stopIfFound: string[]) => {
-        return await pathfindToCoordinates(bot, new Vec3(coords[0], coords[1], coords[2]), stopIfFound);
-    },
-
-    testWorld: async () => {
-        bot.envState.surroundings.getSurroundings();
-        return {
-            resultString: `worked?`,
-            envStateIsUpToDate: true,
-        }
-    },
-};
+const semanticSteveFunctionRegistry = buildFunctionRegistry();
 
 
 async function startBackend() {
@@ -70,7 +62,7 @@ async function startBackend() {
         if (message.function in semanticSteveFunctionRegistry) {
             let envState: EnvState | null = null;
             try {
-                ssFnReturnObj = await semanticSteveFunctionRegistry[message.function](...message.args);
+                ssFnReturnObj = await semanticSteveFunctionRegistry[message.function](bot, ...message.args);
             } catch (error) {
                 ssFnReturnObj.resultString = `Function execution error: ${(error instanceof Error) ? `${error.message}:\n${error.stack?.split('\n').map((line: string) => line.trim()).join('\n')}` : 'Unknown error'}`;
             }

@@ -5,7 +5,8 @@ import type { Entity } from "prismarine-entity";
 import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter"
 import type {Block as PBlock} from "prismarine-block"
-import { ImmediateSurroundings, Direction, Vicinity, EnvState} from "./envState";
+import { ImmediateSurroundings, EnvState} from "./envState";
+import { Direction, Vicinity } from "./types";
 
 
 type PathfinderAbstractionEvents = {

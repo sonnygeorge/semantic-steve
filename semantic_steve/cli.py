@@ -129,7 +129,7 @@ SEMANTIC_STEVE_ASCII_ART = r"""  ____                             _   _        _
 # ------------------------------
 # JSPyBridge: Bot Initialization
 # ------------------------------
-from javascript import require, Once, On
+from javascript import require, Once, On, AsyncTask
 
 
 def compile_typescript():
@@ -187,7 +187,7 @@ def cli_loop(bot, functionRegistry):
             continue
 
         # Look up and call the function from the registry if it exists
-        if not hasattr(bot, "semanticSteveFunctionRegistry") or fn_name not in functionRegistry:
+        if fn_name not in functionRegistry:
             print(f"Error: Function '{fn_name}' not found in the function registry.")
             continue
 

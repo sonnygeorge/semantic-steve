@@ -79,7 +79,6 @@ export class SurroundingsHelper {
     const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
 
     if (!distantSurroundings) return false;
-    console.log(direction, thing)
     const directionData = distantSurroundings.get(direction);
     if (!directionData) return false;
 

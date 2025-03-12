@@ -15,6 +15,7 @@ const bot = createBot({ username: "SemanticSteve" });
 bot.once("spawn", async () => {
     bot.loadPlugin(createPlugin({ immediateSurroundingsRadius: 3, distantSurroundingsRadius: 24 }));
 
+    await bot.waitForChunksToLoad()
 
     console.log("Bot spawned and ready!");
     mfViewer(bot, {port: 3000, firstPerson: true})

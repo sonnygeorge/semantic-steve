@@ -32,7 +32,6 @@ bot.once("spawn", async () => {
 
 
 interface FrontendMessage { function: string; args: any[]; kwargs: Record<string, any>; }
-interface BackendMessage { env_state: string; result: any; }
 
 
 const semanticSteveFunctionRegistry = buildFunctionRegistry();
@@ -48,7 +47,7 @@ async function startBackend() {
     // TODO: (fixme) Not working this first time around because this.bot.world.getColumns() comes back empty
     bot.envState.surroundings.getSurroundings();
 
-    await socket.send(JSON.stringify({ env_state: bot.envState.getReadableString(), result: null }));
+    await socket.send(JSON.stringify({ env_state: bot.envState.getString(), env_state_str: bot.envState.getReadableString(), result: null }));
 
     for await (const [msg] of socket) {
         const message: FrontendMessage = JSON.parse(msg.toString());
@@ -73,6 +72,6 @@ async function startBackend() {
             bot.envState.surroundings.getSurroundings();
         }
 
-        await socket.send(JSON.stringify({ env_state: bot.envState.getReadableString(), result: ssFnReturnObj.resultString }));
+        await socket.send(JSON.stringify({ env_state: bot.envState.getString(), env_state_str: bot.envState.getReadableString(), result: ssFnReturnObj.resultString }));
     }
 }

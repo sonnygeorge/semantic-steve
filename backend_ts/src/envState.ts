@@ -3,7 +3,7 @@ import { Vec3 } from "vec3";
 import type { Item as PItem } from "prismarine-item";
 import type { Block as PBlock } from "prismarine-block";
 import { Entity } from "prismarine-entity";
-import { Direction, EquipmentAndDestination, PCChunkCoordinateAndColumn, Vicinity } from "./types";
+import { Direction, EquipmentAndDestination, PCChunkCoordinateAndColumn, PropertiesOnly, Vicinity } from "./types";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
 import { SurroundingsOptions } from "./types";
 
@@ -433,6 +433,17 @@ export class Surroundings {
     }
     return [this.lastObservedImmediateSurroundings!, this.lastObservedDistantSurroundings!];
   }
+
+  public getData(): PropertiesOnly<Omit<Surroundings, "bot">> {
+    const ret = {
+      immediateRadius: this.immediateRadius,
+      distantRadius: this.distantRadius,
+      lastObservedImmediateSurroundings:this.lastObservedImmediateSurroundings,
+      lastObservedDistantSurroundings: this.lastObservedDistantSurroundings,
+      timeOfLastObservation: this.timeOfLastObservation
+    }
+    return ret
+  }
 }
 
 // Semantic World class (similar to previous implementation but updated to use new Surroundings)
@@ -494,6 +505,15 @@ export class EnvState {
 
   public getNotepad(): Map<string, any> {
     return this.notepad;
+  }
+
+  public getString(): string {
+    
+    const ret = {
+      notepad: this.notepad,
+      surroundings: this.surroundings.getData()
+    }
+    return JSON.stringify(ret, null, 4)
   }
 
   public getReadableString(): string {

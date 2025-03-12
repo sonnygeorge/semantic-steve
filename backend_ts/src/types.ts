@@ -6,6 +6,10 @@ export type SemanticSteveFunctionReturnObj = { resultString: string | null; envS
 export type SemanticSteveFunction = (bot: Bot, ...args: any[]) => SemanticSteveFunctionReturnObj | Promise<SemanticSteveFunctionReturnObj>;
 export type FunctionRegistry = Record<string, SemanticSteveFunction>
 
+export type PropertiesOnly<T> = {
+  [K in keyof T as T[K] extends Function ? never : K]: T[K];
+};
+
 export type SurroundingsOptions = {
   immediateSurroundingsRadius: number;
   distantSurroundingsRadius: number;

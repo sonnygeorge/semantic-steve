@@ -129,7 +129,7 @@ SEMANTIC_STEVE_ASCII_ART = r"""  ____                             _   _        _
 # ------------------------------
 # JSPyBridge: Bot Initialization
 # ------------------------------
-from javascript import require, Once, On, AsyncTask
+from javascript import require, Once, On, AsyncTask, terminate
 
 
 def compile_typescript():
@@ -152,7 +152,22 @@ def compile_typescript():
 # Main CLI Loop
 # ------------------------------
 def cli_loop(bot, functionRegistry):
-    while True:
+    
+    run_cli = True
+    
+    @On(bot, "end")
+    def on_end(*args):
+        nonlocal run_cli
+        print("ended")
+        run_cli = False
+        
+    @On(bot, "error")
+    def on_end(*args):
+        nonlocal run_cli
+        print("error")
+        run_cli = False
+    
+    while run_cli:
    
         if not bot.entity or not bot.entity.height:
             print("Waiting for bot to spawn...")
@@ -206,6 +221,7 @@ def cli_loop(bot, functionRegistry):
         print("\nRESULT FROM FUNCTION CALL:")
         print(result_obj.resultString or "No result returned.")
 
+    print('Exiting CLI loop...')
 
 def main(rebuild_backend=False):
     """
@@ -229,8 +245,8 @@ def main(rebuild_backend=False):
     import_path = os.path.dirname(os.path.realpath(__file__)) + "/../backend_ts/build"
 
     # Adjust these paths as necessary; these modules should be compiled/available as JS.
-    createPlugin = require(f"{import_path}").createPlugin  
-    buildFunctionRegistry = require(f"{import_path}/modules").buildFunctionRegistry
+    createPlugin = require(import_path).createPlugin  
+    buildFunctionRegistry = require(import_path).buildFunctionRegistry
 
     # Create the bot
     bot = mineflayer.createBot({ "username": "SemanticSteve" })
@@ -256,6 +272,7 @@ def main(rebuild_backend=False):
         print("Semantic Steve is ready!")
         
     cli_loop(bot, functionRegistry)
+    terminate()
 
 
     

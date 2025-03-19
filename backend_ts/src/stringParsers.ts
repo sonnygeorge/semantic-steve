@@ -92,7 +92,7 @@ export class SurroundingsHelper {
 
         return directionData.biomesToClosestCoords?.has(biomeId) || false;
       case "player":
-        console.log(directionData.players)
+        console.log(directionData.players);
         return directionData.players.has(thing) || false;
       default:
         return false;
@@ -130,11 +130,12 @@ export class SurroundingsHelper {
    * @param direction The direction to look in
    * @returns The coordinates of the closest instance or null if not found
    */
-  public get_coords_of_closest_thing(thing: string, direction: Vicinity): Vec3 | null {
+  public get_coords_of_closest_thing(thing: string, direction?: Vicinity): Vec3 | null {
+    let testDirs = direction ? [direction] : Object.values(Vicinity);
     const thingType = this.identifyThingType(thing);
 
     // First check immediate vicinity if we're looking for something in it
-    if (direction === Vicinity.UP || direction === Vicinity.DOWN || direction === "immediate") {
+    if (direction === Vicinity.UP || direction === Vicinity.DOWN || direction === Vicinity.IMMEDIATE || direction == null) {
       const immediateSurroundings = this.envState.surroundings.getImmediateSurroundings();
       if (!immediateSurroundings) return null;
 
@@ -169,27 +170,31 @@ export class SurroundingsHelper {
       }
     }
 
-    // Check distant surroundings
-    const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
-    if (!distantSurroundings) return null;
+    for (const direction of testDirs) {
+      // Check distant surroundings
+      const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
+      if (!distantSurroundings) return null;
 
-    const directionData = distantSurroundings.get(direction as unknown as Direction);
-    if (!directionData) return null;
+      const directionData = distantSurroundings.get(direction as unknown as Direction);
+      if (!directionData) return null;
 
-    switch (thingType) {
-      case "block":
-        return directionData.blocksToClosestCoords?.get(thing) || null;
-      case "biome":
-        // Find biome ID from name
-        const biomeId = this.getBiomeIdFromName(thing);
-        if (biomeId === -1) return null;
+      switch (thingType) {
+        case "block":
+          return directionData.blocksToClosestCoords?.get(thing) || null;
+        case "biome":
+          // Find biome ID from name
+          const biomeId = this.getBiomeIdFromName(thing);
+          if (biomeId === -1) return null;
 
-        return directionData.biomesToClosestCoords?.get(biomeId) || null;
-      case "player":
-        return directionData.players.get(thing)?.position || null;
-      default:
-        return null;
+          return directionData.biomesToClosestCoords?.get(biomeId) || null;
+        case "player":
+          return directionData.players.get(thing)?.position || null;
+        default:
+          return null;
+      }
     }
+
+    return null;
   }
 
   /**

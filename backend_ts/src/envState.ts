@@ -573,7 +573,7 @@ export class EnvState {
       if (this.surroundings.lastObservedImmediateSurroundings.blocks) {
         const blocksMap = this.surroundings.lastObservedImmediateSurroundings.blocks;
         for (const [blockType, coords] of blocksMap.entries()) {
-          surroundings.immediateSurroundings.blocks[blockType] = coords.map((c) => `(${c.x},${c.y},${c.z})`);
+          surroundings.immediateSurroundings.blocks[blockType] = coords.map((c) => c.toArray());
         }
       }
 

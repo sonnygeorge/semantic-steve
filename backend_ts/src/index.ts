@@ -4,6 +4,7 @@ import { PathfinderAbstraction } from "./oldPathfind"  // TODO: I think this is 
 import { EnvState } from "./envState";
 import { SurroundingsOptions } from "./types";
 import { SurroundingsHelper } from "./stringParsers";
+import { buildFunctionRegistry } from "./modules";
 
 declare module "mineflayer" {
   interface Bot {
@@ -25,3 +26,5 @@ export function createPlugin(opts: SurroundingsOptions) {
     if (!bot.hasPlugin(pathfinder)) bot.loadPlugin(pathfinder);
   };
 }
+
+export { buildFunctionRegistry } from "./modules";

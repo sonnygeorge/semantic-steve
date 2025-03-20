@@ -96,7 +96,7 @@ E.g., from the CLI: `approach("iron_ore")` or `approach("iron_ore", "north")` to
 
 The user, in theory, will only see our stringified representation of the environment. Our stringified representation will show the user what "things" (blocks, biomes, etc.) are around them in the "immediate" and "distant" "surroundings".
 
-The idea is that, cognitively, one "explores" simply by going towards ("approaching") things that lead you to believe that a given direction is more promising for you goal.
+The idea is that, cognitively, one "explores" simply by going towards ("approaching") things that lead you to believe that a given direction is more promising your goal.
 
 Of course, it's still very probable that, out-of-the-box, LLMs will still go in circles by, e.g., going back and forth between 2-4 "things" that it finds interesting, not realizing that it's stuck in a loop. But that's a problem we'll solve once we have it (i.e., get this much working well).
 

@@ -104,7 +104,7 @@ export class SurroundingsHelper {
    * @param thing The name of the thing to check for
    * @returns True if the thing is in any vicinity
    */
-  public in_vicinity(thing: string): boolean {
+  public in_surroundings(thing: string): boolean {
     // Check immediate vicinity first
     if (this.isInImmediateVicinity(thing)) {
       return true;

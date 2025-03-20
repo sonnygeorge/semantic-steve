@@ -4,7 +4,7 @@ import { pathfindToCoordinates } from "../pathfind";
 import { goals } from "mineflayer-pathfinder";
 
 export default async function approach(bot: Bot, thing: string, direction?: string): Promise<SemanticSteveFunctionReturnObj> {
-  if (!bot.surroundingsHelper.in_vicinity(thing)) {
+  if (!bot.surroundingsHelper.in_surroundings(thing)) {
     return {
       resultString: `Error: ${thing} not found in vicinity`,
       envStateIsUpToDate: true,

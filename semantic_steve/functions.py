@@ -1,3 +1,11 @@
+"""
+This file contains unused Python pseudo-code for (old) Semantic Steve ideas.
+
+You can think of it as the original brainstorm document for Semantic Steve functions/functionality.
+
+It is not real (used) code, and it will be deleted (hopefully) soon.
+"""
+
 from typing import Any, Dict, Literal, Optional, TypedDict
 from dataclasses import dataclass
 
@@ -278,9 +286,7 @@ class SemanticSteve:
 
     def unequip_item(self, item: str) -> tuple[WorldState, ActionResultInfo]: ...
 
-    def right_click_interact_with_block_or_mob() -> (
-        tuple[WorldState, ActionResultInfo]
-    ): ...
+    def right_click_interact_with_block_or_mob() -> tuple[WorldState, ActionResultInfo]: ...
 
     # sit down a dog/cat/mob
     # bed

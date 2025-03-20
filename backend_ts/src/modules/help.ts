@@ -3,7 +3,7 @@ import { SemanticSteveFunctionReturnObj } from "../types";
 import { buildFunctionRegistry } from ".";
 
 export default async function help(bot: Bot):  Promise<SemanticSteveFunctionReturnObj> {
-    // lazy way.
+    // lazy way for now.
     const registry = buildFunctionRegistry();
     return {
         resultString: Object.keys(registry).join(', '),

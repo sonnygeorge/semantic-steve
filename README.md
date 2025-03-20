@@ -100,9 +100,9 @@ The idea is that, cognitively, one "explores" simply by going towards ("approach
 
 Of course, it's still very probable that, out-of-the-box, LLMs will still go in circles by, e.g., going back and forth between 2-4 "things" that it finds interesting, not realizing that it's stuck in a loop. But that's a problem we'll solve once we have it (i.e., get this much working well).
 
-**Plans for the future:**
+### Plans for the future:
 
-### "Phase 2"
+#### "Phase 2"
 
 The next big thing I'm hoping to figure out is something like a `takeScreenshotOf(thing: string)` function.
 
@@ -110,6 +110,6 @@ The reason being: If we can expose a function that can reliably get a .png of so
 
 (at least, for now, in peaceful mode, with ample bridging blocks already in the bot's inventory)
 
-## "Phase 3" and Beyond
+#### "Phase 3" and Beyond
 
 After nailing at least this much, then the world is our oyster for adding all the other possible functions/functionality (crafting, mining, killing mobs, reactive self-defense, etc.) to create a more behaviorally comprehensive semantic-API-obfuscation of "fast-reflex" Minecraft gameplay.

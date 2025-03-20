@@ -94,7 +94,7 @@ E.g., from the CLI: `approach("iron_ore")` or `approach("iron_ore", "north")` to
 
 **The main UX idea we are trying dial in:**
 
-The user, in theory will only see our stringified representation of the environment. Our stringified representation will show the user what "things" (blocks, biomes, etc.) are around them in the "distant surroundings".
+The user, in theory, will only see our stringified representation of the environment. Our stringified representation will show the user what "things" (blocks, biomes, etc.) are around them in the "immediate" and "distant" "surroundings".
 
 The idea is that, cognitively, one "explores" simply by going towards ("approaching") things that lead you to believe that a given direction is more promising for you goal.
 
@@ -106,7 +106,7 @@ Of course, it's still very probable that, out-of-the-box, LLMs will still go in 
 
 The next big thing I'm hoping to figure out is something like a `takeScreenshotOf(thing: string)` function.
 
-The reason being: If we can expose a function that can reliably get a .png of some "thing" it has "approached", then we can, by sending the .png to a Vision-Language Model (VLM) (and "asking" if the image depicts the "thing"), **_programatically benchmark_** an LLM reasoning system's explore and find arbitrary "things".
+The reason being: If we can expose a function that can reliably get a .png of some "thing" it has "approached", then we can, by sending the .png to a Vision-Language Model (VLM) (and "asking" if the image depicts the "thing"), **_programatically benchmark_** an LLM reasoning system's ability to explore and find arbitrary "things".
 
 (at least, for now, in peaceful mode, with ample bridging blocks already in the bot's inventory)
 

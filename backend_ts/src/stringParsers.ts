@@ -47,7 +47,7 @@ export class SurroundingsHelper {
    * @param thing The name of the thing to check for
    * @returns True if the thing is in the immediate vicinity
    */
-  public isInImmediateVicinity(thing: string): boolean {
+  public isInImmediateSurroundings(thing: string): boolean {
     const thingType = this.identifyThingType(thing);
     const immediateSurroundings = this.envState.surroundings.getImmediateSurroundings();
 
@@ -106,7 +106,7 @@ export class SurroundingsHelper {
    */
   public in_surroundings(thing: string): boolean {
     // Check immediate vicinity first
-    if (this.isInImmediateVicinity(thing)) {
+    if (this.isInImmediateSurroundings(thing)) {
       return true;
     }
 

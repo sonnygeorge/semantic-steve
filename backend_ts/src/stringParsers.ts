@@ -176,19 +176,25 @@ export class SurroundingsHelper {
       if (!distantSurroundings) return null;
 
       const directionData = distantSurroundings.get(direction as unknown as Direction);
-      if (!directionData) return null;
+      if (!directionData) continue;
 
       switch (thingType) {
-        case "block":
-          return directionData.blocksToClosestCoords?.get(thing) || null;
-        case "biome":
+        case "block": {
+          const found = directionData.blocksToClosestCoords?.get(thing)
+          if (found != null) return found;
+        }
+        case "biome": {
           // Find biome ID from name
           const biomeId = this.getBiomeIdFromName(thing);
-          if (biomeId === -1) return null;
-
-          return directionData.biomesToClosestCoords?.get(biomeId) || null;
-        case "player":
-          return directionData.players.get(thing)?.position || null;
+          if (biomeId === -1) continue;
+          const found = directionData.biomesToClosestCoords?.get(biomeId)
+          if (found != null) return found
+        }
+        case "player": {
+          const found =  directionData.players.get(thing)?.position
+          if (found != null) return found
+        }
+        // still leave in early exit for default.
         default:
           return null;
       }

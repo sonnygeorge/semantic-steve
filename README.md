@@ -70,7 +70,7 @@ NOTE: Sometimes, @gen's Mineflayer-[$x$] packages don't always end up in the `ya
 
 Right now, we've completed what I'm calling, **_"phase 1"_**, with two functions (mostly) built out:
 
-1. Pathfind to (near) arbitrary coordinates
+#### 1.
 
 ```typescript
 export default async function pathfindToCoordinates(bot: Bot, coords: number[], stopIfFound: string[]): Promise<SemanticSteveFunctionReturnObj>  {
@@ -82,7 +82,7 @@ E.g., from the CLI: `pathfindToCoordinates([101, 64, 23], ["iron_ore"])`
 
 Obviously, we want this to be as "intelligent" as possible—getting as close as possible, knowing when to break blocks or bridge, and outputting highly semantic, useful "results" messages like, `f"You came close to your target (20 blocks below, and 5 blocks to the west), but couldn't proceed further because block type {block_type} was not breakable or traversable."`.
 
-2. 
+#### 2. 
 
 ```typescript
 export default async function approach(bot: Bot, thing: string, direction?: string): Promise<SemanticSteveFunctionReturnObj> {

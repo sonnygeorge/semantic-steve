@@ -6,9 +6,8 @@ You can think of it as the original brainstorm document for Semantic Steve funct
 It is not real (used) code, and it will be deleted (hopefully) soon.
 """
 
-from typing import Any, Dict, Literal, Optional, TypedDict
 from dataclasses import dataclass
-
+from typing import Any, Dict, Literal, Optional, TypedDict
 
 ####################################
 #### World State Representation ####

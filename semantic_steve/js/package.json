@@ -13,7 +13,7 @@
   "devDependencies": {
     "prismarine-entity": "^2.5.0",
     "typed-emitter": "^2.1.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@nxg-org/mineflayer-static-statemachine": "^0.3.4",

@@ -1,10 +1,15 @@
 import { PCChunk } from "prismarine-chunk";
 import { Bot, EquipmentDestination } from "mineflayer";
-import {Item as PItem} from 'prismarine-item'
+import { Item as PItem } from "prismarine-item";
 
-export type SemanticSteveFunctionReturnObj = { resultString: string | null; envStateIsUpToDate: boolean; }
-export type SemanticSteveFunction = (bot: Bot, ...args: any[]) => SemanticSteveFunctionReturnObj | Promise<SemanticSteveFunctionReturnObj>;
-export type FunctionRegistry = Record<string, SemanticSteveFunction>
+export type SkillReturnObj = {
+  resultString: string | null;
+  envStateIsUpToDate: boolean;
+};
+export type Skill = (
+  ...args: any[]
+) => SkillReturnObj | Promise<SkillReturnObj>;
+export type FunctionRegistry = Record<string, Skill>;
 
 export type PropertiesOnly<T> = {
   [K in keyof T as T[K] extends Function ? never : K]: T[K];
@@ -16,13 +21,13 @@ export type SurroundingsOptions = {
 };
 
 export type EquipmentAndDestination = {
-  hand: PItem
-  head: PItem
-  torso: PItem
-  legs: PItem
-  feet: PItem
-  "off-hand": PItem
-}
+  hand: PItem;
+  head: PItem;
+  torso: PItem;
+  legs: PItem;
+  feet: PItem;
+  "off-hand": PItem;
+};
 
 export enum Direction {
   UP = "up",
@@ -51,5 +56,8 @@ export enum Vicinity {
   NORTHWEST = Direction.NORTHWEST,
 }
 
-
-export type PCChunkCoordinateAndColumn = { chunkX: number; chunkZ: number; column: PCChunk };
+export type PCChunkCoordinateAndColumn = {
+  chunkX: number;
+  chunkZ: number;
+  column: PCChunk;
+};

@@ -1,3 +1,2 @@
 pyzmq
-nest-asyncio
-javascript
+pre-commit

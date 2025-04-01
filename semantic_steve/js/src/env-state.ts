@@ -3,9 +3,15 @@ import { Vec3 } from "vec3";
 import type { Item as PItem } from "prismarine-item";
 import type { Block as PBlock } from "prismarine-block";
 import { Entity } from "prismarine-entity";
-import { Direction, EquipmentAndDestination, PCChunkCoordinateAndColumn, PropertiesOnly, Vicinity } from "./types";
+import {
+  Direction,
+  EquipmentAndDestination,
+  PCChunkCoordinateAndColumn,
+  PropertiesOnly,
+  Vicinity,
+  SurroundingsOptions,
+} from "./types";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
-import { SurroundingsOptions } from "./types";
 
 export class ImmediateSurroundings {
   blocks: Map<string, Vec3[]>; // k=block type, v=list of coords of this block type
@@ -39,7 +45,10 @@ export class DistantSurroundingsInADirection {
   }
 }
 
-export type DistantSurroundings = Map<Direction, DistantSurroundingsInADirection>;
+export type DistantSurroundings = Map<
+  Direction,
+  DistantSurroundingsInADirection
+>;
 
 const NEARBY_BLOCK_VIS_OFFSETS: Vec3[] = [
   new Vec3(1, 0, 0),
@@ -80,7 +89,11 @@ export function findDir(yaw: number): Direction {
 }
 
 // Helper function to check if a position is within a direction
-export function offsetIsWithinDirection(pos: Vec3, origin: Vec3, direction: Direction): boolean {
+export function offsetIsWithinDirection(
+  pos: Vec3,
+  origin: Vec3,
+  direction: Direction,
+): boolean {
   if (direction === Direction.UP) {
     return pos.y > origin.y;
   }
@@ -147,7 +160,9 @@ export class Surroundings {
     }
 
     // Check if it's above or below (in a cylindrical common of r=immediateRadius)
-    const dxz = Math.sqrt((position.x - botPos.x) ** 2 + (position.z - botPos.z) ** 2);
+    const dxz = Math.sqrt(
+      (position.x - botPos.x) ** 2 + (position.z - botPos.z) ** 2,
+    );
     if (dxz <= this.immediateRadius) {
       if (position.y > botPos.y) return [Vicinity.UP, distance];
       if (position.y < botPos.y) return [Vicinity.DOWN, distance];
@@ -224,7 +239,11 @@ export class Surroundings {
   private *getAllBlocks(blockRadius: number) {
     // iterate over chunks
     const botPos = this.bot.entity.position;
-    for (const { chunkX, chunkZ, column } of this.bot.world.getColumns() as PCChunkCoordinateAndColumn[]) {
+    for (const {
+      chunkX,
+      chunkZ,
+      column,
+    } of this.bot.world.getColumns() as PCChunkCoordinateAndColumn[]) {
       if (!column) continue;
 
       // check if (any) of chunk is within radius
@@ -237,17 +256,25 @@ export class Surroundings {
         // NOTE: Parentheses since bitwise operators are evaluated after addition
         (chunkX << 4) + 16,
         (this.bot.game as any).height,
-        (chunkZ << 4) + 16
+        (chunkZ << 4) + 16,
       );
 
       if (bb.distanceToVec(botPos) > blockRadius) continue; // FIXME
 
       const cursor = new Vec3(0, 0, 0);
-      for (cursor.y = (this.bot.game as any).height; cursor.y >= (this.bot.game as any).minY; cursor.y--) {
+      for (
+        cursor.y = (this.bot.game as any).height;
+        cursor.y >= (this.bot.game as any).minY;
+        cursor.y--
+      ) {
         for (cursor.x = 0; cursor.x < 16; cursor.x++) {
           for (cursor.z = 0; cursor.z < 16; cursor.z++) {
             // NOTE: Parentheses since bitwise operators are evaluated after addition
-            const pos = new Vec3((chunkX << 4) + cursor.x, cursor.y, (chunkZ << 4) + cursor.z);
+            const pos = new Vec3(
+              (chunkX << 4) + cursor.x,
+              cursor.y,
+              (chunkZ << 4) + cursor.z,
+            );
             if (pos.distanceTo(botPos) > blockRadius) continue;
             const block = column.getBlock(cursor);
             if (block.name === "air") continue; // Skip air blocks
@@ -265,15 +292,24 @@ export class Surroundings {
 
     // Initialize distant surroundings for each direction
     Object.values(Direction).forEach((dir) => {
-      distantResult.set(dir as Direction, new DistantSurroundingsInADirection());
+      distantResult.set(
+        dir as Direction,
+        new DistantSurroundingsInADirection(),
+      );
     });
     // Track closest biome distances for each direction of distant surroundings
-    const closestBiomeDistances: Map<Direction, Map<number, number>> = new Map();
+    const closestBiomeDistances: Map<
+      Direction,
+      Map<number, number>
+    > = new Map();
     Object.values(Direction).forEach((dir) => {
       closestBiomeDistances.set(dir as Direction, new Map());
     });
     // Track closest block distances for each direction of distant surroundings
-    const closestBlockDistances: Map<Direction, Map<string, number>> = new Map();
+    const closestBlockDistances: Map<
+      Direction,
+      Map<string, number>
+    > = new Map();
     Object.values(Direction).forEach((dir) => {
       closestBlockDistances.set(dir as Direction, new Map());
     });
@@ -311,7 +347,8 @@ export class Surroundings {
         directionData.blocksToCounts.set(block.name, currentCount + 1);
 
         // Update closest block if it's the closest for this direction
-        const currentBlockDistance = closestBlockDistances.get(direction)!.get(block.name) || Infinity;
+        const currentBlockDistance =
+          closestBlockDistances.get(direction)!.get(block.name) || Infinity;
         if (distance < currentBlockDistance) {
           closestBlockDistances.get(direction)!.set(block.name, distance);
           directionData.blocksToClosestCoords.set(block.name, block.position);
@@ -319,7 +356,8 @@ export class Surroundings {
 
         // Update closest biome if it's the closest for this direction
         if (biome !== -1) {
-          const currentBiomeDistance = closestBiomeDistances.get(direction)!.get(biome) || Infinity;
+          const currentBiomeDistance =
+            closestBiomeDistances.get(direction)!.get(biome) || Infinity;
           if (distance < currentBiomeDistance) {
             closestBiomeDistances.get(direction)!.set(biome, distance);
             directionData.biomesToClosestCoords.set(biome, block.position);
@@ -339,7 +377,7 @@ export class Surroundings {
       if (distance > this.distantRadius) continue; // Skip if too far
 
       const [vicinity, _] = this.getVicinityAndDistance(entity.position);
- 
+
       if (!vicinity) continue; // Entity is too far
 
       if (vicinity === Vicinity.IMMEDIATE) {
@@ -385,7 +423,9 @@ export class Surroundings {
   }
 
   // Helper to get chunks in a specific direction
-  private getChunksInDirection(direction: Direction): PCChunkCoordinateAndColumn[] {
+  private getChunksInDirection(
+    direction: Direction,
+  ): PCChunkCoordinateAndColumn[] {
     const chunks = this.bot.world.getColumns() as PCChunkCoordinateAndColumn[];
     const botPos = this.bot.entity.position;
 
@@ -394,7 +434,10 @@ export class Surroundings {
       const blockChunkZ = chunkZ << 4;
 
       // Ensure chunk is within the defined radius
-      if (Math.abs(blockChunkX - botPos.x) > this.distantRadius || Math.abs(blockChunkZ - botPos.z) > this.distantRadius) {
+      if (
+        Math.abs(blockChunkX - botPos.x) > this.distantRadius ||
+        Math.abs(blockChunkZ - botPos.z) > this.distantRadius
+      ) {
         return false;
       }
 
@@ -410,36 +453,55 @@ export class Surroundings {
   }
 
   // Public methods
-  public getImmediateSurroundings(throttleSeconds?: number): ImmediateSurroundings {
-    if (!throttleSeconds || new Date().getTime() - this.timeOfLastObservation.getTime() > throttleSeconds * 1000) {
+  public getImmediateSurroundings(
+    throttleSeconds?: number,
+  ): ImmediateSurroundings {
+    if (
+      !throttleSeconds ||
+      new Date().getTime() - this.timeOfLastObservation.getTime() >
+        throttleSeconds * 1000
+    ) {
       this.observeSurroundings();
     }
     return this.lastObservedImmediateSurroundings!;
   }
 
   public getDistantSurroundings(throttleSeconds?: number): DistantSurroundings {
-    if (!throttleSeconds || new Date().getTime() - this.timeOfLastObservation.getTime() > throttleSeconds * 1000) {
+    if (
+      !throttleSeconds ||
+      new Date().getTime() - this.timeOfLastObservation.getTime() >
+        throttleSeconds * 1000
+    ) {
       this.observeSurroundings();
     }
     return this.lastObservedDistantSurroundings!;
   }
 
-  public getSurroundings(throttleSeconds?: number): [ImmediateSurroundings, DistantSurroundings] {
-    if (!throttleSeconds || new Date().getTime() - this.timeOfLastObservation.getTime() > throttleSeconds * 1000) {
+  public getSurroundings(
+    throttleSeconds?: number,
+  ): [ImmediateSurroundings, DistantSurroundings] {
+    if (
+      !throttleSeconds ||
+      new Date().getTime() - this.timeOfLastObservation.getTime() >
+        throttleSeconds * 1000
+    ) {
       this.observeSurroundings();
     }
-    return [this.lastObservedImmediateSurroundings!, this.lastObservedDistantSurroundings!];
+    return [
+      this.lastObservedImmediateSurroundings!,
+      this.lastObservedDistantSurroundings!,
+    ];
   }
 
   public getData(): PropertiesOnly<Omit<Surroundings, "bot">> {
     const ret = {
       immediateRadius: this.immediateRadius,
       distantRadius: this.distantRadius,
-      lastObservedImmediateSurroundings:this.lastObservedImmediateSurroundings,
+      lastObservedImmediateSurroundings: this.lastObservedImmediateSurroundings,
       lastObservedDistantSurroundings: this.lastObservedDistantSurroundings,
-      timeOfLastObservation: this.timeOfLastObservation
-    }
-    return ret
+      timeOfLastObservation: this.timeOfLastObservation,
+    };
+    return ret;
   }
 }
 
@@ -449,7 +511,14 @@ export class EnvState {
   private bot: Bot;
   public surroundings: Surroundings;
 
-  static EQUIPMENT_ORDERING: EquipmentDestination[] = ["hand", "off-hand", "feet", "legs", "torso", "head"];
+  static EQUIPMENT_ORDERING: EquipmentDestination[] = [
+    "hand",
+    "off-hand",
+    "feet",
+    "legs",
+    "torso",
+    "head",
+  ];
 
   constructor(bot: Bot, opts: SurroundingsOptions) {
     this.bot = bot;
@@ -479,7 +548,9 @@ export class EnvState {
   //   }
 
   public get inventory(): PItem[] {
-    return this.bot.inventory.slots.filter((item) => item !== null) as unknown as PItem[];
+    return this.bot.inventory.slots.filter(
+      (item) => item !== null,
+    ) as unknown as PItem[];
   }
 
   public get equipped(): EquipmentAndDestination {
@@ -505,12 +576,11 @@ export class EnvState {
   }
 
   public getString(): string {
-    
     const ret = {
       notepad: this.notepad,
-      surroundings: this.surroundings.getData()
-    }
-    return JSON.stringify(ret, null, 4)
+      surroundings: this.surroundings.getData(),
+    };
+    return JSON.stringify(ret, null, 4);
   }
 
   public getReadableString(): string {
@@ -532,7 +602,8 @@ export class EnvState {
     const inv = this.inventory;
     const invSimplified: Record<string, number> = {};
     for (const item of inv) {
-      if (invSimplified[item.name] === undefined) invSimplified[item.name] = item.stackSize;
+      if (invSimplified[item.name] === undefined)
+        invSimplified[item.name] = item.stackSize;
       else invSimplified[item.name] += item.stackSize;
     }
     const invStr = JSON.stringify(invSimplified, null, 3);
@@ -545,7 +616,8 @@ export class EnvState {
         name: item?.name ?? null,
       };
       if (item?.maxDurability !== undefined) {
-        equipSimplified[place].durabilityLeft = item.maxDurability - item.durabilityUsed;
+        equipSimplified[place].durabilityLeft =
+          item.maxDurability - item.durabilityUsed;
         equipSimplified[place].maxDurability = item.maxDurability;
       }
     }
@@ -568,17 +640,20 @@ export class EnvState {
 
       // Process blocks
       if (this.surroundings.lastObservedImmediateSurroundings.blocks) {
-        const blocksMap = this.surroundings.lastObservedImmediateSurroundings.blocks;
+        const blocksMap =
+          this.surroundings.lastObservedImmediateSurroundings.blocks;
         for (const [blockType, coords] of blocksMap.entries()) {
-          surroundings.immediateSurroundings.blocks[blockType] = coords.map((c) => c.toArray());
+          surroundings.immediateSurroundings.blocks[blockType] = coords.map(
+            (c) => c.toArray(),
+          );
         }
       }
 
       // Process biomes
       if (this.surroundings.lastObservedImmediateSurroundings.biomes) {
-        surroundings.immediateSurroundings.biomes = Array.from(this.surroundings.lastObservedImmediateSurroundings.biomes).map(
-          (b) => this.bot.registry.biomes[b].name
-        );
+        surroundings.immediateSurroundings.biomes = Array.from(
+          this.surroundings.lastObservedImmediateSurroundings.biomes,
+        ).map((b) => this.bot.registry.biomes[b].name);
       }
     }
 
@@ -586,7 +661,10 @@ export class EnvState {
     if (this.surroundings.lastObservedDistantSurroundings !== null) {
       surroundings.distantSurroundings = {};
 
-      for (const [direction, data] of this.surroundings.lastObservedDistantSurroundings.entries()) {
+      for (const [
+        direction,
+        data,
+      ] of this.surroundings.lastObservedDistantSurroundings.entries()) {
         surroundings.distantSurroundings[direction] = {
           blocks: null,
           biomes: null,
@@ -596,7 +674,8 @@ export class EnvState {
         if (data.blocksToCounts && data.blocksToCounts.size > 0) {
           surroundings.distantSurroundings[direction].blocks = {};
           for (const [blockType, count] of data.blocksToCounts.entries()) {
-            surroundings.distantSurroundings[direction].blocks[blockType] = count;
+            surroundings.distantSurroundings[direction].blocks[blockType] =
+              count;
           }
         }
 
@@ -605,7 +684,8 @@ export class EnvState {
           surroundings.distantSurroundings[direction].biomes = {};
           for (const [biome, coords] of data.biomesToClosestCoords.entries()) {
             const biomeName = this.bot.registry.biomes[biome].name;
-            surroundings.distantSurroundings[direction].biomes[biomeName] = `(${coords.x},${coords.y},${coords.z})`;
+            surroundings.distantSurroundings[direction].biomes[biomeName] =
+              `(${coords.x},${coords.y},${coords.z})`;
           }
         }
       }

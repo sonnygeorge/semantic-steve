@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 
-import { EnvState } from "./envState";
+import { EnvState } from "./env-state";
 import { Direction, Vicinity } from "./types";
 
 export type ThingType = "block" | "biome" | "player" | "unknown";
@@ -22,13 +22,17 @@ export class SurroundingsHelper {
    */
   public identifyThingType(thing: string): ThingType {
     // Check if it's a valid block name
-    const blockNames = Object.values(this.bot.registry.blocksByName).map((b) => b.name);
+    const blockNames = Object.values(this.bot.registry.blocksByName).map(
+      (b) => b.name,
+    );
     if (blockNames.includes(thing)) {
       return "block";
     }
 
     // Check if it's a valid biome name
-    const biomeNames = Object.values(this.bot.registry.biomes).map((b) => b.name);
+    const biomeNames = Object.values(this.bot.registry.biomes).map(
+      (b) => b.name,
+    );
     if (biomeNames.includes(thing)) {
       return "biome";
     }
@@ -49,7 +53,8 @@ export class SurroundingsHelper {
    */
   public isInImmediateSurroundings(thing: string): boolean {
     const thingType = this.identifyThingType(thing);
-    const immediateSurroundings = this.envState.surroundings.getImmediateSurroundings();
+    const immediateSurroundings =
+      this.envState.surroundings.getImmediateSurroundings();
 
     if (!immediateSurroundings) return false;
 
@@ -76,7 +81,8 @@ export class SurroundingsHelper {
    */
   public isInDistantDirection(thing: string, direction: Direction): boolean {
     const thingType = this.identifyThingType(thing);
-    const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
+    const distantSurroundings =
+      this.envState.surroundings.getDistantSurroundings();
 
     if (!distantSurroundings) return false;
     const directionData = distantSurroundings.get(direction);
@@ -111,7 +117,8 @@ export class SurroundingsHelper {
     }
 
     // Then check all directions in distant surroundings
-    const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
+    const distantSurroundings =
+      this.envState.surroundings.getDistantSurroundings();
     if (!distantSurroundings) return false;
 
     for (const direction of Object.values(Direction)) {
@@ -130,13 +137,22 @@ export class SurroundingsHelper {
    * @param direction The direction to look in
    * @returns The coordinates of the closest instance or null if not found
    */
-  public get_coords_of_closest_thing(thing: string, direction?: Vicinity): Vec3 | null {
+  public get_coords_of_closest_thing(
+    thing: string,
+    direction?: Vicinity,
+  ): Vec3 | null {
     let testDirs = direction ? [direction] : Object.values(Vicinity);
     const thingType = this.identifyThingType(thing);
 
     // First check immediate vicinity if we're looking for something in it
-    if (direction === Vicinity.UP || direction === Vicinity.DOWN || direction === Vicinity.IMMEDIATE || direction == null) {
-      const immediateSurroundings = this.envState.surroundings.getImmediateSurroundings();
+    if (
+      direction === Vicinity.UP ||
+      direction === Vicinity.DOWN ||
+      direction === Vicinity.IMMEDIATE ||
+      direction == null
+    ) {
+      const immediateSurroundings =
+        this.envState.surroundings.getImmediateSurroundings();
       if (!immediateSurroundings) return null;
 
       switch (thingType) {
@@ -172,27 +188,30 @@ export class SurroundingsHelper {
 
     for (const direction of testDirs) {
       // Check distant surroundings
-      const distantSurroundings = this.envState.surroundings.getDistantSurroundings();
+      const distantSurroundings =
+        this.envState.surroundings.getDistantSurroundings();
       if (!distantSurroundings) return null;
 
-      const directionData = distantSurroundings.get(direction as unknown as Direction);
+      const directionData = distantSurroundings.get(
+        direction as unknown as Direction,
+      );
       if (!directionData) continue;
 
       switch (thingType) {
         case "block": {
-          const found = directionData.blocksToClosestCoords?.get(thing)
+          const found = directionData.blocksToClosestCoords?.get(thing);
           if (found != null) return found;
         }
         case "biome": {
           // Find biome ID from name
           const biomeId = this.getBiomeIdFromName(thing);
           if (biomeId === -1) continue;
-          const found = directionData.biomesToClosestCoords?.get(biomeId)
-          if (found != null) return found
+          const found = directionData.biomesToClosestCoords?.get(biomeId);
+          if (found != null) return found;
         }
         case "player": {
-          const found =  directionData.players.get(thing)?.position
-          if (found != null) return found
+          const found = directionData.players.get(thing)?.position;
+          if (found != null) return found;
         }
         // still leave in early exit for default.
         default:

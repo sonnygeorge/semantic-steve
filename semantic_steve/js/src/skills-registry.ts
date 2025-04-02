@@ -5,8 +5,8 @@ import type { Bot } from "mineflayer";
 
 export function buildSkillsRegistry(bot: Bot): Record<string, Skill> {
     return {
-        pathfindToCoordinates: async (coordinates: number[], stopIfFound: string[]) => {
-            return await pathfindToCoordinates(bot, coordinates, stopIfFound);
+        pathfindToCoordinates: async (botInstance: Bot, coordinates: number[], stopIfFound: string[]) => {
+            return await pathfindToCoordinates(botInstance, coordinates, stopIfFound);
         },
     }
 };

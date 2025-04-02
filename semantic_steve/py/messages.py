@@ -22,7 +22,7 @@ class DataFromMinecraft(BaseModel):
 
 class SkillInvocation(BaseModel):
     skill: str
-    args: dict[str, ValidSkillArgument]
+    kwargs: dict[str, ValidSkillArgument]
 
     @staticmethod
     def from_str(str: str) -> "SkillInvocation":
@@ -33,5 +33,5 @@ class SkillInvocation(BaseModel):
 
         return SkillInvocation(
             skill=fn_name,
-            args=kwargs,  # FIXME
+            kwargs=kwargs,  # FIXME
         )

@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 
-import { EnvState } from "./env-state";
+import { EnvState } from "./core/environment/state";
 import { Direction, Vicinity } from "./types";
 
 export type ThingType = "block" | "biome" | "player" | "unknown";
@@ -23,7 +23,7 @@ export class SurroundingsHelper {
   public identifyThingType(thing: string): ThingType {
     // Check if it's a valid block name
     const blockNames = Object.values(this.bot.registry.blocksByName).map(
-      (b) => b.name,
+      (b) => b.name
     );
     if (blockNames.includes(thing)) {
       return "block";
@@ -31,7 +31,7 @@ export class SurroundingsHelper {
 
     // Check if it's a valid biome name
     const biomeNames = Object.values(this.bot.registry.biomes).map(
-      (b) => b.name,
+      (b) => b.name
     );
     if (biomeNames.includes(thing)) {
       return "biome";
@@ -139,7 +139,7 @@ export class SurroundingsHelper {
    */
   public get_coords_of_closest_thing(
     thing: string,
-    direction?: Vicinity,
+    direction?: Vicinity
   ): Vec3 | null {
     let testDirs = direction ? [direction] : Object.values(Vicinity);
     const thingType = this.identifyThingType(thing);
@@ -193,7 +193,7 @@ export class SurroundingsHelper {
       if (!distantSurroundings) return null;
 
       const directionData = distantSurroundings.get(
-        direction as unknown as Direction,
+        direction as unknown as Direction
       );
       if (!directionData) continue;
 

@@ -1,8 +1,8 @@
 import type { Bot } from "mineflayer";
-import { SkillReturnObj } from "../types";
+import { SkillReturn } from "../types";
 
 
-export async function pathfindToCoordinates(bot: Bot, coords: number[], stopIfFound: string[]): Promise<SkillReturnObj>  {
+export async function pathfindToCoordinates(bot: Bot, coords: number[], stopIfFound: string[]): Promise<SkillReturn>  {
     return {
         resultString: null,
         envStateIsUpToDate: false,

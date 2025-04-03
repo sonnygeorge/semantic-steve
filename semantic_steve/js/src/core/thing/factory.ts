@@ -15,7 +15,7 @@ export class ThingFactory {
   public createThing(thing: string): Thing | null {
     // Block
     const blockNames = Object.values(this.bot.registry.blocksByName).map(
-      (b) => b.name
+      (b) => b.name,
     );
     if (blockNames.includes(thing)) {
       return new Block(this.bot, thing);
@@ -23,7 +23,7 @@ export class ThingFactory {
 
     // Biome
     const biomeNames = Object.values(this.bot.registry.biomes).map(
-      (b) => b.name
+      (b) => b.name,
     );
     if (biomeNames.includes(thing)) {
       return new Biome(this.bot, thing);

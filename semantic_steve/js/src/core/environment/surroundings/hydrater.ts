@@ -2,12 +2,7 @@ import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import type { Block as PBlock } from "prismarine-block";
 import type { world as PWorld } from "prismarine-world";
-import {
-  _Surroundings,
-  Direction,
-  Vicinity,
-  SurroundingsRadii,
-} from "./types";
+import { _Surroundings, Direction, Vicinity, SurroundingsRadii } from "./types";
 import { AABB } from "@nxg-org/mineflayer-util-plugin"; // TODO: Remove this dependency
 
 // NOTE: We don't care about (account for) variation from crouching, riding, etc.

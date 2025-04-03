@@ -10,7 +10,7 @@ def strip_whitespace_from_lines(text: str) -> str:
 
 
 def generate_skills_docs() -> list[str]:
-    with open(PATH_TO_SKILLS_REGISTRY, "r") as file:
+    with open(PATH_TO_SKILLS_REGISTRY) as file:
         skill_registry_ts_file_raw = file.read()
 
     # Extract the content of the registry-building function

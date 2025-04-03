@@ -1,5 +1,5 @@
-import os
 import asyncio
+import os
 
 from semantic_steve import SemanticSteve, run_as_cli
 
@@ -14,7 +14,7 @@ async def llm_example():
         "reading over the up-to-date state of the world, considering your "
         "progress/trajectory, and outputting NOTHING BUT a one-liner Javascript-valid "
         'function call to one of the following high-level "skill" functions:\n'
-        '\n\n'.join(ss_docs.skills_docs)
+        "\n\n".join(ss_docs.skills_docs)
     )
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

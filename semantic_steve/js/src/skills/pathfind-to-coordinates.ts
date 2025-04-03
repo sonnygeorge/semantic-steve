@@ -9,7 +9,7 @@ import { SUPPORTED_THING_TYPES } from "../core/thing";
 export async function pathfindToCoordinates(
   bot: Bot,
   coords: number[],
-  stopIfFound: string[]
+  stopIfFound: string[],
 ): Promise<SkillReturn> {
   const vec3Coords = new Vec3(coords[0], coords[1], coords[2]);
   const stopIfFoundThings: Thing[] = [];
@@ -20,7 +20,7 @@ export async function pathfindToCoordinates(
       return {
         resultString: pathfindToCoordinatesResultsMessages.ERROR_INVALID_THING(
           thingName,
-          SUPPORTED_THING_TYPES
+          SUPPORTED_THING_TYPES,
         ),
         envStateIsHydrated: false,
       };

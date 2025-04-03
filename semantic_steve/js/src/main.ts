@@ -15,7 +15,7 @@ bot.once("spawn", async () => {
     createPlugin({
       immediateSurroundingsRadius: 3,
       distantSurroundingsRadius: 24,
-    })
+    }),
   );
   console.log("Bot spawned!");
   await bot.waitForChunksToLoad();
@@ -52,12 +52,12 @@ async function main() {
     if (!(skillInvocation.skillName in skillsRegistry)) {
       skillReturn.resultString =
         genericResultsMessages.ERROR_SKILL_NAME_NOT_FOUND(
-          skillInvocation.skillName
+          skillInvocation.skillName,
         );
     } else {
       try {
         skillReturn = await skillsRegistry[skillInvocation.skillName](
-          ...skillInvocation.args
+          ...skillInvocation.args,
         );
       } catch (error) {
         skillReturn.resultString =
@@ -68,7 +68,7 @@ async function main() {
                   ?.split("\n")
                   .map((line: string) => line.trim())
                   .join("\n")}`
-              : "Unknown error"
+              : "Unknown error",
           );
       }
     }

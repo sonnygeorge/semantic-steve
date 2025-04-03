@@ -15,7 +15,7 @@ export function buildSkillsRegistry(bot: Bot): Record<string, Skill> {
      */
     pathfindToCoordinates: async (
       coordinates: [number, number, number],
-      stopIfFound: string[]
+      stopIfFound: string[],
     ) => {
       return await pathfindToCoordinates(bot, coordinates, stopIfFound);
     },

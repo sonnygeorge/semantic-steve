@@ -6,7 +6,7 @@ import { Thing } from "../core/thing/protocol";
 export async function _pathfindToCoordinates(
   bot: Bot,
   coords: Vec3,
-  stopIfFound: Thing[]
+  stopIfFound: Thing[],
 ): Promise<SkillReturn> {
   return {
     // TODO

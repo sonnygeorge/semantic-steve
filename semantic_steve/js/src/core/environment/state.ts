@@ -5,7 +5,7 @@ import {
   Surroundings,
   SurroundingsRadii,
   SurroundingsDTO,
-} from "src/core/environment/surroundings";
+} from "./surroundings";
 
 // TODO: Daytime/nightime?
 

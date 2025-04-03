@@ -1,5 +1,5 @@
 import { Bot } from "mineflayer";
-import { Thing } from "src/core/thing/protocol";
+import { Thing } from "./protocol";
 
 export class Block implements Thing {
   bot: Bot;

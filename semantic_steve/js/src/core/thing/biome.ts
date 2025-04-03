@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
-import { Thing } from "src/core/thing/protocol";
+import { Thing } from "./protocol";
 
 export class Biome implements Thing {
   bot: Bot;
@@ -18,7 +18,7 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be improssible if this object is being created by the factory`,
+      `This should be impossible if this object is being created by the factory`,
     );
   }
 

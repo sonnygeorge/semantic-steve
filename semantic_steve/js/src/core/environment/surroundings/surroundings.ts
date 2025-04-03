@@ -1,9 +1,6 @@
 import { Bot } from "mineflayer";
-import {
-  _Surroundings,
-  SurroundingsRadii,
-} from "src/core/environment/surroundings/types";
-import { SurroundingsHydrater } from "src/core/environment/surroundings/hydrater";
+import { _Surroundings, SurroundingsRadii } from "./types";
+import { SurroundingsHydrater } from "./hydrater";
 
 class HydratableSurroundings extends _Surroundings {
   private hydrater: SurroundingsHydrater;

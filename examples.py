@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from semantic_steve import SemanticSteve, run_as_cli
 
@@ -37,7 +38,4 @@ async def cli_example():
 if __name__ == "__main__":
     # Uncomment the example you want to run
     # asyncio.run(llm_example())
-    # asyncio.run(cli_example())
-
-    for skill in SemanticSteve.get_skills_docs():
-        print(skill)
+    asyncio.run(cli_example())

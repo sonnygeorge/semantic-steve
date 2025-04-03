@@ -10,7 +10,7 @@ SEMANTIC_STEVE_ASCII_ART = r"""  ____                             _   _        _
 
 
 CMD_TO_REBUILD_TYPESCRIPT = ["npx", "tsc"]
-CMD_TO_START_JS_PROCESS = ["node", "build/backend.js"]
+CMD_TO_START_JS_PROCESS = ["node", "build/main.js"]
 CWD_FOR_JS_PROCESS_CMDS = os.path.dirname(os.path.realpath(__file__)) + "/../js/"
 PATH_TO_SKILLS_REGISTRY = (
     os.path.dirname(os.path.realpath(__file__)) + "/../js/src/skills-registry.ts"

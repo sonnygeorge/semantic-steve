@@ -30,12 +30,3 @@ class SemanticSteveUsageError(Exception):
 
 class InvalidSkillInvocationError(SemanticSteveUsageError):
     pass
-
-
-##############################
-## Semantic Steve Env State ##
-##############################
-
-
-class SemanticSteveEnvState(BaseModel):
-    pass  # TODO

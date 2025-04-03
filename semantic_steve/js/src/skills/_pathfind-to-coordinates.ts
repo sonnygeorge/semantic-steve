@@ -1,9 +1,9 @@
 import type { Bot } from "mineflayer";
 import { SkillReturn } from "../types";
 import { Vec3 } from "vec3";
-import { Thing } from "src/core/thing";
+import { Thing } from "../core/thing/protocol";
 
-export async function pathfindToCoordinates(
+export async function _pathfindToCoordinates(
   bot: Bot,
   coords: Vec3,
   stopIfFound: Thing[]
@@ -11,6 +11,6 @@ export async function pathfindToCoordinates(
   return {
     // TODO
     resultString: null,
-    envStateIsUpToDate: false,
+    envStateIsHydrated: false,
   };
 }

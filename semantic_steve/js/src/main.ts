@@ -3,8 +3,10 @@ import { createBot } from "mineflayer";
 import { mineflayer as mfViewer } from "prismarine-viewer";
 import { createPlugin } from "./";
 import { buildSkillsRegistry } from "./skills-registry";
-import { SkillReturn, SkillInvocation } from "./types";
+import { SkillReturn } from "./types";
+import { SkillInvocation, DataFromMinecraft } from "./py-messages";
 import { EnvState } from "./core/environment/state";
+import { genericResultsMessages } from "./results-messages";
 
 const bot = createBot({ username: "SemanticSteve" });
 
@@ -13,73 +15,73 @@ bot.once("spawn", async () => {
     createPlugin({
       immediateSurroundingsRadius: 3,
       distantSurroundingsRadius: 24,
-    }),
+    })
   );
   console.log("Bot spawned!");
   await bot.waitForChunksToLoad();
   console.log("Chunks loaded!");
   mfViewer(bot, { port: 3000, firstPerson: true }); // TODO: Move port to constants or config?
-  await startBackend();
+  await main();
 });
 
 const skillsRegistry = buildSkillsRegistry(bot);
 
-async function startBackend() {
+async function main() {
   console.log("Hello from JS process!");
   const socket = new zmq.Pair();
-  await socket.bind("tcp://*:5555"); // TODO: Move port to a shard config.json?
+  await socket.bind("tcp://*:5555"); // TODO: Move port to a shared config.json?
   console.log("Backend connected on tcp://*:5555");
 
-  console.log("Getting initial environment state...");
-  // TODO: (fixme) Not working this first time around because this.bot.world.getColumns() comes back empty
-  bot.envState.surroundings.getSurroundings();
+  bot.envState.surroundings.hydrate();
 
-  await socket.send(
-    JSON.stringify({
-      env_state: bot.envState.getString(),
-      env_state_str: bot.envState.getReadableString(),
-      result: null,
-    }),
-  );
+  let toSend: DataFromMinecraft = {
+    envState: bot.envState.getDTO(),
+    skillInvocationResults: null,
+  };
+
+  await socket.send(JSON.stringify(toSend));
 
   for await (const [msg] of socket) {
     const skillInvocation: SkillInvocation = JSON.parse(msg.toString());
-    console.log("Received message from frontend");
 
-    let skillReturnObj = {
-      resultString: `Error: Function '${skillInvocation.skillName}' not found`,
-      envStateIsUpToDate: true,
-    } as SkillReturn;
+    let skillReturn: SkillReturn = {
+      resultString: null,
+      envStateIsHydrated: false,
+    };
 
-    if (skillInvocation.skillName in skillsRegistry) {
-      let envState: EnvState | null = null;
+    if (!(skillInvocation.skillName in skillsRegistry)) {
+      skillReturn.resultString =
+        genericResultsMessages.ERROR_SKILL_NAME_NOT_FOUND(
+          skillInvocation.skillName
+        );
+    } else {
       try {
-        skillReturnObj = await skillsRegistry[skillInvocation.skillName](
-          skillInvocation.kwargs,
+        skillReturn = await skillsRegistry[skillInvocation.skillName](
+          ...skillInvocation.args
         );
       } catch (error) {
-        skillReturnObj.resultString = `Function execution error: ${
-          error instanceof Error
-            ? `${error.message}:\n${error.stack
-                ?.split("\n")
-                .map((line: string) => line.trim())
-                .join("\n")}`
-            : "Unknown error"
-        }`;
+        skillReturn.resultString =
+          genericResultsMessages.UNHANDLED_RUNTIME_ERROR(
+            skillInvocation.skillName,
+            error instanceof Error
+              ? `${error.message}:\n${error.stack
+                  ?.split("\n")
+                  .map((line: string) => line.trim())
+                  .join("\n")}`
+              : "Unknown error"
+          );
       }
     }
 
-    // Update the environment state to be up-to-date if needed (e.g., the function didn't already take care of that)
-    if (!skillReturnObj.envStateIsUpToDate) {
-      bot.envState.surroundings.getSurroundings();
+    if (!skillReturn.envStateIsHydrated) {
+      bot.envState.surroundings.hydrate();
     }
 
-    await socket.send(
-      JSON.stringify({
-        env_state: bot.envState.getString(),
-        env_state_str: bot.envState.getReadableString(),
-        result: skillReturnObj.resultString,
-      }),
-    );
+    toSend = {
+      envState: bot.envState.getDTO(),
+      skillInvocationResults: skillReturn.resultString,
+    };
+
+    await socket.send(JSON.stringify(toSend));
   }
 }

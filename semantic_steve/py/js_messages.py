@@ -5,24 +5,24 @@ from pydantic import BaseModel
 
 from semantic_steve.py.schema import (
     InvalidSkillInvocationError,
-    SemanticSteveEnvState,
     ValidSkillArgument,
 )
 from semantic_steve.py.utils import parse_python_syntax_skill_invocation
 
 
+# We get these from the JS process
 class DataFromMinecraft(BaseModel):
-    env_state: SemanticSteveEnvState
-    skill_invocation_results: str | None
-    inventory_changes_since_last_skill_invocation: Any  # FIXME
+    envState: dict
+    skillInvocationResults: str | None
 
     def get_pretty_string(self) -> str:
-        return json.dumps(self.model_dump(), indent=4)  # FIXME
+        return json.dumps(self.model_dump(), indent=4)  # TODO
 
 
+# We send these to the JS process
 class SkillInvocation(BaseModel):
-    skill: str
-    kwargs: dict[str, ValidSkillArgument]
+    skillName: str
+    args: list[ValidSkillArgument]
 
     @staticmethod
     def from_str(str: str) -> "SkillInvocation":
@@ -32,6 +32,6 @@ class SkillInvocation(BaseModel):
             raise InvalidSkillInvocationError(f"Invalid skill invocation: {str}") from e
 
         return SkillInvocation(
-            skill=fn_name,
-            kwargs=kwargs,  # FIXME
+            skillName=fn_name,
+            args=args,
         )

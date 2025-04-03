@@ -1,22 +1,30 @@
+export const genericResultsMessages = {
+  ERROR_SKILL_NAME_NOT_FOUND: (skillName: string) =>
+    `SkillInvocationError: '${skillName}' is not a recognized or supported skill function. Please check the spelling and try again.`,
+
+  UNHANDLED_RUNTIME_ERROR: (skillName: string, error: string) =>
+    `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to execute '${skillName}': ${error}`,
+};
+
 export const pathfindToCoordinatesResultsMessages = {
   ERROR_INVALID_THING: (thing: string, supportedThingTypes: string) =>
     `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be stopped at if found: ${supportedThingTypes}.`,
 
   FOUND_THING_IN_IMMEDIATE_SURROUNDINGS: (
     targetCoords: string,
-    foundThingName: string,
+    foundThingName: string
   ) =>
     `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`,
 
   FOUND_THING_DISTANT_SURROUNDINGS: (
     targetCoords: string,
-    foundThingName: string,
+    foundThingName: string
   ) =>
     `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`,
 
   PARTIAL_SUCCESS: (
     reachedCoords: string,
-    targetCoords: string,
+    targetCoords: string
     // TODO: Is it possible to add layman-understandable reasons to this message?
     // E.g., "because these blocks were impeding the way: '{impedingBlockNames}'"...
     // ...allowing the LLM to reason that, if it really wanted to proceeed towards these
@@ -26,9 +34,6 @@ export const pathfindToCoordinatesResultsMessages = {
 
   SUCCESS: (targetCoords: string) =>
     `You were able to successfully pathfind to or near ${targetCoords} (such that these coordinates are now in your immediate surroundings).`,
-
-  UNHANDLED_RUNTIME_ERROR: (targetCoords: string, error: string) =>
-    `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to pathfinding to or near ${targetCoords}: ${error}`,
 };
 
 export const approachResultsMessages = {
@@ -40,7 +45,7 @@ export const approachResultsMessages = {
 
   ERROR_THING_NOT_IN_DISTANT_SURROUNDINGS_DIRECTION: (
     thing: string,
-    direction: string,
+    direction: string
   ) =>
     `SkillInvocationError: '${thing}' not found in your distant surroundings ${direction} direction. The thing you want to approach must be visible in the specified direction of your distant surroundings.`,
 
@@ -52,7 +57,4 @@ export const approachResultsMessages = {
 
   FAILURE: (thing: string, pathfindingPartialSuccessResult: string) =>
     `You were unable to approach thing '${thing}'. ${pathfindingPartialSuccessResult}`,
-
-  UNHANDLED_RUNTIME_ERROR: (thing: string, error: string) =>
-    `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to approach '${thing}': ${error}`,
 };

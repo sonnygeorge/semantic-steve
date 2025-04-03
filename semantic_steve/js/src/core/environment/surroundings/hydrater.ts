@@ -7,7 +7,7 @@ import {
   Direction,
   Vicinity,
   SurroundingsRadii,
-} from "src/core/environment/surroundings/types";
+} from "./types";
 import { AABB } from "@nxg-org/mineflayer-util-plugin"; // TODO: Remove this dependency
 
 // NOTE: We don't care about (account for) variation from crouching, riding, etc.

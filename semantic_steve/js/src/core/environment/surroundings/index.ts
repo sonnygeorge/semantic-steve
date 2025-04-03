@@ -1,4 +1,4 @@
-import { Surroundings } from "src/core/environment/surroundings/surroundings";
+import { Surroundings } from "./surroundings";
 import {
   Direction,
   Vicinity,
@@ -8,7 +8,7 @@ import {
   DistantSurroundingsDTO,
   DistantSurroundings,
   ImmediateSurroundings,
-} from "src/core/environment/surroundings/types";
+} from "./types";
 
 export {
   Surroundings,

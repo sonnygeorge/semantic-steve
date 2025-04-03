@@ -1,19 +1,19 @@
-import asyncio
-from semantic_steve import run_as_cli, SemanticSteve
+import os
+
+from semantic_steve import SemanticSteve, run_as_cli
 
 
 async def llm_example():
-    import os
     import openai
 
     ss_docs = SemanticSteve.get_docs()
-    sys_prompt = (
+    sys_prompt = (  # TODO: Include "tips" once implemented
         f"You are a helpful assistant who {ss_docs.user_role_as_verb_phrase}. Your goal "
-        "is to beat the Ender Dragon. You work towards this goal message-by-message, "
+        "is to beat the Ender Dragon. You will work towards this goal message-by-message: "
         "reading over the up-to-date state of the world, considering your "
-        "progress/trajectory, and then outputting NOTHING BUT a single line of Python "
-        'that is a syntactically valid function call to one of these high-level "skill" '
-        f"functions:\n{ss_docs.skills_docs}",
+        "progress/trajectory, and outputting NOTHING BUT a one-liner Javascript-valid "
+        'function call to one of the following high-level "skill" functions:\n'
+        '\n\n'.join(ss_docs.skills_docs)
     )
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -37,4 +37,7 @@ async def cli_example():
 if __name__ == "__main__":
     # Uncomment the example you want to run
     # asyncio.run(llm_example())
-    asyncio.run(cli_example())
+    # asyncio.run(cli_example())
+
+    for skill in SemanticSteve.get_skills_docs():
+        print(skill)

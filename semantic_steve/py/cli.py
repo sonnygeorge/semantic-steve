@@ -1,7 +1,9 @@
-from semantic_steve.py.semantic_steve import SemanticSteve
 from semantic_steve.py.constants import SEMANTIC_STEVE_ASCII_ART
+from semantic_steve.py.semantic_steve import SemanticSteve
 
 
+
+# TODO: Add 'skills' and 'tips' commands... 'help' command?
 async def run_as_cli(semantic_steve: SemanticSteve):
     with semantic_steve as ss:  # Start up JS process & connect to ZMQ socket
         data_from_minecraft = await ss.wait_for_data_from_minecraft()

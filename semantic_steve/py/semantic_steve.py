@@ -5,13 +5,14 @@ import zmq
 from semantic_steve.py.constants import (
     SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
 )
+from semantic_steve.py.js_process import SemanticSteveJsProcessManager
+from semantic_steve.py.messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.schema import (
+    InvalidSkillInvocationError,
     SemanticSteveDocs,
     SemanticSteveUsageError,
-    InvalidSkillInvocationError,
 )
-from semantic_steve.py.js_process_manager import SemanticSteveJsProcessManager
-from semantic_steve.py.messages import DataFromMinecraft, SkillInvocation
+from semantic_steve.py.skills_docs import generate_skills_docs
 
 
 class SemanticSteve:
@@ -37,13 +38,11 @@ class SemanticSteve:
 
     @staticmethod
     def get_tips_tutorials_and_sops() -> list[str]:
-        # TODO: Read in .md files in docs/ directory
-        pass
+        pass  # TODO
 
     @staticmethod
     def get_skills_docs() -> list[str]:
-        # TODO: Read in .md files in docs/ directory
-        pass
+        return generate_skills_docs()
 
     @staticmethod
     def get_docs() -> SemanticSteveDocs:
@@ -70,16 +69,16 @@ class SemanticSteve:
         if self.socket is not None:
             self.socket.close()
             self.context.term()
-            print(f"SemanticSteve python disconnected from tcp://localhost:{self.zmq_port}.")
+            print(f"Python disconnected from tcp://localhost:{self.zmq_port}.")
         self.js_process_manager.__exit__(exc_type, exc_value, traceback)
 
     #####################
     ## Private helpers ##
     #####################
 
-    def _assert_inside_context(self, mthd: str):
+    def _assert_called_in_context_manager_context(self, method_name: str):
         if self.context is None or self.socket is None:
-            msg = f"`{mthd}` must be called inside a `with SemanticSteve() as ss:` context."
+            msg = f"`{method_name}` must be called in a `with SemanticSteve()...` context."
             raise SemanticSteveUsageError(msg)
 
     ####################
@@ -87,7 +86,9 @@ class SemanticSteve:
     ####################
 
     async def wait_for_data_from_minecraft(self) -> DataFromMinecraft:
-        self._assert_inside_context("wait_for_data_from_minecraft")
+        self._assert_called_in_context_manager_context(
+            method_name="wait_for_data_from_minecraft"
+        )
         # Await response from JS process
         data_from_minecraft_dict = None
         while data_from_minecraft_dict is None:
@@ -100,7 +101,7 @@ class SemanticSteve:
         return DataFromMinecraft(**data_from_minecraft_dict)
 
     async def invoke(self, skill_invocation: str) -> DataFromMinecraft:
-        self._assert_inside_context("invoke_skill")
+        self._assert_called_in_context_manager_context(method_name="invoke_skill")
         # Validate and parse skill invocation
         try:
             skill_invocation = SkillInvocation.from_str(skill_invocation)

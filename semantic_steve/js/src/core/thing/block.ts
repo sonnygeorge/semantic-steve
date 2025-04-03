@@ -3,12 +3,16 @@ import { Thing } from "src/core/thing/protocol";
 
 export class Block implements Thing {
   bot: Bot;
+  name: string;
 
-  constructor(bot: Bot) {
+  constructor(bot: Bot, name: string) {
     this.bot = bot;
+    this.name = name;
   }
 
   isInSurroundings(): boolean {
-    return false; // TODO: Implement
+    return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
+      this.name
+    );
   }
 }

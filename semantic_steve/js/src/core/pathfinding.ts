@@ -1,19 +1,18 @@
-import { Vec3 } from "vec3";
 import type { Bot } from "mineflayer";
 import { goals, Movements } from "mineflayer-pathfinder";
 import {
   BotStateMachine,
   getTransition,
   getNestedMachine,
-  WebserverBehaviorPositions,
-  StateMachineWebserver,
+  // WebserverBehaviorPositions,
+  // StateMachineWebserver,
 } from "@nxg-org/mineflayer-static-statemachine";
-import { EnvState } from "./environment/state";
+import { EnvState } from "src/core/environment/state";
 import { StateBehavior } from "@nxg-org/mineflayer-static-statemachine";
 import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter";
-// Import the SemanticSteve singleton to register functions
-import { Direction, SkillReturn, Vicinity } from "../types";
+import { Direction, Vicinity } from "src/core/environment/surroundings";
+import { SkillReturn } from "src/types";
 
 // Import behaviors we need
 import {
@@ -31,7 +30,7 @@ type SurroundingsEvents = {
   thingFound: (
     thingName: string,
     vicinity: Vicinity | Direction,
-    envState: EnvState,
+    envState: EnvState
   ) => void;
   threatDetected: () => void;
 };
@@ -63,7 +62,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
         this.stopBiomeIdsToNames.set(biomeId, thingName);
       } else {
         console.warn(
-          `WARNING: Couldn't recognize '${thingName}'. Make sure you are only passing valid blocks, or biomes!`,
+          `WARNING: Couldn't recognize '${thingName}'. Make sure you are only passing valid blocks, or biomes!`
         );
       }
     }
@@ -83,10 +82,8 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
 
     this.lastScanTime = currentTime;
 
-    // Get surroundings
-    const [immediate, distant] = this.bot.envState.surroundings.getSurroundings(
-      this.scanThrottleSeconds,
-    );
+    // Hydrate surroundings
+    this.bot.envState.surroundings.hydrate(this.scanThrottleSeconds);
 
     // Check for blocks in immediate surroundings
     for (const [blockId, blockName] of this.stopBlocksIdsToNames) {
@@ -97,8 +94,8 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
         this.emit(
           "thingFound",
           blockName,
-          Vicinity.IMMEDIATE,
-          this.bot.envState,
+          Vicinity.IMMEDIATE_SURROUNDINGS,
+          this.bot.envState
         );
         return;
       }
@@ -122,7 +119,7 @@ class SurroundingsChecker extends (EventEmitter as new () => TypedEmitter<Surrou
           "thingFound",
           biomeName,
           Vicinity.IMMEDIATE,
-          this.bot.envState,
+          this.bot.envState
         );
         return;
       }
@@ -232,7 +229,7 @@ class BehaviorPathfindToCoords extends StateBehavior {
   handleThingFound = (
     thingName: string,
     vicinity: Vicinity | Direction,
-    envState: EnvState,
+    envState: EnvState
   ): void => {
     this.data.thingFound = { name: thingName, vicinity: vicinity };
 
@@ -307,7 +304,7 @@ class BehaviorPathFailed extends StateBehavior {
 export async function pathfindToCoordinates(
   bot: Bot,
   wantedGoal: goals.Goal,
-  stopIfFound: string[] = [],
+  stopIfFound: string[] = []
 ): Promise<SkillReturn> {
   // Create shared data object
   const surroundChecker = new SurroundingsChecker(bot);
@@ -329,10 +326,10 @@ export async function pathfindToCoordinates(
     getTransition(
       "pathfindToThingInterrupt",
       BehaviorPathfindToCoords,
-      BehaviorThingInterrupt,
+      BehaviorThingInterrupt
     )
       .setShouldTransition(
-        (state) => state.isFinished() && state.thingWasFound(),
+        (state) => state.isFinished() && state.thingWasFound()
       )
       .build(),
 
@@ -340,10 +337,10 @@ export async function pathfindToCoordinates(
     getTransition(
       "pathfindToComplete",
       BehaviorPathfindToCoords,
-      BehaviorPathComplete,
+      BehaviorPathComplete
     )
       .setShouldTransition(
-        (state) => state.isFinished() && state.pathWasSuccessful(),
+        (state) => state.isFinished() && state.pathWasSuccessful()
       )
       .build(),
 
@@ -351,7 +348,7 @@ export async function pathfindToCoordinates(
     getTransition(
       "pathfindToFailed",
       BehaviorPathfindToCoords,
-      BehaviorPathFailed,
+      BehaviorPathFailed
     )
       .setShouldTransition((state) => state.isFinished() && state.pathFailed())
       .build(),
@@ -362,7 +359,7 @@ export async function pathfindToCoordinates(
     "pathfinder",
     pathfinderTransitions,
     BehaviorPathfindToCoords,
-    [BehaviorPathFailed, BehaviorPathComplete, BehaviorThingInterrupt],
+    [BehaviorPathFailed, BehaviorPathComplete, BehaviorThingInterrupt]
   ).build();
 
   // starts root machine immediately upon creation.

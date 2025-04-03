@@ -10,7 +10,23 @@ export class ThingFactory {
     this.bot = bot;
   }
 
-  public createThing(thingString: string): Thing {
-    return new Block(this.bot); // TODO Implement
+  public createThing(thing: string): Thing | null {
+    // Block
+    const blockNames = Object.values(this.bot.registry.blocksByName).map(
+      (b) => b.name
+    );
+    if (blockNames.includes(thing)) {
+      return new Block(this.bot, thing);
+    }
+
+    // Biome
+    const biomeNames = Object.values(this.bot.registry.biomes).map(
+      (b) => b.name
+    );
+    if (biomeNames.includes(thing)) {
+      return new Biome(this.bot, thing);
+    }
+
+    return null; // Return null if thing is not recognized
   }
 }

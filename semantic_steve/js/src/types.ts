@@ -13,7 +13,7 @@ export type SkillReturn = {
 };
 
 export type Skill = (
-  kwargs: Record<string, ValidSkillArgument>
+  ...args: ValidSkillArgument[]
 ) => SkillReturn | Promise<SkillReturn>;
 
 export type SkillsRegistry = Record<string, Skill>;

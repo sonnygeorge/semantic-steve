@@ -4,5 +4,5 @@ export interface Thing {
   bot: Bot;
   name: string;
 
-  isInSurroundings(): boolean;
+  isVisibleInSurroundings(): boolean;
 }

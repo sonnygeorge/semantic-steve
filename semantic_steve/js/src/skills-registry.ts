@@ -8,14 +8,15 @@ import type { Bot } from "mineflayer";
 export function buildSkillsRegistry(bot: Bot): Record<string, Skill> {
   return {
     /**
-     * Pathfinds to a set of coordinates (digging and bridging as needed), stopping early if
-     * something from the stopIfFound list becomes visible in the bot's surroundings.
+     * Pathfinds as as possible to a set of coordinates (digging and bridging as needed),
+     * stopping early if something from the stopIfFound list becomes visible in the bot's
+     * surroundings.
      * @param coordinates - The target coordinates as an array ordered [x, y, z].
      * @param stopIfFound - An array of strings representing the names of things to stop at if found.
      */
     pathfindToCoordinates: async (
       coordinates: [number, number, number],
-      stopIfFound: string[],
+      stopIfFound: string[]
     ) => {
       return await pathfindToCoordinates(bot, coordinates, stopIfFound);
     },

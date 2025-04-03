@@ -18,11 +18,23 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be impossible if this object is being created by the factory`,
+      `This should be impossible if this object is being created by the factory`
     );
   }
 
-  isInSurroundings(): boolean {
-    return this.id in this.bot.envState.surroundings.immediate.biomes;
+  isVisibleInSurroundings(): boolean {
+    if (this.id in this.bot.envState.surroundings.immediate.biomes) {
+      return true;
+    }
+    this.bot.envState.surroundings.distant.forEach(
+      (distantSurroundingsInADirection) => {
+        if (
+          distantSurroundingsInADirection.biomesToClosestCoords.has(this.id)
+        ) {
+          return true;
+        }
+      }
+    );
+    return false;
   }
 }

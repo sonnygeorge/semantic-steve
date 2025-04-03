@@ -10,21 +10,27 @@ export const pathfindToCoordinatesResultsMessages = {
   ERROR_INVALID_THING: (thing: string, supportedThingTypes: string) =>
     `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be stopped at if found: ${supportedThingTypes}.`,
 
-  FOUND_THING_IN_IMMEDIATE_SURROUNDINGS: (
-    targetCoords: string,
-    foundThingName: string,
-  ) =>
-    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`,
+  ERROR_INVALID_COORDS: (coords: string) =>
+    `SkillInvocationError: '${coords}' is not a valid coordinates array. Expected an array of three numbers ordered as [x, y, z].`,
 
-  FOUND_THING_DISTANT_SURROUNDINGS: (
-    targetCoords: string,
-    foundThingName: string,
-  ) =>
-    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`,
+  // FOUND_THING_IN_IMMEDIATE_SURROUNDINGS: (
+  //   targetCoords: string,
+  //   foundThingName: string
+  // ) =>
+  //   `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`,
+
+  // FOUND_THING_DISTANT_SURROUNDINGS: (
+  //   targetCoords: string,
+  //   foundThingName: string
+  // ) =>
+  //   `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`,
+
+  FOUND_THING: (targetCoords: string, foundThingName: string) =>
+    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible somewhere in the surroundings.`,
 
   PARTIAL_SUCCESS: (
     reachedCoords: string,
-    targetCoords: string,
+    targetCoords: string
     // TODO: Is it possible to add layman-understandable reasons to this message?
     // E.g., "because these blocks were impeding the way: '{impedingBlockNames}'"...
     // ...allowing the LLM to reason that, if it really wanted to proceeed towards these
@@ -45,7 +51,7 @@ export const approachResultsMessages = {
 
   ERROR_THING_NOT_IN_DISTANT_SURROUNDINGS_DIRECTION: (
     thing: string,
-    direction: string,
+    direction: string
   ) =>
     `SkillInvocationError: '${thing}' not found in your distant surroundings ${direction} direction. The thing you want to approach must be visible in the specified direction of your distant surroundings.`,
 

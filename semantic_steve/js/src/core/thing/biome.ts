@@ -18,7 +18,7 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be improssible if this is being created by the factory`
+      `This should be improssible if this object is being created by the factory`,
     );
   }
 

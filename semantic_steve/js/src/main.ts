@@ -13,7 +13,7 @@ bot.once("spawn", async () => {
     createPlugin({
       immediateSurroundingsRadius: 3,
       distantSurroundingsRadius: 24,
-    })
+    }),
   );
   console.log("Bot spawned!");
   await bot.waitForChunksToLoad();
@@ -39,7 +39,7 @@ async function startBackend() {
       env_state: bot.envState.getString(),
       env_state_str: bot.envState.getReadableString(),
       result: null,
-    })
+    }),
   );
 
   for await (const [msg] of socket) {
@@ -55,7 +55,7 @@ async function startBackend() {
       let envState: EnvState | null = null;
       try {
         skillReturnObj = await skillsRegistry[skillInvocation.skillName](
-          skillInvocation.kwargs
+          skillInvocation.kwargs,
         );
       } catch (error) {
         skillReturnObj.resultString = `Function execution error: ${
@@ -79,7 +79,7 @@ async function startBackend() {
         env_state: bot.envState.getString(),
         env_state_str: bot.envState.getReadableString(),
         result: skillReturnObj.resultString,
-      })
+      }),
     );
   }
 }

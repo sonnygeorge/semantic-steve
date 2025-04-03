@@ -65,7 +65,7 @@ export class EnvState {
 
   public get inventory(): PItem[] {
     return this.bot.inventory.slots.filter(
-      (item) => item !== null
+      (item) => item !== null,
     ) as unknown as PItem[];
   }
 
@@ -90,13 +90,13 @@ export class EnvState {
       health: `${this.health}/20`, // 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // 20 is the max hunger in vanilla Minecraft
       inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count])
+        this.inventory.map((item) => [item.name, item.count]),
       ) as Record<string, number>,
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ])
+        ]),
       ) as Map<EquipmentDestination, string | null>,
       surroundings: this.surroundings.getDTO(),
     };

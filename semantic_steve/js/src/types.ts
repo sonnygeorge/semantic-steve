@@ -12,9 +12,7 @@ export type SkillReturn = {
   envStateIsUpToDate: boolean;
 };
 
-export type Skill = (
-  ...args: ValidSkillArgument[]
-) => SkillReturn | Promise<SkillReturn>;
+export type Skill = (...args: any) => SkillReturn | Promise<SkillReturn>;
 
 export type SkillsRegistry = Record<string, Skill>;
 

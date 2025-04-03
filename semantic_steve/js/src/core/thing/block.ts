@@ -12,7 +12,7 @@ export class Block implements Thing {
 
   isInSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name
+      this.name,
     );
   }
 }

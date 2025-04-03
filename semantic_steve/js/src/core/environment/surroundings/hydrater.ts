@@ -113,7 +113,7 @@ export class SurroundingsHydrater {
    *   2. The distance to the coordinates (in meters/blocks).
    */
   private getVicinityAndDistanceOfCoords(
-    coords: Vec3
+    coords: Vec3,
   ): [Vicinity | null, number] {
     const botCoords = this.bot.entity.position;
     const distanceToCoords = botCoords.distanceTo(coords);
@@ -129,7 +129,7 @@ export class SurroundingsHydrater {
 
     // Check if it's above or below (in a cylindrical column of r=immediateRadius)
     const dxz = Math.sqrt(
-      (coords.x - botCoords.x) ** 2 + (coords.z - botCoords.z) ** 2
+      (coords.x - botCoords.x) ** 2 + (coords.z - botCoords.z) ** 2,
     );
     if (dxz <= this.radii.immediateSurroundingsRadius) {
       if (coords.y > botCoords.y)
@@ -242,7 +242,7 @@ export class SurroundingsHydrater {
       ];
       if (
         !chunkCornerCoords.some((cornerCoords) =>
-          this.areCoordsWithinSurroundings(cornerCoords)
+          this.areCoordsWithinSurroundings(cornerCoords),
         )
       )
         continue;
@@ -253,7 +253,7 @@ export class SurroundingsHydrater {
   }
 
   private *getAllBlocksFromChunkThatAreInSurroundings(
-    chunkCoordsAndColumn: PWorld.ChunkCoordsAndColumn
+    chunkCoordsAndColumn: PWorld.ChunkCoordsAndColumn,
   ): Generator<{ block: PBlock; blockCoords: Vec3 }> {
     const cursor = new Vec3(0, 0, 0);
     for (
@@ -266,7 +266,7 @@ export class SurroundingsHydrater {
           const blockCoords = new Vec3(
             (chunkCoordsAndColumn.chunkX << 4) + cursor.x,
             cursor.y,
-            (chunkCoordsAndColumn.chunkZ << 4) + cursor.z
+            (chunkCoordsAndColumn.chunkZ << 4) + cursor.z,
           );
           if (!this.areCoordsWithinSurroundings(blockCoords)) {
             continue;
@@ -288,7 +288,7 @@ export class SurroundingsHydrater {
         block,
         blockCoords,
       } of this.getAllBlocksFromChunkThatAreInSurroundings(
-        chunkCoordsAndColumn
+        chunkCoordsAndColumn,
       )) {
         if (!this.isBlockVisible(block, blockCoords)) continue;
         yield { block, blockCoords };
@@ -350,7 +350,7 @@ export class SurroundingsHydrater {
           distantSurroundingsInDirection.blocksToCounts.get(block.name) || 0;
         distantSurroundingsInDirection.blocksToCounts.set(
           block.name,
-          currentCount + 1
+          currentCount + 1,
         );
 
         // Update closest block if the block is the new closest of this block for this direction
@@ -363,7 +363,7 @@ export class SurroundingsHydrater {
             .set(block.name, blockDistance);
           distantSurroundingsInDirection.blocksToClosestCoords.set(
             block.name,
-            blockCoords
+            blockCoords,
           );
         }
 
@@ -378,7 +378,7 @@ export class SurroundingsHydrater {
               .set(biome, blockDistance);
             distantSurroundingsInDirection.biomesToClosestCoords.set(
               biome,
-              blockCoords
+              blockCoords,
             );
           }
         }

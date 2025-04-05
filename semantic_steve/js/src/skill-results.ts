@@ -1,34 +1,35 @@
 import { Vec3 } from "vec3";
 
-export interface Result {
+export interface SkillResult {
   message: string;
 }
 
-export namespace GenericResults {
-  export class SkillNotFound implements Result {
+export namespace GenericSkillResults {
+  export class SkillNotFound implements SkillResult {
     message: string;
     constructor(skillName: string) {
       this.message = `SkillInvocationError: '${skillName}' is not a recognized or supported skill function. Please check the spelling and try again.`;
     }
   }
 
-  export class UnhandledRuntimeError implements Result {
+  export class UnhandledRuntimeError implements SkillResult {
     message: string;
-    constructor(skillName: string, error: string) {
-      this.message = `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to execute '${skillName}': ${error}`;
+    constructor(skillName: string, error: Error) {
+      const errorString = error.toString();
+      this.message = `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to execute '${skillName}': ${errorString}`;
     }
   }
 }
 
 export namespace PathfindToCoordinatesResults {
-  export class InvalidThing implements Result {
+  export class InvalidThing implements SkillResult {
     message: string;
     constructor(thing: string, supportedThingTypes: string) {
       this.message = `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be stopped at if found: ${supportedThingTypes}.`;
     }
   }
 
-  export class InvalidCoords implements Result {
+  export class InvalidCoords implements SkillResult {
     message: string;
     constructor(coords: [number, number, number]) {
       const coordsString = `[${coords[0]}, ${coords[1]}, ${coords[2]}]`;
@@ -36,7 +37,7 @@ export namespace PathfindToCoordinatesResults {
     }
   }
 
-  export class FoundThingInImmediateSurroundings implements Result {
+  export class FoundThingInImmediateSurroundings implements SkillResult {
     message: string;
     constructor(targetCoords: Vec3, foundThingName: string) {
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
@@ -44,7 +45,7 @@ export namespace PathfindToCoordinatesResults {
     }
   }
 
-  export class FoundThingInDistantSurroundings implements Result {
+  export class FoundThingInDistantSurroundings implements SkillResult {
     message: string;
     constructor(targetCoords: Vec3, foundThingName: string) {
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
@@ -52,7 +53,7 @@ export namespace PathfindToCoordinatesResults {
     }
   }
 
-  export class PartialSuccess implements Result {
+  export class PartialSuccess implements SkillResult {
     message: string;
     constructor(reachedCoords: Vec3, targetCoords: Vec3) {
       const reachedCoordsString = `[${reachedCoords.x}, ${reachedCoords.y}, ${reachedCoords.z}]`;
@@ -65,7 +66,7 @@ export namespace PathfindToCoordinatesResults {
     }
   }
 
-  export class Success implements Result {
+  export class Success implements SkillResult {
     message: string;
     constructor(targetCoords: Vec3) {
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
@@ -75,42 +76,42 @@ export namespace PathfindToCoordinatesResults {
 }
 
 export namespace ApproachResults {
-  export class InvalidThing implements Result {
+  export class InvalidThing implements SkillResult {
     message: string;
     constructor(thing: string, supportedThingTypes: string) {
       this.message = `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be approached: ${supportedThingTypes}.`;
     }
   }
 
-  export class ThingNotInDistantSurroundings implements Result {
+  export class ThingNotInDistantSurroundings implements SkillResult {
     message: string;
     constructor(thing: string) {
       this.message = `SkillInvocationError: '${thing}' not found in your distant surroundings. A thing must be visible in your distant surroundings in order to be approached.`;
     }
   }
 
-  export class ThingNotInDistantSurroundingsDirection implements Result {
+  export class ThingNotInDistantSurroundingsDirection implements SkillResult {
     message: string;
     constructor(thing: string, direction: string) {
       this.message = `SkillInvocationError: '${thing}' not found in your distant surroundings ${direction} direction. The thing you want to approach must be visible in the specified direction of your distant surroundings.`;
     }
   }
 
-  export class Success implements Result {
+  export class Success implements SkillResult {
     message: string;
     constructor(approachedThing: string) {
       this.message = `You successfully approached '${approachedThing}'. It should now be present in your immediate surroundings.`;
     }
   }
 
-  export class SuccessDirection implements Result {
+  export class SuccessDirection implements SkillResult {
     message: string;
     constructor(thing: string, direction: string) {
       this.message = `You successfully approached '${thing}' from the '${direction}' direction. '${thing}' should now be present in your immediate surroundings.`;
     }
   }
 
-  export class Failure implements Result {
+  export class Failure implements SkillResult {
     message: string;
     constructor(thing: string, pathfindingPartialSuccessResult: string) {
       this.message = `You were unable to approach thing '${thing}'. ${pathfindingPartialSuccessResult}`;

@@ -2,7 +2,7 @@ import * as zmq from "zeromq";
 import assert from "assert";
 import { Bot } from "mineflayer";
 import { SkillInvocation, DataFromMinecraft } from "./py-messages";
-import { Result, GenericResults } from "./results";
+import { SkillResult, GenericSkillResults } from "./skill-results";
 import { SelfPreserver } from "./self-preserver";
 import { Skill } from "./skill";
 import { buildSkillsRegistry } from "./skill";
@@ -19,7 +19,7 @@ export class SemanticSteveConfig {
     immediateSurroundingsRadius: number = 5,
     distantSurroundingsRadius: number = 47,
     mfViewerPort: number = 3000,
-    zmqPort: number = 5555,
+    zmqPort: number = 5555
   ) {
     this.selfPreservationCheckThrottleMS = selfPreservationCheckThrottleMS;
     this.immediateSurroundingsRadius = immediateSurroundingsRadius;
@@ -39,7 +39,7 @@ export class SemanticSteve {
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig(),
+    config: SemanticSteveConfig = new SemanticSteveConfig()
   ) {
     this.bot = bot;
 
@@ -48,13 +48,13 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS,
+      config.selfPreservationCheckThrottleMS
     );
 
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this),
+      this.handleSkillResolution.bind(this)
     );
   }
 
@@ -88,11 +88,22 @@ export class SemanticSteve {
 
   private invokeSkill(skillInvocation: SkillInvocation): void {
     const skillToInvoke: Skill = this.skills[skillInvocation.skillName];
-    skillToInvoke.invoke(...skillInvocation.args);
+    // Add skill invocation to the macrotask queue (wrapped w/ handling of errors)
+    setTimeout(async () => {
+      try {
+        await skillToInvoke.invoke(...skillInvocation.args);
+      } catch (error) {
+        const result = new GenericSkillResults.UnhandledRuntimeError(
+          skillInvocation.skillName,
+          error as Error
+        );
+        this.handleSkillResolution(result);
+      }
+    }, 0);
     this.currentSkill = skillToInvoke;
   }
 
-  private handleSkillResolution(result: Result): void {
+  private handleSkillResolution(result: SkillResult): void {
     assert(this.currentSkill, "Got resolution before invocation");
     this.currentSkill = undefined;
     // Always (re)hydrate the environment state after a skill resolves...
@@ -137,8 +148,8 @@ export class SemanticSteve {
         if (skillInvocation.skillName in this.skills) {
           this.invokeSkill(skillInvocation);
         } else {
-          const result = new GenericResults.SkillNotFound(
-            skillInvocation.skillName,
+          const result = new GenericSkillResults.SkillNotFound(
+            skillInvocation.skillName
           );
           this.handleSkillResolution(result);
         }
@@ -151,7 +162,7 @@ export class SemanticSteve {
         if (this.currentSkill) {
           await this.currentSkill.pause();
         }
-        await this.selfPreserver.invoke(); // Await resolution of preserver before continuing
+        await this.selfPreserver.invoke(); // Await resolution before continuing
         if (this.currentSkill) {
           await this.currentSkill.resume();
         }

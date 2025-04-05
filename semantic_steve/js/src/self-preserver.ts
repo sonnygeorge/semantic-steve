@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 
 export class SelfPreserver {
-  // Not implemented yet
+  // Not yet implemented
   private bot: Bot;
   private checkThrottleMS: number;
 

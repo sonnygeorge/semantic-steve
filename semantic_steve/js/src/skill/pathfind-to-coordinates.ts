@@ -2,7 +2,10 @@ import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot, BotEvents } from "mineflayer";
 import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
-import { PathfindToCoordinatesResults as Results, Result } from "../results";
+import {
+  PathfindToCoordinatesResults as Results,
+  SkillResult,
+} from "../skill-results";
 import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
 
@@ -50,9 +53,10 @@ export class PathfindToCoordinates extends Skill {
     const goal: goals.GoalBlock = new goals.GoalBlock(
       this.targetCoords.x,
       this.targetCoords.y,
-      this.targetCoords.z,
+      this.targetCoords.z
     );
     this.bot.pathfinder.setGoal(goal);
+    console.log("Goal set. Beginning pathfinding...");
   }
 
   private stopPathfinding(): void {
@@ -96,21 +100,21 @@ export class PathfindToCoordinates extends Skill {
 
   private resolveThingFound(
     thingName: string,
-    wasInImmediateSurroundings: boolean,
+    wasInImmediateSurroundings: boolean
   ): void {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
     this.stopPathfinding();
-    let result: Result;
+    let result: SkillResult;
     if (wasInImmediateSurroundings) {
       result = new Results.FoundThingInImmediateSurroundings(
         this.targetCoords,
-        thingName,
+        thingName
       );
     } else {
       result = new Results.FoundThingInDistantSurroundings(
         this.targetCoords,
-        thingName,
+        thingName
       );
     }
     this.unsetParams();
@@ -123,7 +127,7 @@ export class PathfindToCoordinates extends Skill {
     this.stopPathfinding();
     const result = new Results.PartialSuccess(
       this.bot.entity.position,
-      this.targetCoords,
+      this.targetCoords
     );
     this.unsetParams();
     this.onResolution(result);
@@ -164,7 +168,7 @@ export class PathfindToCoordinates extends Skill {
 
   private setUpListener(
     event: keyof BotEvents,
-    listener: (...args: any[]) => void,
+    listener: (...args: any[]) => void
   ): void {
     this.bot.on(event, listener);
     this.activeListeners.push({ event, listener });
@@ -174,23 +178,23 @@ export class PathfindToCoordinates extends Skill {
     console.log("Setting up pathfinding listeners");
     this.setUpListener(
       "goal_reached",
-      this.resolvePathfindingSuccess.bind(this),
+      this.resolvePathfindingSuccess.bind(this)
     );
     this.setUpListener(
       "move",
-      this.checkForStopIfFoundThingsAndHandle.bind(this),
+      this.checkForStopIfFoundThingsAndHandle.bind(this)
     );
     this.setUpListener(
       "path_update",
-      this.checkForNoPathStatusAndHandle.bind(this),
+      this.checkForNoPathStatusAndHandle.bind(this)
     );
     this.setUpListener(
       "path_update",
-      this.checkForTimeoutStatusAndHandle.bind(this),
+      this.checkForTimeoutStatusAndHandle.bind(this)
     );
     this.setUpListener(
       "path_stop",
-      this.resolvePathfindingPartialSuccess.bind(this),
+      this.resolvePathfindingPartialSuccess.bind(this)
     );
   }
 
@@ -206,9 +210,9 @@ export class PathfindToCoordinates extends Skill {
   // Implementation of Skill interface
   // ==================================
 
-  private async _invoke(
+  public async invoke(
     coords: [number, number, number],
-    stopIfFound?: string[],
+    stopIfFound?: string[]
   ): Promise<void> {
     // Pre-process coordinates
     if (!Array.isArray(coords) || coords.length !== 3) {
@@ -235,15 +239,6 @@ export class PathfindToCoordinates extends Skill {
 
     // Begin pathfinding
     this.beginPathfinding();
-  }
-
-  public invoke(
-    coordinates: [number, number, number],
-    stopIfFound?: string[],
-  ): void {
-    // Add _invoke to the macrotask queue so it kicks off at the next unblocked tick...
-    // ...and this function can return immediately (and the SemanticSteve.run loop continues).
-    setTimeout(this._invoke.bind(this, coordinates, stopIfFound), 0);
   }
 
   public async pause(): Promise<void> {

@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
-import { Result } from "../results";
+import { SkillResult } from "../skill-results";
 
-export type SkillResolutionHandler = (result: Result) => void;
+export type SkillResolutionHandler = (result: SkillResult) => void;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.
@@ -25,7 +25,7 @@ export abstract class Skill {
     this.onResolution = onResolution;
   }
 
-  abstract invoke(...args: any[]): void;
+  abstract invoke(...args: any[]): Promise<void>;
   abstract pause(): Promise<void>;
   abstract resume(): Promise<void>;
 }

@@ -8,7 +8,7 @@ async def run_as_cli(semantic_steve: SemanticSteve):
         data_from_minecraft = await ss.wait_for_data_from_minecraft()
         while True:
             print(SEMANTIC_STEVE_ASCII_ART)
-            print(data_from_minecraft.get_pretty_string())
+            print(data_from_minecraft.get_readable_string())
             skill_invocation_str = input("Invoke a skill (or 'exit' to quit): ").strip()
             if skill_invocation_str.lower() == "exit":
                 break

@@ -2,7 +2,7 @@ import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
 import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
-import { pathfindToCoordinatesResults } from "../skill-results";
+import { PathfindToCoordinatesResults as Results, Result } from "../results";
 import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
 
@@ -65,65 +65,58 @@ export class PathfindToCoordinates extends Skill {
   // ==========
 
   private resolveInvalidCoords(coords: [number, number, number]): void {
-    const result = pathfindToCoordinatesResults.ERROR_INVALID_COORDS(
-      coords.toString()
-    );
-    this.onResolution(result);
+    console.log("Resolving pathfinding as invalid coordinates");
+    this.onResolution(new Results.InvalidCoords(coords));
   }
 
   private resolveInvalidThing(thingName: string): void {
-    const result = pathfindToCoordinatesResults.ERROR_INVALID_THING(
-      thingName,
-      SUPPORTED_THING_TYPES
-    );
+    console.log("Resolving pathfinding as invalid thing");
+    const result = new Results.InvalidThing(thingName, SUPPORTED_THING_TYPES);
     this.onResolution(result);
   }
 
   private resolvePathfindingSuccess(): void {
+    console.log("Resolving pathfinding as success");
     assert(this.targetCoords);
-    this.unsetParams();
     this.stopPathfinding();
-    this.onResolution(
-      pathfindToCoordinatesResults.SUCCESS(
-        `[${this.targetCoords.x}, ${this.targetCoords.y}, ${this.targetCoords.z}]`
-      )
-    );
+    const result = new Results.Success(this.targetCoords);
+    this.unsetParams();
+    this.onResolution(result);
   }
 
   private resolveThingFound(
     thingName: string,
     wasInImmediateSurroundings: boolean
   ): void {
+    console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
-    this.unsetParams();
     this.stopPathfinding();
+    let result: Result;
     if (wasInImmediateSurroundings) {
-      this.onResolution(
-        pathfindToCoordinatesResults.FOUND_THING_IN_IMMEDIATE_SURROUNDINGS(
-          `[${this.targetCoords.x}, ${this.targetCoords.y}, ${this.targetCoords.z}]`,
-          thingName
-        )
+      result = new Results.FoundThingInImmediateSurroundings(
+        this.targetCoords,
+        thingName
       );
     } else {
-      this.onResolution(
-        pathfindToCoordinatesResults.FOUND_THING_IN_DISTANT_SURROUNDINGS(
-          `[${this.targetCoords.x}, ${this.targetCoords.y}, ${this.targetCoords.z}]`,
-          thingName
-        )
+      result = new Results.FoundThingInDistantSurroundings(
+        this.targetCoords,
+        thingName
       );
     }
+    this.unsetParams();
+    this.onResolution(result);
   }
 
   private resolvePathfindingPartialSuccess(): void {
+    console.log("Resolving pathfinding as partial success");
     assert(this.targetCoords);
-    this.unsetParams();
     this.stopPathfinding();
-    this.onResolution(
-      pathfindToCoordinatesResults.PARTIAL_SUCCESS(
-        `[${this.targetCoords.x}, ${this.targetCoords.y}, ${this.targetCoords.z}]`,
-        `[${this.bot.entity.position.x}, ${this.bot.entity.position.y}, ${this.bot.entity.position.z}]`
-      )
+    const result = new Results.PartialSuccess(
+      this.bot.entity.position,
+      this.targetCoords
     );
+    this.unsetParams();
+    this.onResolution(result);
   }
 
   // ==========
@@ -179,7 +172,7 @@ export class PathfindToCoordinates extends Skill {
 
   private async _invoke(
     coords: [number, number, number],
-    stopIfFound: string[]
+    stopIfFound?: string[]
   ): Promise<void> {
     // Pre-process coordinates
     if (!Array.isArray(coords) || coords.length !== 3) {
@@ -190,14 +183,16 @@ export class PathfindToCoordinates extends Skill {
 
     // Pre-process stopIfFound
     this.stopIfFound = [];
-    for (const thingName of stopIfFound) {
-      try {
-        const thing = this.bot.thingFactory.createThing(thingName);
-        this.stopIfFound.push(thing);
-      } catch (error) {
-        if (error instanceof InvalidThingError) {
-          this.resolveInvalidThing(thingName);
-          return;
+    if (stopIfFound?.length) {
+      for (const thingName of stopIfFound) {
+        try {
+          const thing = this.bot.thingFactory.createThing(thingName);
+          this.stopIfFound.push(thing);
+        } catch (error) {
+          if (error instanceof InvalidThingError) {
+            this.resolveInvalidThing(thingName);
+            return;
+          }
         }
       }
     }

@@ -61,7 +61,7 @@ class SemanticSteve:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PAIR)
         self.socket.connect(f"tcp://localhost:{self.zmq_port}")
-        self.socket.setsockopt(zmq.RCVTIMEO, -1)
+        self.socket.setsockopt(zmq.RCVTIMEO, 0)
         print(f"SemanticSteve python connected to tcp://localhost:{self.zmq_port}.")
         return self
 
@@ -96,7 +96,7 @@ class SemanticSteve:
                 data_from_minecraft_dict = self.socket.recv_json()
             except zmq.Again:
                 self.js_process_manager.check_and_propogate_errors()
-                asyncio.sleep(0.1)
+                await asyncio.sleep(0.1)  # Sleep for a short time to avoid busy waiting
         # Parse as object (enforcing Pydantic validation on the received message json)
         return DataFromMinecraft(**data_from_minecraft_dict)
 
@@ -105,8 +105,11 @@ class SemanticSteve:
         # Validate and parse skill invocation
         try:
             skill_invocation = SkillInvocation.from_str(skill_invocation)
+            print(f"Skill invocation: {skill_invocation}")
         except InvalidSkillInvocationError:
-            pass  # FIXME
+            # TODO: Implement this
+            print(f"Invalid skill invocation: {skill_invocation}")
+            return
         # Send message to JS process
         self.socket.send_json(skill_invocation.model_dump())
         # Await response from JS process

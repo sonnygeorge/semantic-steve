@@ -1,6 +1,7 @@
 import { Bot } from "mineflayer";
+import { Result } from "../results";
 
-export type SkillResolutionHandler = (result: string) => void;
+export type SkillResolutionHandler = (result: Result) => void;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.

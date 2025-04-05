@@ -14,7 +14,7 @@ class DataFromMinecraft(BaseModel):
     envState: dict
     skillInvocationResults: str | None
 
-    def get_pretty_string(self) -> str:
+    def get_readable_string(self) -> str:
         return json.dumps(self.model_dump(), indent=4)  # TODO
 
 

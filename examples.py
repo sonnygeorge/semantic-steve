@@ -23,7 +23,7 @@ async def llm_example():
     with SemanticSteve() as ss:
         data_from_minecraft = await ss.wait_for_data_from_minecraft()
         while True:
-            msgs.append({"role": "user", "content": data_from_minecraft.get_pretty_string()})
+            msgs.append({"role": "user", "content": data_from_minecraft.get_readable_string()})
             response = client.chat.completions.create(model="gpt-4o-mini", messages=msgs)
             skill_invocation_str = response.choices[0].message.content
             msgs.append({"role": "assistant", "content": skill_invocation_str})

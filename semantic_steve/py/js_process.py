@@ -1,3 +1,4 @@
+import time
 import subprocess
 
 from semantic_steve.py.constants import (
@@ -30,7 +31,8 @@ class SemanticSteveJsProcessManager:
             cwd=CWD_FOR_JS_PROCESS_CMDS,
             text=True,
         )
-        self.check_and_propogate_errors(self.js_process)
+        # time.sleep(0.1)  # Give the process a brief moment to start
+        self.check_and_propogate_errors()
         return self.js_process
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -70,10 +72,10 @@ class SemanticSteveJsProcessManager:
     ## Public methods ##
     ####################
 
-    def check_and_propogate_errors(self, js_process: subprocess.Popen) -> None:
-        return_code = js_process.poll()
+    def check_and_propogate_errors(self) -> None:
+        return_code = self.js_process.poll()
         if return_code is not None:
-            _, stderr = js_process.communicate()
+            _, stderr = self.js_process.communicate()
             if return_code != 0:
                 print(stderr)  # Print the JS process error message to the console
                 raise subprocess.CalledProcessError(

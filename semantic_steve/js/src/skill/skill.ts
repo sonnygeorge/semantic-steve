@@ -16,6 +16,7 @@ export interface SkillMetadata {
  * The interface that all skills must implement.
  */
 export abstract class Skill {
+  public static readonly metadata: SkillMetadata;
   protected bot: Bot;
   protected onResolution: SkillResolutionHandler;
 

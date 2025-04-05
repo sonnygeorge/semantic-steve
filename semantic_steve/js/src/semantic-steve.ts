@@ -1,9 +1,6 @@
 import * as zmq from "zeromq";
 import assert from "assert";
 import { Bot } from "mineflayer";
-import { createBot } from "mineflayer";
-import { mineflayer as mfViewer } from "prismarine-viewer";
-import { createPlugin } from "./";
 import { SkillInvocation, DataFromMinecraft } from "./py-messages";
 import { Result, GenericResults } from "./results";
 import { SelfPreserver } from "./self-preserver";
@@ -22,7 +19,7 @@ export class SemanticSteveConfig {
     immediateSurroundingsRadius: number = 5,
     distantSurroundingsRadius: number = 47,
     mfViewerPort: number = 3000,
-    zmqPort: number = 5555
+    zmqPort: number = 5555,
   ) {
     this.selfPreservationCheckThrottleMS = selfPreservationCheckThrottleMS;
     this.immediateSurroundingsRadius = immediateSurroundingsRadius;
@@ -37,12 +34,12 @@ export class SemanticSteve {
   private socket: zmq.Pair;
   private zmqPort: number;
   private selfPreserver: SelfPreserver;
-  private skills: Record<string, Skill>;
-  private currentSkill: Skill | null;
+  private skills: Record<string, Skill>; // TODO: Should this be Map?
+  private currentSkill?: Skill;
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig()
+    config: SemanticSteveConfig = new SemanticSteveConfig(),
   ) {
     this.bot = bot;
 
@@ -51,15 +48,14 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS
+      config.selfPreservationCheckThrottleMS,
     );
 
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this)
+      this.handleSkillResolution.bind(this),
     );
-    this.currentSkill = null;
   }
 
   public async initializeSocket(): Promise<void> {
@@ -81,7 +77,7 @@ export class SemanticSteve {
       return msgFromPython.toString();
     } catch (e) {
       // Safety checks to ensure this is working as expected ("failure"=receiveTimeout)
-      assert(typeof e === "object" && e !== null && "code" in e);
+      assert(e && typeof e === "object" && "code" in e);
       assert(e.code === "EAGAIN");
     }
   }
@@ -97,8 +93,8 @@ export class SemanticSteve {
   }
 
   private handleSkillResolution(result: Result): void {
-    assert(this.currentSkill !== null, "Got resolution before invocation");
-    this.currentSkill = null;
+    assert(this.currentSkill, "Got resolution before invocation");
+    this.currentSkill = undefined;
     // Always (re)hydrate the environment state after a skill resolves...
     // NOTE: A future performance optimization could be to propagate a flag to this method
     // indicating whether the environment state is already hydrated. For code cleanliness
@@ -120,7 +116,7 @@ export class SemanticSteve {
     this.bot.envState.surroundings.hydrate();
     let toSendToPython: DataFromMinecraft = {
       envState: this.bot.envState.getDTO(),
-      skillInvocationResults: null, // No skill invocation results yet
+      // NOTE: No skill invocation results yet
     };
     await this.sendDataToPython(toSendToPython);
   }
@@ -136,13 +132,13 @@ export class SemanticSteve {
       const msgFromPython = await this.checkForMsgFromPython();
 
       if (msgFromPython) {
-        assert(this.currentSkill === null, "Got invocation before resolution");
+        assert(!this.currentSkill, "Got invocation before resolution");
         const skillInvocation: SkillInvocation = JSON.parse(msgFromPython);
         if (skillInvocation.skillName in this.skills) {
           this.invokeSkill(skillInvocation);
         } else {
           const result = new GenericResults.SkillNotFound(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           this.handleSkillResolution(result);
         }

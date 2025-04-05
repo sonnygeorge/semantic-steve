@@ -19,6 +19,7 @@ class HydratableSurroundings extends _Surroundings {
     const shouldHydrate = timeSinceLastHydrationMS > throttleMS;
 
     if (shouldHydrate) {
+      console.log("Hydrating surroundings...");
       const hydrated = this.hydrater.getHydration();
       Object.assign(this, hydrated);
       this.timeOfLastHydration = new Date();

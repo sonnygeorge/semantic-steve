@@ -1,2 +1,3 @@
 pyzmq
 pre-commit
+prompt_toolkit

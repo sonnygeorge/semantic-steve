@@ -9,5 +9,5 @@ export type SkillInvocation = {
 // We send these to python
 export type DataFromMinecraft = {
   envState: EnvStateDTO;
-  skillInvocationResults: string | null;
+  skillInvocationResults?: string;
 };

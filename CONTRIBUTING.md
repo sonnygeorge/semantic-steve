@@ -4,12 +4,11 @@ For now, please contact me directly first.
 
 TODO:
 
-- Re-implement `generate_skills_docs()`
-- Test `pathfindToCoordinates` manually
-- Reimplement `approach`
+- Put `pathfindToCoordinates` through its paces more (see TODOs in file)...
 - Figure out clean (decoupled/general) way to detect/propogate `UNHANDLED_RUNTIME_ERROR` to python... Try/catch arround `_invoke()`?
 - Implement general death result in a general/clean (out of scope for skills) way:
   - If death happened before skill-invocation message received, once received, discard and resolve w/ death result
   - If death happened during skill-execution, pause skill, unset `SemanticSteve.currentSkill`, and resolve with death result
 - Figure out how to do `getReportSinceLastSkillResolution()` in a clean way
+- Implement `approach`
 - How to add tests for each skill result? (Remember [this](https://discord.com/channels/413438066984747026/799108880218980382/1303466848356143154) Discord message...)

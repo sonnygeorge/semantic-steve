@@ -1,33 +1,43 @@
 import assert from "assert";
 import { Vec3 } from "vec3";
-import { Bot } from "mineflayer";
+import { Bot, BotEvents } from "mineflayer";
 import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
 import { PathfindToCoordinatesResults as Results, Result } from "../results";
 import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
 
-const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1300;
+// TODO: Put this through its paces:
+// TODO: Why does it not work twice in a row?... Cross-reference Gen's statemachine event handling...
+// TODO: Hydrate on completion and check for stopIfFound things one last time to prevent resolving Success when it should resolve ThingFound
+
+const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
 
 export class PathfindToCoordinates extends Skill {
   public static readonly metadata: SkillMetadata = {
     name: "pathfindToCoordinates",
     signature:
-      "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound: string[])",
+      "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
     docstring: `
       /**
        * Pathfinds as well as possible to or near a set of coordinates (digging and bridging
        * as needed), stopping early if something from the stopIfFound list becomes visible
        * in the bot's surroundings.
        * @param coordinates - The target coordinates as an array ordered [x, y, z].
-       * @param stopIfFound - An array of strings representing the names of things to stop at if found.
+       * @param stopIfFound - An optional array of strings representing the names of anything
+       * that, if found in the surroundings, makes it worth it to stop pathfinding further.
        */
     `,
   };
-  private targetCoords: Vec3 | null = null;
+  private targetCoords?: Vec3;
   private stopIfFound: Thing[] = [];
+  private activeListeners: {
+    event: keyof BotEvents;
+    listener: (...args: any[]) => void;
+  }[];
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
+    this.activeListeners = [];
   }
 
   // =======================
@@ -40,7 +50,7 @@ export class PathfindToCoordinates extends Skill {
     const goal: goals.GoalBlock = new goals.GoalBlock(
       this.targetCoords.x,
       this.targetCoords.y,
-      this.targetCoords.z
+      this.targetCoords.z,
     );
     this.bot.pathfinder.setGoal(goal);
   }
@@ -56,7 +66,7 @@ export class PathfindToCoordinates extends Skill {
   // ===================================
 
   private unsetParams(): void {
-    this.targetCoords = null;
+    this.targetCoords = undefined;
     this.stopIfFound = [];
   }
 
@@ -86,7 +96,7 @@ export class PathfindToCoordinates extends Skill {
 
   private resolveThingFound(
     thingName: string,
-    wasInImmediateSurroundings: boolean
+    wasInImmediateSurroundings: boolean,
   ): void {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
@@ -95,12 +105,12 @@ export class PathfindToCoordinates extends Skill {
     if (wasInImmediateSurroundings) {
       result = new Results.FoundThingInImmediateSurroundings(
         this.targetCoords,
-        thingName
+        thingName,
       );
     } else {
       result = new Results.FoundThingInDistantSurroundings(
         this.targetCoords,
-        thingName
+        thingName,
       );
     }
     this.unsetParams();
@@ -113,7 +123,7 @@ export class PathfindToCoordinates extends Skill {
     this.stopPathfinding();
     const result = new Results.PartialSuccess(
       this.bot.entity.position,
-      this.targetCoords
+      this.targetCoords,
     );
     this.unsetParams();
     this.onResolution(result);
@@ -136,12 +146,14 @@ export class PathfindToCoordinates extends Skill {
 
   private checkForNoPathStatusAndHandle(path: PartiallyComputedPath): void {
     if (path.status === "timeout") {
+      console.log("path.status was 'timeout'");
       this.resolvePathfindingPartialSuccess();
     }
   }
 
   private checkForTimeoutStatusAndHandle(path: PartiallyComputedPath): void {
     if (path.status === "noPath") {
+      console.log("path.status was 'noPath'");
       this.resolvePathfindingPartialSuccess();
     }
   }
@@ -150,20 +162,44 @@ export class PathfindToCoordinates extends Skill {
   // Setup/cleanup of listeners
   // ===========================
 
+  private setUpListener(
+    event: keyof BotEvents,
+    listener: (...args: any[]) => void,
+  ): void {
+    this.bot.on(event, listener);
+    this.activeListeners.push({ event, listener });
+  }
+
   private setupListeners(): void {
-    this.bot.on("goal_reached", this.resolvePathfindingSuccess.bind(this));
-    this.bot.on("move", this.checkForStopIfFoundThingsAndHandle.bind(this));
-    this.bot.on("path_update", this.checkForNoPathStatusAndHandle.bind(this));
-    this.bot.on("path_update", this.checkForTimeoutStatusAndHandle.bind(this));
-    this.bot.on("path_stop", this.resolvePathfindingPartialSuccess.bind(this));
+    console.log("Setting up pathfinding listeners");
+    this.setUpListener(
+      "goal_reached",
+      this.resolvePathfindingSuccess.bind(this),
+    );
+    this.setUpListener(
+      "move",
+      this.checkForStopIfFoundThingsAndHandle.bind(this),
+    );
+    this.setUpListener(
+      "path_update",
+      this.checkForNoPathStatusAndHandle.bind(this),
+    );
+    this.setUpListener(
+      "path_update",
+      this.checkForTimeoutStatusAndHandle.bind(this),
+    );
+    this.setUpListener(
+      "path_stop",
+      this.resolvePathfindingPartialSuccess.bind(this),
+    );
   }
 
   private cleanupListeners(): void {
-    this.bot.off("goal_reached", this.resolvePathfindingSuccess.bind(this));
-    this.bot.off("move", this.checkForStopIfFoundThingsAndHandle.bind(this));
-    this.bot.off("path_update", this.checkForNoPathStatusAndHandle.bind(this));
-    this.bot.off("path_update", this.checkForTimeoutStatusAndHandle.bind(this));
-    this.bot.off("path_stop", this.resolvePathfindingPartialSuccess.bind(this));
+    console.log("Cleaning up pathfinding listeners");
+    for (const { event, listener } of this.activeListeners) {
+      this.bot.off(event, listener);
+    }
+    this.activeListeners = []; // Clear the array
   }
 
   // ==================================
@@ -172,7 +208,7 @@ export class PathfindToCoordinates extends Skill {
 
   private async _invoke(
     coords: [number, number, number],
-    stopIfFound?: string[]
+    stopIfFound?: string[],
   ): Promise<void> {
     // Pre-process coordinates
     if (!Array.isArray(coords) || coords.length !== 3) {
@@ -203,7 +239,7 @@ export class PathfindToCoordinates extends Skill {
 
   public invoke(
     coordinates: [number, number, number],
-    stopIfFound: string[]
+    stopIfFound?: string[],
   ): void {
     // Add _invoke to the macrotask queue so it kicks off at the next unblocked tick...
     // ...and this function can return immediately (and the SemanticSteve.run loop continues).
@@ -212,7 +248,8 @@ export class PathfindToCoordinates extends Skill {
 
   public async pause(): Promise<void> {
     console.log(`Pausing '${PathfindToCoordinates.metadata.name}'`);
-    this.stopPathfinding(); // NOTE: we don't unset params in order to be able to resume
+    this.stopPathfinding();
+    // NOTE: we don't unset params in order to be able to resume
   }
 
   public async resume(): Promise<void> {

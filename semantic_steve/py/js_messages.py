@@ -2,20 +2,17 @@ import json
 
 from pydantic import BaseModel
 
-from semantic_steve.py.schema import (
-    InvalidSkillInvocationError,
-    ValidSkillArgument,
-)
-from semantic_steve.py.utils import parse_python_syntax_skill_invocation
+from semantic_steve.py.schema import ValidSkillArgument
+from semantic_steve.py.utils import SingleLineListEncoder, parse_skill_invocation
 
 
 # We get these from the JS process
 class DataFromMinecraft(BaseModel):
     envState: dict
-    skillInvocationResults: str | None
+    skillInvocationResults: str | None = None
 
     def get_readable_string(self) -> str:
-        return json.dumps(self.model_dump(), indent=4)  # TODO
+        return json.dumps(self.model_dump(), indent=4, cls=SingleLineListEncoder)
 
 
 # We send these to the JS process
@@ -25,11 +22,7 @@ class SkillInvocation(BaseModel):
 
     @staticmethod
     def from_str(str: str) -> "SkillInvocation":
-        try:
-            fn_name, args, kwargs = parse_python_syntax_skill_invocation(str)
-        except (SyntaxError, ValueError) as e:
-            raise InvalidSkillInvocationError(f"Invalid skill invocation: {str}") from e
-
+        fn_name, args, kwargs = parse_skill_invocation(str)
         return SkillInvocation(
             skillName=fn_name,
             args=args,

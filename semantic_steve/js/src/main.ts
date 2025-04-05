@@ -12,7 +12,7 @@ bot.once("spawn", async () => {
     createPlugin({
       immediateSurroundingsRadius: config.immediateSurroundingsRadius,
       distantSurroundingsRadius: config.distantSurroundingsRadius,
-    })
+    }),
   );
   await bot.waitForChunksToLoad();
   mfViewer(bot, { port: config.mfViewerPort, firstPerson: true });

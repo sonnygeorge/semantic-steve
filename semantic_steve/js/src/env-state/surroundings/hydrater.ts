@@ -103,18 +103,18 @@ export class SurroundingsHydrater {
    * ### Function Signature:
    *
    * @param {Vec3} coords - The coordinates to check.
-   * @returns {[Vicinity | null, number]} - A tuple containing:
-   *   1. The `Vicinity` the coordinates are in (or null if outside surroundings).
+   * @returns {[Vicinity | undefined, number]} - A tuple containing:
+   *   1. The `Vicinity` the coordinates are in (or undefined if outside surroundings).
    *   2. The distance to the coordinates (in meters/blocks).
    */
   private getVicinityAndDistanceOfCoords(
     coords: Vec3,
-  ): [Vicinity | null, number] {
+  ): [Vicinity | undefined, number] {
     const botCoords = this.bot.entity.position;
     const distanceToCoords = botCoords.distanceTo(coords);
 
     if (distanceToCoords > this.radii.distantSurroundingsRadius) {
-      return [null, distanceToCoords];
+      return [undefined, distanceToCoords];
     }
 
     // Check if it's within immediate surroundings
@@ -171,8 +171,8 @@ export class SurroundingsHydrater {
     ]) {
       const blockAtOffset = this.bot.blockAt(blockCoords.plus(offset));
 
-      // Increment if block at offset is fully exposed
-      if (blockAtOffset === null) {
+      // Increment if block at offset is (fully) exposed
+      if (!blockAtOffset) {
         numExposedSides++;
         continue;
       }

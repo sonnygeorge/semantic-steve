@@ -38,7 +38,7 @@ export type EnvStateDTO = {
   health: string;
   hunger: string;
   inventory: Record<string, number>;
-  equipped: Map<EquipmentDestination, string | null>;
+  equipped: Map<EquipmentDestination, string | undefined>;
   surroundings: SurroundingsDTO;
 };
 
@@ -65,11 +65,11 @@ export class EnvState {
 
   public get inventory(): PItem[] {
     return this.bot.inventory.slots.filter(
-      (item) => item !== null
+      (item) => item !== null,
     ) as unknown as PItem[];
   }
 
-  public get equipped(): Map<EquipmentDestination, PItem | null> {
+  public get equipped(): Map<EquipmentDestination, PItem | undefined> {
     const equipped = {} as any;
     for (let i = 0; i < MINEFLAYER_EQUIPMENT_DESTINATION_ORDER.length; i++) {
       equipped[MINEFLAYER_EQUIPMENT_DESTINATION_ORDER[i]] =
@@ -88,14 +88,14 @@ export class EnvState {
       health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
       inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count])
+        this.inventory.map((item) => [item.name, item.count]),
       ) as Record<string, number>,
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ])
-      ) as Map<EquipmentDestination, string | null>,
+        ]),
+      ) as Map<EquipmentDestination, string | undefined>,
       surroundings: this.surroundings.getDTO(),
     };
   }

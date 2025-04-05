@@ -2,16 +2,10 @@ import asyncio
 
 import zmq
 
-from semantic_steve.py.constants import (
-    SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
-)
+from semantic_steve.py.constants import SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
-from semantic_steve.py.schema import (
-    InvalidSkillInvocationError,
-    SemanticSteveDocs,
-    SemanticSteveUsageError,
-)
+from semantic_steve.py.schema import SemanticSteveDocs, SemanticSteveUsageError
 from semantic_steve.py.skills_docs import generate_skills_docs
 
 
@@ -89,7 +83,6 @@ class SemanticSteve:
         self._assert_called_in_context_manager_context(
             method_name="wait_for_data_from_minecraft"
         )
-        # Await response from JS process
         data_from_minecraft_dict = None
         while data_from_minecraft_dict is None:
             try:
@@ -97,20 +90,10 @@ class SemanticSteve:
             except zmq.Again:
                 self.js_process_manager.check_and_propogate_errors()
                 await asyncio.sleep(0.1)  # Sleep for a short time to avoid busy waiting
-        # Parse as object (enforcing Pydantic validation on the received message json)
         return DataFromMinecraft(**data_from_minecraft_dict)
 
     async def invoke(self, skill_invocation: str) -> DataFromMinecraft:
         self._assert_called_in_context_manager_context(method_name="invoke_skill")
-        # Validate and parse skill invocation
-        try:
-            skill_invocation = SkillInvocation.from_str(skill_invocation)
-            print(f"Skill invocation: {skill_invocation}")
-        except InvalidSkillInvocationError:
-            # TODO: Implement this
-            print(f"Invalid skill invocation: {skill_invocation}")
-            return
-        # Send message to JS process
-        self.socket.send_json(skill_invocation.model_dump())
-        # Await response from JS process
+        parsed_skill_invocation = SkillInvocation.from_str(skill_invocation)
+        self.socket.send_json(parsed_skill_invocation.model_dump())
         return await self.wait_for_data_from_minecraft()

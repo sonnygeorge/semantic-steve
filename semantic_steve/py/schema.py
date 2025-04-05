@@ -26,7 +26,3 @@ class SemanticSteveDocs(BaseModel):
 
 class SemanticSteveUsageError(Exception):
     pass
-
-
-class InvalidSkillInvocationError(SemanticSteveUsageError):
-    pass

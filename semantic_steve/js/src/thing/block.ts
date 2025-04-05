@@ -11,22 +11,14 @@ export class Block implements Thing {
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
-    if (
-      this.bot.envState.surroundings.immediate.blocksToAllCoords.has(this.name)
-    ) {
-      return true;
-    }
-    return false;
+    return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
+      this.name,
+    );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
-    this.bot.envState.surroundings.distant.forEach(
-      (distantSurroundingsInADirection, direction) => {
-        if (distantSurroundingsInADirection.blocksToCounts.has(this.name)) {
-          return true;
-        }
-      }
+    return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
+      dir.blocksToCounts.has(this.name),
     );
-    return false;
   }
 }

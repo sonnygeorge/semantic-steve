@@ -1,4 +1,3 @@
-import time
 import subprocess
 
 from semantic_steve.py.constants import (

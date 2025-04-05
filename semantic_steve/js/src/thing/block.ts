@@ -1,6 +1,5 @@
 import { Bot } from "mineflayer";
-import { Thing } from "./protocol";
-import { DistantSurroundingsInADirection } from "../environment/surroundings/types";
+import { Thing } from "./thing";
 
 export class Block implements Thing {
   bot: Bot;
@@ -11,12 +10,16 @@ export class Block implements Thing {
     this.name = name;
   }
 
-  isVisibleInSurroundings(): boolean {
+  public isVisibleInImmediateSurroundings(): boolean {
     if (
       this.bot.envState.surroundings.immediate.blocksToAllCoords.has(this.name)
     ) {
       return true;
     }
+    return false;
+  }
+
+  public isVisibleInDistantSurroundings(): boolean {
     this.bot.envState.surroundings.distant.forEach(
       (distantSurroundingsInADirection, direction) => {
         if (distantSurroundingsInADirection.blocksToCounts.has(this.name)) {

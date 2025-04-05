@@ -1,4 +1,4 @@
-import { EnvStateDTO } from "./core/environment/state";
+import { EnvStateDTO } from "./env-state/env-state";
 
 // We receive these from python
 export type SkillInvocation = {

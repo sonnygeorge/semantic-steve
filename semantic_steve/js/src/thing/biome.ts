@@ -1,6 +1,6 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
-import { Thing } from "./protocol";
+import { Thing } from "./thing";
 
 export class Biome implements Thing {
   bot: Bot;
@@ -22,10 +22,14 @@ export class Biome implements Thing {
     );
   }
 
-  isVisibleInSurroundings(): boolean {
+  public isVisibleInImmediateSurroundings(): boolean {
     if (this.id in this.bot.envState.surroundings.immediate.biomes) {
       return true;
     }
+    return false;
+  }
+
+  public isVisibleInDistantSurroundings(): boolean {
     this.bot.envState.surroundings.distant.forEach(
       (distantSurroundingsInADirection) => {
         if (

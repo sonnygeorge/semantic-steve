@@ -12,10 +12,10 @@ class HydratableSurroundings extends _Surroundings {
     this.timeOfLastHydration = new Date(0); // Jan 1 1970
   }
 
-  public hydrate(throttleSeconds?: number): void {
+  public hydrate(throttleMS?: number): void {
     const now = new Date().getTime();
     const timeSinceLastHydrationMS = now - this.timeOfLastHydration.getTime();
-    const throttleMS = throttleSeconds ? throttleSeconds * 1000 : 0;
+    throttleMS = throttleMS ? throttleMS : 0;
     const shouldHydrate = timeSinceLastHydrationMS > throttleMS;
 
     if (shouldHydrate) {

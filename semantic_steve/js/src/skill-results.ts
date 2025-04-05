@@ -1,4 +1,4 @@
-export const genericResultsMessages = {
+export const genericResults = {
   ERROR_SKILL_NAME_NOT_FOUND: (skillName: string) =>
     `SkillInvocationError: '${skillName}' is not a recognized or supported skill function. Please check the spelling and try again.`,
 
@@ -6,32 +6,29 @@ export const genericResultsMessages = {
     `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to execute '${skillName}': ${error}`,
 };
 
-export const pathfindToCoordinatesResultsMessages = {
+export const pathfindToCoordinatesResults = {
   ERROR_INVALID_THING: (thing: string, supportedThingTypes: string) =>
     `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be stopped at if found: ${supportedThingTypes}.`,
 
   ERROR_INVALID_COORDS: (coords: string) =>
     `SkillInvocationError: '${coords}' is not a valid coordinates array. Expected an array of three numbers ordered as [x, y, z].`,
 
-  // FOUND_THING_IN_IMMEDIATE_SURROUNDINGS: (
-  //   targetCoords: string,
-  //   foundThingName: string
-  // ) =>
-  //   `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`,
+  FOUND_THING_IN_IMMEDIATE_SURROUNDINGS: (
+    targetCoords: string,
+    foundThingName: string
+  ) =>
+    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`,
 
-  // FOUND_THING_DISTANT_SURROUNDINGS: (
-  //   targetCoords: string,
-  //   foundThingName: string
-  // ) =>
-  //   `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`,
-
-  FOUND_THING: (targetCoords: string, foundThingName: string) =>
-    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible somewhere in the surroundings.`,
+  FOUND_THING_IN_DISTANT_SURROUNDINGS: (
+    targetCoords: string,
+    foundThingName: string
+  ) =>
+    `Your pathfinding to or near ${targetCoords} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`,
 
   PARTIAL_SUCCESS: (
     reachedCoords: string,
     targetCoords: string
-    // TODO: Is it possible to add layman-understandable reasons to this message?
+    // TODO: Is it possible to add layman-understandable reasons to this?
     // E.g., "because these blocks were impeding the way: '{impedingBlockNames}'"...
     // ...allowing the LLM to reason that, if it really wanted to proceeed towards these
     // coords, it might want to acquire a tool that is better fit for breaking such blocks.
@@ -42,7 +39,7 @@ export const pathfindToCoordinatesResultsMessages = {
     `You were able to successfully pathfind to or near ${targetCoords} (such that these coordinates are now in your immediate surroundings).`,
 };
 
-export const approachResultsMessages = {
+export const approachResults = {
   ERROR_INVALID_THING: (thing: string, supportedThingTypes: string) =>
     `SkillInvocationError: '${thing}' is not a recognized or supported thing. Currently, only these varieties of things can be approached: ${supportedThingTypes}.`,
 

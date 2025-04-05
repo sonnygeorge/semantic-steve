@@ -1,8 +1,8 @@
 import { pathfinder } from "mineflayer-pathfinder";
 import type { Bot, BotOptions } from "mineflayer";
-import { EnvState } from "./core/environment/state";
-import { ThingFactory } from "./core/thing";
-import { SurroundingsRadii } from "./core/environment/surroundings";
+import { EnvState } from "./env-state/env-state";
+import { ThingFactory } from "./thing";
+import { SurroundingsRadii } from "./env-state/surroundings";
 
 declare module "mineflayer" {
   interface Bot {
@@ -11,6 +11,9 @@ declare module "mineflayer" {
   }
 }
 
+/**
+ * "Creates a plugin" for the bot w/ the environment state and thing factory.
+ */
 export function createPlugin(surroundingsRadii: SurroundingsRadii) {
   return (bot: Bot, botOptions: BotOptions) => {
     bot.envState = new EnvState(bot, surroundingsRadii);

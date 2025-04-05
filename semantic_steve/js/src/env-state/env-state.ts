@@ -65,7 +65,7 @@ export class EnvState {
 
   public get inventory(): PItem[] {
     return this.bot.inventory.slots.filter(
-      (item) => item !== null,
+      (item) => item !== null
     ) as unknown as PItem[];
   }
 
@@ -78,25 +78,23 @@ export class EnvState {
     return equipped;
   }
 
-  public hydrate(throttleSeconds?: number): void {
-    this.surroundings.hydrate(throttleSeconds);
-    // Potentially put other stuff in the future here (if more than just the surroundings
-    // need 'hydration')...
+  public hydrate(throttleMS?: number): void {
+    this.surroundings.hydrate(throttleMS);
   }
 
   public getDTO(): EnvStateDTO {
     return {
       playerCoordinates: [this.botCoords.x, this.botCoords.y, this.botCoords.z],
-      health: `${this.health}/20`, // 20 is the max health in vanilla Minecraft
-      hunger: `${this.hunger}/20`, // 20 is the max hunger in vanilla Minecraft
+      health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
+      hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
       inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count]),
+        this.inventory.map((item) => [item.name, item.count])
       ) as Record<string, number>,
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ]),
+        ])
       ) as Map<EquipmentDestination, string | null>,
       surroundings: this.surroundings.getDTO(),
     };

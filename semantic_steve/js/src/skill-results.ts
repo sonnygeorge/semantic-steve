@@ -19,6 +19,20 @@ export namespace GenericSkillResults {
       this.message = `SkillRuntimeError: An unexpected/unhandled error occurred while attempting to execute '${skillName}': ${errorString}`;
     }
   }
+
+  export class DeathDuringExecution implements SkillResult {
+    message: string;
+    constructor() {
+      this.message = `For some reason, while executing your last skill, you died. This is your new state after respawning.`;
+    }
+  }
+
+  export class DeathWhileAwaitingInvocation implements SkillResult {
+    message: string;
+    constructor(skillName: string) {
+      this.message = `For some reason, before your skill could be invoked, you died. Since death results in a respawn (changed state), the invocation '${skillName}' was never attempted. This is your new state after respawning.`;
+    }
+  }
 }
 
 export namespace PathfindToCoordinatesResults {

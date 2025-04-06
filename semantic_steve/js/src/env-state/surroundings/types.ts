@@ -125,7 +125,7 @@ export enum Vicinity {
  * Crucially, only JSON-serializable types are used in this DTO (e.g., no `Vec3` objects).
  */
 export type ImmediateSurroundingsDTO = {
-  visibleBlocks: Record<string, [number, number, number][]>;
+  visibleBlocks: { [key: string]: [number, number, number][] };
   visibleBiomes: string[];
 };
 
@@ -150,10 +150,10 @@ export class ImmediateSurroundings {
         [...this.blocksToAllCoords.entries()].map(([block, allCoords]) => [
           block,
           allCoords.map((coords) => [coords.x, coords.y, coords.z]),
-        ]),
+        ])
       ),
       visibleBiomes: Array.from(this.biomes).map(
-        (biomeId) => this.bot.registry.biomes[biomeId].name,
+        (biomeId) => this.bot.registry.biomes[biomeId].name
       ),
     };
   }
@@ -172,7 +172,7 @@ export class ImmediateSurroundings {
  * Crucially, only JSON-serializable types are used in this DTO (e.g., no `Vec3` objects).
  */
 export type DistantSurroundingsInADirectionDTO = {
-  visibleBlockCounts: Record<string, number>;
+  visibleBlockCounts: { [key: string]: number };
   visibleBiomes: string[];
 };
 
@@ -197,7 +197,7 @@ export class DistantSurroundingsInADirection {
     return {
       visibleBlockCounts: Object.fromEntries(this.blocksToCounts),
       visibleBiomes: Array.from(this.biomesToClosestCoords.keys()).map(
-        (biomeId) => this.bot.registry.biomes[biomeId].name,
+        (biomeId) => this.bot.registry.biomes[biomeId].name
       ),
     };
   }
@@ -215,10 +215,9 @@ export class DistantSurroundingsInADirection {
  *
  * Crucially, only JSON-serializable types are used in this DTO (e.g., no `Vec3` objects).
  */
-export type DistantSurroundingsDTO = Record<
-  string,
-  DistantSurroundingsInADirectionDTO
->;
+export type DistantSurroundingsDTO = {
+  [key: string]: DistantSurroundingsInADirectionDTO;
+};
 
 /**
  * Full-detail data structure (used internally) that represents the contents of the bot's
@@ -276,7 +275,7 @@ export class _Surroundings {
       Object.values(Direction).map((dir) => [
         dir,
         new DistantSurroundingsInADirection(bot),
-      ]),
+      ])
     );
   }
 
@@ -284,7 +283,7 @@ export class _Surroundings {
     return {
       immediateSurroundings: this.immediate.getDTO(),
       distantSurroundings: Object.fromEntries(
-        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()]),
+        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()])
       ),
     };
   }

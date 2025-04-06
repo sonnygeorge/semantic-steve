@@ -12,13 +12,13 @@ export class Block implements Thing {
 
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name,
+      this.name
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name),
+      dir.blocksToCounts.has(this.name)
     );
   }
 }

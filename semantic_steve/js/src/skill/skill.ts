@@ -1,7 +1,10 @@
 import { Bot } from "mineflayer";
 import { SkillResult } from "../skill-results";
 
-export type SkillResolutionHandler = (result: SkillResult) => void;
+export type SkillResolutionHandler = (
+  result: SkillResult,
+  envStateIsHydrated?: boolean
+) => void;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.

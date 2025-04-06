@@ -6,12 +6,12 @@ export { Skill, SkillMetadata, SkillResolutionHandler };
 
 export function buildSkillsRegistry(
   bot: Bot,
-  onResolution: SkillResolutionHandler,
-): Record<string, Skill> {
+  onResolution: SkillResolutionHandler
+): { [key: string]: Skill } {
   return {
     [PathfindToCoordinates.metadata.name]: new PathfindToCoordinates(
       bot,
-      onResolution,
+      onResolution
     ),
   };
 }

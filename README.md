@@ -11,6 +11,8 @@
 
 A semantic wrapper for controlling Minecraft 'Steve'
 
+Think the project is interesting? Give it a star! ⭐
+
 UNDER HEAVY DEVELOPMENT
 
 ## Overview

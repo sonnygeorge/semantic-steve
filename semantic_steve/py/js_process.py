@@ -30,7 +30,6 @@ class SemanticSteveJsProcessManager:
             cwd=CWD_FOR_JS_PROCESS_CMDS,
             text=True,
         )
-        # time.sleep(0.1)  # Give the process a brief moment to start
         self.check_and_propogate_errors()
         return self.js_process
 
@@ -52,7 +51,7 @@ class SemanticSteveJsProcessManager:
                 text=True,
             )
         except subprocess.CalledProcessError as e:
-            print(e.stderr)  # Print the error message to the console
+            print(e.stderr)  # Print the JS process error message to the console
             raise e
 
     def _cleanup_process_if_needed(self, js_process: subprocess.Popen) -> None:

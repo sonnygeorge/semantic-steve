@@ -79,6 +79,8 @@ export class EnvState {
   }
 
   public hydrate(throttleMS?: number): void {
+    // For now, we just pass the throttleMS through to the surroundings
+    // since there's nothing computationally expensive to retrieve here.
     this.surroundings.hydrate(throttleMS);
   }
 

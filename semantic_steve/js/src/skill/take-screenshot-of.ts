@@ -7,21 +7,26 @@ const { createCanvas } = require("node-canvas-webgl/lib");
 import fs from "fs/promises";
 import path from "path";
 import { Vec3 } from "vec3";
-const { Viewer, WorldView, getBufferFromStream } = require("prismarine-viewer/viewer");
+const {
+  Viewer,
+  WorldView,
+  getBufferFromStream,
+} = require("prismarine-viewer/viewer");
 import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
 import { SkillResult, TakeScreenshotOfResults } from "../skill-results";
-
-
 
 export class TakeScreenshotOf extends Skill {
   public static readonly metadata: SkillMetadata = {
     name: "takeScreenshotOf",
-    signature: "takeScreenshotOf(thing: string)",
+    signature:
+      "takeScreenshotOf(thing: string, atCoordinates?: [number, number, number])",
     docstring: `
       /**
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
+       * @param atCoordinates - Optional coordinates to disamiguate where the 
+       * thing is located.
        */
     `,
   };
@@ -33,7 +38,10 @@ export class TakeScreenshotOf extends Skill {
     // global.Worker = require('worker_threads').Worker
   }
 
-  public async invoke(thing: string): Promise<void> {
+  public async invoke(
+    thing: string,
+    atCoordinates?: [number, number, number]
+  ): Promise<void> {
     try {
       // Find the Thing object using the bot's thing factory
       let targetThing: Thing;
@@ -43,7 +51,12 @@ export class TakeScreenshotOf extends Skill {
         console.log(error);
         if (error instanceof InvalidThingError) {
           // Invalid thing name
-          this.onResolution(new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES));
+          this.onResolution(
+            new TakeScreenshotOfResults.InvalidThing(
+              thing,
+              SUPPORTED_THING_TYPES
+            )
+          );
           return;
         }
         // Other errors
@@ -54,7 +67,10 @@ export class TakeScreenshotOf extends Skill {
       if (!targetThing.isVisibleInImmediateSurroundings()) {
         // The thing exists but isn't visible in immediate surroundings
         this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(thing, `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`)
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`
+          )
         );
         return;
       }
@@ -64,7 +80,9 @@ export class TakeScreenshotOf extends Skill {
 
       if (!screenshotBuffer) {
         // Screenshot capture failed
-        this.onResolution(new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES));
+        this.onResolution(
+          new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
+        );
         return;
       }
 
@@ -72,11 +90,15 @@ export class TakeScreenshotOf extends Skill {
       const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
 
       // Return success with the appropriate result type
-      this.onResolution(new TakeScreenshotOfResults.Success(thing, screenshotPath));
+      this.onResolution(
+        new TakeScreenshotOfResults.Success(thing, screenshotPath)
+      );
     } catch (error) {
       console.log("error", error);
       // Use InvalidThing result for any errors
-      this.onResolution(new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES));
+      this.onResolution(
+        new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
+      );
     }
   }
 
@@ -115,7 +137,11 @@ export class TakeScreenshotOf extends Skill {
       viewer.listen(worldView);
 
       // Position the camera at the bot's position
-      viewer.camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
+      viewer.camera.position.set(
+        cameraPosition.x,
+        cameraPosition.y,
+        cameraPosition.z
+      );
 
       // Set camera orientation based on the bot's viewing angle
       viewer.camera.rotation.set(this.bot.entity.pitch, this.bot.entity.yaw, 0);
@@ -169,7 +195,9 @@ export class TakeScreenshotOf extends Skill {
    * Gets the position details for a Thing.
    * Necessary for positioning the camera to take a screenshot.
    */
-  private async getThingDetails(thing: Thing): Promise<{ position: Vec3; type: string; object: any } | null> {
+  private async getThingDetails(
+    thing: Thing
+  ): Promise<{ position: Vec3; type: string; object: any } | null> {
     // First, check if it's an entity
     const entities = this.bot.entities;
     for (const entityId in entities) {
@@ -177,8 +205,10 @@ export class TakeScreenshotOf extends Skill {
 
       // Check if this entity matches the thing's name
       if (
-        (entity.name && entity.name.toLowerCase() === thing.name.toLowerCase()) ||
-        (entity.displayName && entity.displayName.toLowerCase().includes(thing.name.toLowerCase()))
+        (entity.name &&
+          entity.name.toLowerCase() === thing.name.toLowerCase()) ||
+        (entity.displayName &&
+          entity.displayName.toLowerCase().includes(thing.name.toLowerCase()))
       ) {
         return {
           position: entity.position,
@@ -191,7 +221,8 @@ export class TakeScreenshotOf extends Skill {
     // Then check if it's a block
     const blocks = this.bot.findBlocks({
       matching: (block) => {
-        const blockName = this.bot.registry.blocksByStateId[block.stateId]?.name;
+        const blockName =
+          this.bot.registry.blocksByStateId[block.stateId]?.name;
         return blockName?.toLowerCase().includes(thing.name.toLowerCase());
       },
       maxDistance: 32,
@@ -220,7 +251,9 @@ export class TakeScreenshotOf extends Skill {
     await fs.mkdir(screenshotsDir, { recursive: true });
 
     // Create filename based on thing and timestamp
-    const fileName = `${thing.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}.jpg`;
+    const fileName = `${thing
+      .toLowerCase()
+      .replace(/\s+/g, "_")}_${Date.now()}.jpg`;
     const filePath = path.join(screenshotsDir, fileName);
 
     // Write the file

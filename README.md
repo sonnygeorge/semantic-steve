@@ -23,4 +23,8 @@ The primary design goal of `semantic-steve` is as an easy-to-understand, yet _ge
 
 ## Usage
 
-See `examples.py`:
+See `examples.py`.
+
+## Contributing
+
+See `CONTRIBUTING.md`.

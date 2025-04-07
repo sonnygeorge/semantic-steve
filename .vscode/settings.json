@@ -1,3 +1,9 @@
 {
-    "print.colourScheme": "GitHub"
+    "print.colourScheme": "GitHub",
+    "files.associations": {
+        "*.cu": "cuda-cpp",
+        "*.cuh": "cuda-cpp",
+        "cstdint": "cpp",
+        "climits": "cpp"
+    }
 }

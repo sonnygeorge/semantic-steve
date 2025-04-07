@@ -235,12 +235,14 @@ export class SurroundingsHydrater {
         new Vec3(chunkMaxX, chunkMaxY, chunkMinZ),
         new Vec3(chunkMaxX, chunkMaxY, chunkMaxZ),
       ];
-      if (
-        !chunkCornerCoords.some((cornerCoords) =>
-          this.areCoordsWithinSurroundings(cornerCoords),
-        )
-      )
-        continue;
+      // console.log(chunkCoordsAndColumn.column,  chunkCornerCoords.some((cornerCoords) =>
+      // this.areCoordsWithinSurroundings(cornerCoords)))
+      // if (
+      //   !chunkCornerCoords.some((cornerCoords) =>
+      //     this.areCoordsWithinSurroundings(cornerCoords),
+      //   )
+      // )
+      //   continue;
 
       // Yield since chunk is at least partially in surroundings
       yield chunkCoordsAndColumn;
@@ -311,6 +313,7 @@ export class SurroundingsHydrater {
       blocksToClosestDistanceByDirection.set(dir as Direction, new Map());
     });
 
+    // console.log("Hydrating surroundings...  backend", this.getAllVisibleBlocksInSurroundings);
     // Iterate through visible blocks in surroundings
     for (const {
       block,
@@ -318,6 +321,7 @@ export class SurroundingsHydrater {
     } of this.getAllVisibleBlocksInSurroundings()) {
       const [blockVicinity, blockDistance] =
         this.getVicinityAndDistanceOfCoords(blockCoords);
+      // console.log(block, blockVicinity, blockDistance)
 
       const biome = block.biome.id;
       if (blockVicinity === Vicinity.IMMEDIATE_SURROUNDINGS) {

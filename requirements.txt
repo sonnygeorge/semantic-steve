@@ -1,3 +1,5 @@
 pyzmq
 pre-commit
 prompt_toolkit
+pydantic
+openai

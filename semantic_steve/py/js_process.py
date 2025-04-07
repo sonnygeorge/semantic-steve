@@ -1,6 +1,7 @@
 import subprocess
 
 from semantic_steve.py.constants import (
+    CMD_TO_DEBUG_START_JS_PROCESS,
     CMD_TO_REBUILD_TYPESCRIPT,
     CMD_TO_START_JS_PROCESS,
     CWD_FOR_JS_PROCESS_CMDS,
@@ -12,8 +13,9 @@ class SemanticSteveJsProcessManager:
 
     TERMINATE_TIMEOUT_SECONDS = 5
 
-    def __init__(self, should_rebuild_typescript: bool = False):
+    def __init__(self, should_rebuild_typescript: bool = False, debug: bool = False):
         self.should_rebuild_typescript = should_rebuild_typescript
+        self.debug = debug
         self.js_process: subprocess.Popen | None = None
 
     ########################
@@ -21,11 +23,12 @@ class SemanticSteveJsProcessManager:
     ########################
 
     def __enter__(self):
-        if self.should_rebuild_typescript:
+        if self.should_rebuild_typescript and not self.debug: # unneeded step if debugging.
             self._rebuild_typescript()
 
+        print(CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS)
         self.js_process = subprocess.Popen(
-            CMD_TO_START_JS_PROCESS,
+            CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS,
             stderr=subprocess.PIPE,
             cwd=CWD_FOR_JS_PROCESS_CMDS,
             text=True,

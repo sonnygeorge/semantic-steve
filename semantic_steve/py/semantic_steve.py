@@ -14,13 +14,16 @@ class SemanticSteve:
         self,
         should_rebuild_typescript: bool = False,
         zmq_port: int = 5555,
+        debug: bool = False
     ):
         self.js_process_manager = SemanticSteveJsProcessManager(
-            should_rebuild_typescript=should_rebuild_typescript
+            should_rebuild_typescript=should_rebuild_typescript, debug=debug
         )
         self.zmq_port = zmq_port
+        self.debug = debug
         self.socket: zmq.Socket | None = None
         self.context: zmq.Context | None = None
+
 
     ###########################
     ## Documentation getters ##

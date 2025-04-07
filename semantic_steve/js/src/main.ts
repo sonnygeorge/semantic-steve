@@ -8,9 +8,22 @@ import {
   SemanticSteveConfigOptions,
 } from "./semantic-steve";
 
-const config = new SemanticSteveConfig();
+const config = new SemanticSteveConfig(
+  {
+    botHost: process.env.BOT_HOST || 'localhost',
+    botPort: parseInt(process.env.BOT_PORT || "25565"),
+    mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
+    zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
+    immediateSurroundingsRadius: parseInt(
+      process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"
+    ),
+    distantSurroundingsRadius: parseInt(
+      process.env.DISTANT_SURROUNDINGS_RADIUS || "13"
+    ),
+  } as SemanticSteveConfigOptions
+);
 
-const bot = createBot({ username: "SemanticSteve", port: config.botPort });
+const bot = createBot({ username: "SemanticSteve", port: config.botPort, host: config.botHost });
 bot.once("spawn", async () => {
   bot.loadPlugin(
     createPlugin({

@@ -140,7 +140,7 @@ export class SemanticSteve {
       throw new Error("This should never occur when the last known inventory is not ran");
     }
 
-    const ret: InventoryDifferential = {};
+    const differential: InventoryDifferential = {};
 
     // iterate over slots, report the item differential.
     for (let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart; i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd; i++) {
@@ -154,16 +154,16 @@ export class SemanticSteve {
       
       if (!found) {
         // item was removed
-        ret[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
+        differential[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
       }
 
       // item exists, but count is different
       if (found && found.count !== oldItem.count) {
-        ret[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+        differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
       }
     
     }
-    return ret;
+    return differential;
   }
 
   private handleSkillResolution(

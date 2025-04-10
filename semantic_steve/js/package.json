@@ -21,6 +21,7 @@
     "canvas": "^3.1.0",
     "mineflayer": "^4.26.0",
     "mineflayer-pathfinder": "^2.4.5",
+    "node-canvas-webgl": "PrismarineJS/node-canvas-webgl",
     "node-gyp": "^11.2.0",
     "prismarine-viewer": "^1.33.0",
     "three-software-renderer": "^1.2.0",

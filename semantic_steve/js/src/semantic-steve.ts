@@ -6,11 +6,14 @@ import { SkillResult, GenericSkillResults } from "./skill-results";
 import { SelfPreserver } from "./self-preserver";
 import { Skill } from "./skill";
 import { buildSkillsRegistry } from "./skill";
+import PItemLoader, {Item as PItem} from 'prismarine-item'
 import {Window as PWindow, WindowsExports} from 'prismarine-windows'
+import nbt from 'prismarine-nbt'
 
 export interface InventoryDifferential {
   [id: number]: {
-    metadata: any;
+    metadata?: any;
+    damageDifferential?: number;
     count: number;
   }
 }
@@ -56,6 +59,7 @@ export class SemanticSteve {
   private inventoryAtTimeOfCurrentSkillInvocation?: Bot["inventory"]; // Not implemented (placeholder)
   private hasDiedWhileAwaitingInvocation: boolean = false;
   private PWindow: WindowsExports;
+  private PItem: typeof PItem;
 
   constructor(
     bot: Bot,
@@ -64,6 +68,7 @@ export class SemanticSteve {
     this.bot = bot;
 
     this.PWindow = require("prismarine-windows")(bot.version);
+    this.PItem = require("prismarine-item")(bot.registry)
 
     this.socket = new zmq.Pair({ receiveTimeout: 0 });
     this.zmqPort = config.zmqPort;
@@ -87,7 +92,12 @@ export class SemanticSteve {
     const slots = this.bot.inventory.slots;
     slots.forEach((slot, idx) => {
       if (slot) {
-        window.updateSlot(idx, slot);
+        
+        const newItem = this.PItem.fromNotch(this.PItem.toNotch(slot, true), slot.stackId ?? undefined);
+        if (newItem != null) {
+          newItem.slot = idx;
+        }
+        window.updateSlot(idx, newItem as PItem);
       }
     })
     return window;
@@ -133,8 +143,37 @@ export class SemanticSteve {
     this.currentSkill = skillToInvoke;
     this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
   }
+  
 
+  private getToolDamage(item: PItem) {
+    // if (!item || !item.nbt) return 0;
+    
+    // const raw = item.nbt.value as any;
+    // const simplified = nbt.simplify(raw.Damage);
+    // // Check if the item has NBT data and a Damage tag
+    // // if (item.nbt && item.nbt.value && item.nbt.value.Damage) {
+    // //   return item.nbt.value.Damage.value;
+    // // }
+    // if (simplified !== undefined) {
+    //   return simplified;
+    // }
+    if (item.durabilityUsed) {
+      return item.durabilityUsed;
+    }
+    
+    if (this.bot.registry.supportFeature('nbtOnMetadata')) {
+      if (item.metadata !== undefined) {
+        return item.metadata;
+      }
+    }
+    // For older Mineflayer versions that use metadata directly
+    
+    
+    return 0;
+  }
   private getInventoryChangesSinceCurrentSkillWasInvoked(): InventoryDifferential {
+
+    
 
     if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
       throw new Error("This should never occur when the last known inventory is not ran");
@@ -148,6 +187,7 @@ export class SemanticSteve {
       if (!oldItem) {
         continue;
       }
+    
       // find item in the current inventory
       const found = this.bot.inventory.findItemRange(
         this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt)
@@ -159,7 +199,21 @@ export class SemanticSteve {
 
       // item exists, but count is different
       if (found && found.count !== oldItem.count) {
-        differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+        differential[oldItem.type] = { count: found.count - oldItem.count };
+      }
+
+      // item exists, but nbt is different
+      if (found && found.nbt && found.nbt !== oldItem.nbt) {
+        // check damage first
+        const oldDmg = this.getToolDamage(oldItem);
+        const newDmg = this.getToolDamage(found);
+        if (oldDmg !== newDmg) {
+          differential[oldItem.type] = { damageDifferential: oldDmg - newDmg, count: found.count - oldItem.count };
+        } else {
+          // check if the nbt is different
+          differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+        }
+
       }
     
     }

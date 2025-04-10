@@ -2,7 +2,7 @@ import { SkillResult } from "../skill-results";
 import assert from "assert";
 import { Bot } from "mineflayer";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
-
+import {once} from "events"
 export namespace MineBlocksResults {
   export class InvalidBlock implements SkillResult {
     message: string;
@@ -262,10 +262,13 @@ export class MineBlocks extends Skill {
           }
         }
       }
+
+      // allows the item's usage to be updated in the inventory, so we can monitor tool durability usage.
+      await once(this.bot.inventory, 'updateSlot');
       
       // Resolve with the appropriate result
       this.isMining = false;
-      
+
       if (this.currentQuantity === 0) {
         return this.onResolution(new MineBlocksResults.BlockNotInSurroundings(this.blockToMine));
       } else if (this.currentQuantity < this.targetQuantity) {

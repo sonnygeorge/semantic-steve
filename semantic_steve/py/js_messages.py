@@ -10,6 +10,7 @@ from semantic_steve.py.utils import SingleLineListEncoder, parse_skill_invocatio
 class DataFromMinecraft(BaseModel):
     envState: dict
     skillInvocationResults: str | None = None
+    inventoryChanges: dict | None = None
 
     def get_readable_string(self) -> str:
         return json.dumps(self.model_dump(), indent=4, cls=SingleLineListEncoder)

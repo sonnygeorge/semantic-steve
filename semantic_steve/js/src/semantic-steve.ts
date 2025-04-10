@@ -1,11 +1,19 @@
 import * as zmq from "zeromq";
 import assert from "assert";
-import { Bot } from "mineflayer";
+import { Bot, StorageEvents } from "mineflayer";
 import { SkillInvocation, DataFromMinecraft } from "./py-messages";
 import { SkillResult, GenericSkillResults } from "./skill-results";
 import { SelfPreserver } from "./self-preserver";
 import { Skill } from "./skill";
 import { buildSkillsRegistry } from "./skill";
+import {Window as PWindow, WindowsExports} from 'prismarine-windows'
+
+export interface InventoryDifferential {
+  [id: number]: {
+    metadata: any;
+    count: number;
+  }
+}
 
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;
@@ -45,14 +53,17 @@ export class SemanticSteve {
   private selfPreserver: SelfPreserver;
   private skills: { [key: string]: Skill };
   private currentSkill?: Skill;
-  private inventoryAtTimeOfCurrentSkillInvocation: undefined = undefined; // Not implemented (placeholder)
+  private inventoryAtTimeOfCurrentSkillInvocation?: Bot["inventory"]; // Not implemented (placeholder)
   private hasDiedWhileAwaitingInvocation: boolean = false;
+  private PWindow: WindowsExports;
 
   constructor(
     bot: Bot,
     config: SemanticSteveConfig = new SemanticSteveConfig()
   ) {
     this.bot = bot;
+
+    this.PWindow = require("prismarine-windows")(bot.version);
 
     this.socket = new zmq.Pair({ receiveTimeout: 0 });
     this.zmqPort = config.zmqPort;
@@ -62,11 +73,24 @@ export class SemanticSteve {
       config.selfPreservationCheckThrottleMS
     );
 
+
+
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
       this.handleSkillResolution.bind(this)
     );
+  }
+
+  private buildInventoryCopy(): PWindow<StorageEvents> {
+    const window: PWindow<StorageEvents> = this.PWindow.createWindow(0, 'minecraft:inventory', 'Inventory');
+    const slots = this.bot.inventory.slots;
+    slots.forEach((slot, idx) => {
+      if (slot) {
+        window.updateSlot(idx, slot);
+      }
+    })
+    return window;
   }
 
   // =======================================
@@ -107,12 +131,39 @@ export class SemanticSteve {
     }, 0);
     // Set fields that are to be set while skills are running
     this.currentSkill = skillToInvoke;
-    this.inventoryAtTimeOfCurrentSkillInvocation = undefined; // Not implemented (placeholder)
+    this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
   }
 
-  // Not implemented (placeholder)
-  private getInventoryChangesSinceCurrentSkillWasInvoked(): undefined {
-    // TODO: Compare current inventory with `this.inventoryAtTimeOfCurrentSkillInvocation`
+  private getInventoryChangesSinceCurrentSkillWasInvoked(): InventoryDifferential {
+
+    if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
+      throw new Error("This should never occur when the last known inventory is not ran");
+    }
+
+    const ret: InventoryDifferential = {};
+
+    // iterate over slots, report the item differential.
+    for (let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart; i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd; i++) {
+      const oldItem = this.inventoryAtTimeOfCurrentSkillInvocation.slots[i];
+      if (!oldItem) {
+        continue;
+      }
+      // find item in the current inventory
+      const found = this.bot.inventory.findItemRange(
+        this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt)
+      
+      if (!found) {
+        // item was removed
+        ret[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
+      }
+
+      // item exists, but count is different
+      if (found && found.count !== oldItem.count) {
+        ret[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+      }
+    
+    }
+    return ret;
   }
 
   private handleSkillResolution(
@@ -138,6 +189,7 @@ export class SemanticSteve {
     const toSendToPython: DataFromMinecraft = {
       envState: this.bot.envState.getDTO(),
       skillInvocationResults: result.message,
+      inventoryChanges: invChanges,
     };
 
     this.sendDataToPython(toSendToPython);

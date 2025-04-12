@@ -9,6 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+# Reintroduce the semantic_steve/js/build/ directory
+!semantic_steve/js/build/
 develop-eggs/
 dist/
 downloads/
@@ -177,4 +179,3 @@ cython_debug/
 node_modules/
 _backend_ts/
 screenshots/
-

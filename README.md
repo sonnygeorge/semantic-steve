@@ -25,28 +25,20 @@ The primary design goal of `semantic-steve` is as an easy-to-understand, yet _ge
 
 ## Installation
 
-This package requires **Node.js 22**. Install it first:
-
-- Download: https://nodejs.org
-- Or use `nvm`: `nvm install 22` (assuming you have [nvm](https://github.com/nvm-sh/nvm) installed)
-- Verify: `node --version` (should output `v22.x.x`)
-
-Then install the package:
-
 ```bash
 pip install git+https://github.com/sonnygeorge/semantic-steve.git@dev
 ```
-
-Note: The installation will fail if Node.js 22 is not installed such that `node --version` outputs `v22.x.x`.
 
 ## Usage
 
 See `examples.py`.
 
+NOTE:
+- You must have Node.js 22 such that `node --version` outputs `v22.x.x`.
+- You must have `yarn` installed.
+
+Otherwise, attempting to run SemanticSteve will raise an error.
+
 ## Contributing
 
 See `CONTRIBUTING.md`.
-
-```
-
-```

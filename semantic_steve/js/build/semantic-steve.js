@@ -53,27 +53,44 @@ const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 class SemanticSteveConfig {
     constructor(options = {}) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         this.selfPreservationCheckThrottleMS =
             (_a = options.selfPreservationCheckThrottleMS) !== null && _a !== void 0 ? _a : 1500;
         this.immediateSurroundingsRadius = (_b = options.immediateSurroundingsRadius) !== null && _b !== void 0 ? _b : 5;
         this.distantSurroundingsRadius = (_c = options.distantSurroundingsRadius) !== null && _c !== void 0 ? _c : 13;
-        this.botPort = (_d = options.botPort) !== null && _d !== void 0 ? _d : 25565;
-        this.mfViewerPort = (_e = options.mfViewerPort) !== null && _e !== void 0 ? _e : 3000;
-        this.zmqPort = (_f = options.zmqPort) !== null && _f !== void 0 ? _f : 5555;
+        this.botHost = (_d = options.botHost) !== null && _d !== void 0 ? _d : "localhost";
+        this.botPort = (_e = options.botPort) !== null && _e !== void 0 ? _e : 25565;
+        this.mfViewerPort = (_f = options.mfViewerPort) !== null && _f !== void 0 ? _f : 3000;
+        this.zmqPort = (_g = options.zmqPort) !== null && _g !== void 0 ? _g : 5555;
     }
 }
 exports.SemanticSteveConfig = SemanticSteveConfig;
 class SemanticSteve {
     constructor(bot, config = new SemanticSteveConfig()) {
-        this.inventoryAtTimeOfCurrentSkillInvocation = undefined; // Not implemented (placeholder)
         this.hasDiedWhileAwaitingInvocation = false;
         this.bot = bot;
+        this.PWindow = require("prismarine-windows")(bot.version);
+        this.PItem = require("prismarine-item")(bot.registry);
         this.socket = new zmq.Pair({ receiveTimeout: 0 });
         this.zmqPort = config.zmqPort;
         this.selfPreserver = new self_preserver_1.SelfPreserver(this.bot, config.selfPreservationCheckThrottleMS);
         // Skills setup
         this.skills = (0, skill_1.buildSkillsRegistry)(this.bot, this.handleSkillResolution.bind(this));
+    }
+    buildInventoryCopy() {
+        const window = this.PWindow.createWindow(0, 'minecraft:inventory', 'Inventory');
+        const slots = this.bot.inventory.slots;
+        slots.forEach((slot, idx) => {
+            var _a;
+            if (slot) {
+                const newItem = this.PItem.fromNotch(this.PItem.toNotch(slot, true), (_a = slot.stackId) !== null && _a !== void 0 ? _a : undefined);
+                if (newItem != null) {
+                    newItem.slot = idx;
+                }
+                window.updateSlot(idx, newItem);
+            }
+        });
+        return window;
     }
     // =======================================
     // Sending and receiving data from Python
@@ -112,11 +129,66 @@ class SemanticSteve {
         }), 0);
         // Set fields that are to be set while skills are running
         this.currentSkill = skillToInvoke;
-        this.inventoryAtTimeOfCurrentSkillInvocation = undefined; // Not implemented (placeholder)
+        this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
     }
-    // Not implemented (placeholder)
+    getToolDamage(item) {
+        // if (!item || !item.nbt) return 0;
+        // const raw = item.nbt.value as any;
+        // const simplified = nbt.simplify(raw.Damage);
+        // // Check if the item has NBT data and a Damage tag
+        // // if (item.nbt && item.nbt.value && item.nbt.value.Damage) {
+        // //   return item.nbt.value.Damage.value;
+        // // }
+        // if (simplified !== undefined) {
+        //   return simplified;
+        // }
+        if (item.durabilityUsed) {
+            return item.durabilityUsed;
+        }
+        if (this.bot.registry.supportFeature('nbtOnMetadata')) {
+            if (item.metadata !== undefined) {
+                return item.metadata;
+            }
+        }
+        // For older Mineflayer versions that use metadata directly
+        return 0;
+    }
     getInventoryChangesSinceCurrentSkillWasInvoked() {
-        // TODO: Compare current inventory with `this.inventoryAtTimeOfCurrentSkillInvocation`
+        if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
+            throw new Error("This should never occur when the last known inventory is not ran");
+        }
+        const differential = {};
+        // iterate over slots, report the item differential.
+        for (let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart; i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd; i++) {
+            const oldItem = this.inventoryAtTimeOfCurrentSkillInvocation.slots[i];
+            if (!oldItem) {
+                continue;
+            }
+            // find item in the current inventory
+            const found = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt);
+            if (!found) {
+                // item was removed
+                differential[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
+            }
+            // item exists, but count is different
+            if (found && found.count !== oldItem.count) {
+                differential[oldItem.type] = { count: found.count - oldItem.count };
+            }
+            // item exists, but nbt is different
+            if (found && found.nbt && found.nbt !== oldItem.nbt) {
+                // check damage first
+                const oldDmg = this.getToolDamage(oldItem);
+                const newDmg = this.getToolDamage(found);
+                if (oldDmg !== newDmg) {
+                    differential[oldItem.type] = { damageDifferential: oldDmg - newDmg, count: found.count - oldItem.count };
+                }
+                else {
+                    // check if the nbt is different
+                    differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+                }
+            }
+        }
+        return differential;
     }
     handleSkillResolution(result, 
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
@@ -136,6 +208,7 @@ class SemanticSteve {
         const toSendToPython = {
             envState: this.bot.envState.getDTO(),
             skillInvocationResults: result.message,
+            inventoryChanges: invChanges,
         };
         this.sendDataToPython(toSendToPython);
     }

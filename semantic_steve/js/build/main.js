@@ -13,8 +13,15 @@ const mineflayer_1 = require("mineflayer");
 const _1 = require(".");
 const prismarine_viewer_1 = require("prismarine-viewer");
 const semantic_steve_1 = require("./semantic-steve");
-const config = new semantic_steve_1.SemanticSteveConfig();
-const bot = (0, mineflayer_1.createBot)({ username: "SemanticSteve", port: config.botPort });
+const config = new semantic_steve_1.SemanticSteveConfig({
+    botHost: process.env.BOT_HOST || 'localhost',
+    botPort: parseInt(process.env.BOT_PORT || "25565"),
+    mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
+    zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
+    immediateSurroundingsRadius: parseInt(process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"),
+    distantSurroundingsRadius: parseInt(process.env.DISTANT_SURROUNDINGS_RADIUS || "13"),
+});
+const bot = (0, mineflayer_1.createBot)({ username: "SemanticSteve", port: config.botPort, host: config.botHost });
 bot.once("spawn", () => __awaiter(void 0, void 0, void 0, function* () {
     bot.loadPlugin((0, _1.createPlugin)({
         immediateSurroundingsRadius: config.immediateSurroundingsRadius,

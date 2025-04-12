@@ -40,6 +40,9 @@ class InstallNodeModules(install):
                 "Download from https://nodejs.org."
             )
 
+        # Proceed with the standard installation
+        install.run(self)
+
         # Run yarn install in the js directory to install JavaScript dependencies
         js_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "semantic_steve", "js"
@@ -65,9 +68,6 @@ class InstallNodeModules(install):
                     "yarn is not installed or not found in PATH. "
                     "Please install yarn using npm: `npm install -g yarn`"
                 )
-
-        # Proceed with the standard installation
-        install.run(self)
 
 
 setup(

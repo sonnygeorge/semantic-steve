@@ -1,6 +1,9 @@
 import ast
 import json
 
+import subprocess
+import sys
+
 
 class SingleLineListEncoder(json.JSONEncoder):
     """Custom JSON encoder that formats lists on a single line"""
@@ -47,7 +50,7 @@ class SingleLineListEncoder(json.JSONEncoder):
 
 def parse_skill_invocation(function_call_str: str) -> tuple[str, list, dict]:
     """Parses a skill invocation string into its components."""
-    
+
     function_call_str = function_call_str.strip()
     if "(" not in function_call_str or ")" not in function_call_str:
         return function_call_str, [], {}

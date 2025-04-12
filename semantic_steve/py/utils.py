@@ -1,8 +1,11 @@
 import ast
+import os
 import json
 
 import subprocess
 import sys
+
+from semantic_steve.py.constants import PATH_TO_JS_DIR
 
 
 class SingleLineListEncoder(json.JSONEncoder):
@@ -113,3 +116,65 @@ def parse_skill_invocation(function_call_str: str) -> tuple[str, list, dict]:
                 parsed_arg = current_arg.strip()
             args.append(parsed_arg)
     return function_name, args, kwargs
+
+
+def ascertain_js_dependencies():
+    if not os.path.exists(PATH_TO_JS_DIR):
+        raise RuntimeError(
+            "Somehow the necessary javascript code directory does not exist at the "
+            f"expected location: '{PATH_TO_JS_DIR}'. Try reinstalling the package and "
+            "report this issue if it persists."
+        )
+
+    # Validate Node.js version
+    invalid_node_version_recommendation = (
+        "Please install Node.js 22 from https://nodejs.org or use a version manager"
+        " like nvm: `nvm install 22`. The command `node --version` must return a "
+        "version starting with 'v22'. in order for SemanticSteve to run."
+    )
+    try:
+        result = subprocess.run(
+            ["node", "--version"], capture_output=True, text=True, check=True
+        )
+        version = result.stdout.strip().lstrip("v")  # e.g., "22.1.0"
+        major = int(version.split(".")[0])
+        if major != 22:
+            raise RuntimeError(
+                f"Node.js version {version} found, but version 22 is required. "
+                + invalid_node_version_recommendation
+            )
+    except FileNotFoundError:
+        raise RuntimeError(
+            "Node.js is not installed or not found in PATH. "
+            + "Please install Node.js 22 from https://nodejs.org or use a version manager"
+            " like nvm: `nvm install 22`. The command `node --version` must return a "
+            "version starting with 'v22'. in order to run SemanticSteve."
+        )
+    except subprocess.CalledProcessError:
+        raise RuntimeError(
+            "Failed to run `node --version`. " + invalid_node_version_recommendation
+        )
+    except ValueError:
+        raise RuntimeError(
+            "Could not parse Node.js version. " + invalid_node_version_recommendation
+        )
+
+    # Ensure JS dependencies are installed
+    try:
+        subprocess.run(
+            ["yarn", "install"],
+            cwd=PATH_TO_JS_DIR,
+            check=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"The following error occurred while trying to run `yarn "
+            f"install` to ascertain the JS dependencies: {e}"
+        )
+    except FileNotFoundError:
+        raise RuntimeError(
+            "yarn is not installed or not found in PATH. "
+            "Please install yarn using npm: `npm install -g yarn`"
+        )

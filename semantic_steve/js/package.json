@@ -4,11 +4,8 @@
   "main": "build/index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node build/index.js",
     "build": "npx tsc",
-    "dev": "npx ts-node src/index.ts",
-    "cli_test": "npx ts-node test/cli.ts",
-    "chat_test": "npx ts-node test/chat.ts"
+    "dev": "npx ts-node src/index.ts"
   },
   "devDependencies": {
     "prismarine-entity": "^2.5.0",
@@ -28,6 +25,6 @@
     "zeromq": "^6.3.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22"
   }
 }

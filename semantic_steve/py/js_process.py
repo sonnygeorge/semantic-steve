@@ -4,7 +4,7 @@ from semantic_steve.py.constants import (
     CMD_TO_DEBUG_START_JS_PROCESS,
     CMD_TO_REBUILD_TYPESCRIPT,
     CMD_TO_START_JS_PROCESS,
-    CWD_FOR_JS_PROCESS_CMDS,
+    PATH_TO_JS_DIR,
 )
 
 
@@ -23,14 +23,14 @@ class SemanticSteveJsProcessManager:
     ########################
 
     def __enter__(self):
-        if self.should_rebuild_typescript and not self.debug: # unneeded step if debugging.
+        if self.should_rebuild_typescript and not self.debug:  # unneeded step if debugging.
             self._rebuild_typescript()
 
         print(CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS)
         self.js_process = subprocess.Popen(
             CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS,
             stderr=subprocess.PIPE,
-            cwd=CWD_FOR_JS_PROCESS_CMDS,
+            cwd=PATH_TO_JS_DIR,
             text=True,
         )
         self.check_and_propogate_errors()
@@ -48,7 +48,7 @@ class SemanticSteveJsProcessManager:
         try:
             subprocess.run(
                 CMD_TO_REBUILD_TYPESCRIPT,
-                cwd=CWD_FOR_JS_PROCESS_CMDS,
+                cwd=PATH_TO_JS_DIR,
                 check=True,
                 stderr=subprocess.PIPE,
                 text=True,

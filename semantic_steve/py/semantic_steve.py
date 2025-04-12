@@ -7,23 +7,25 @@ from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
 from semantic_steve.py.schema import SemanticSteveDocs, SemanticSteveUsageError
 from semantic_steve.py.skills_docs import generate_skills_docs
+from semantic_steve.py.utils import ascertain_js_dependencies
 
 
 class SemanticSteve:
     def __init__(
         self,
-        should_rebuild_typescript: bool = False,
         zmq_port: int = 5555,
-        debug: bool = False
+        # Users should never use the following args (only devs):
+        _debug: bool = False,
+        _should_rebuild_typescript: bool = False,
     ):
+        SemanticSteve.ascertain_js_dependencies()
         self.js_process_manager = SemanticSteveJsProcessManager(
-            should_rebuild_typescript=should_rebuild_typescript, debug=debug
+            should_rebuild_typescript=_should_rebuild_typescript, debug=_debug
         )
         self.zmq_port = zmq_port
-        self.debug = debug
+        self.debug = _debug
         self.socket: zmq.Socket | None = None
         self.context: zmq.Context | None = None
-
 
     ###########################
     ## Documentation getters ##
@@ -48,6 +50,15 @@ class SemanticSteve:
             skills_docs=SemanticSteve.get_skills_docs(),
             tips_tutorials_and_sops=SemanticSteve.get_tips_tutorials_and_sops(),
         )
+
+    ###################################
+    ## Management of JS dependencies ##
+    ###################################
+
+    @staticmethod
+    def ascertain_js_dependencies():
+        """Checks if the JS dependencies are installed and installs them if not."""
+        ascertain_js_dependencies()
 
     ########################
     ## Context management ##

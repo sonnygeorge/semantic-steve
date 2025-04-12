@@ -44,6 +44,10 @@ class AscertainNodeVersion(install):
 
 
 setup(
+    packages=["semantic_steve"],
+    package_data={
+        "semantic_steve": ["js/**/*"],  # Include all files in the js directory
+    },
     cmdclass={
         "install": AscertainNodeVersion,
     },

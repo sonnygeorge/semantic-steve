@@ -1,14 +1,16 @@
 from setuptools import setup, Command
 from setuptools.command.install import install
 import subprocess
+import os
+import sys
 
 
-class AssertNodeVersion(install):
-    """Custom install command to check for Node.js 22 before installation."""
+class InstallNodeModules(install):
+    """Custom install command to check for Node.js 22 and run yarn install."""
 
     def run(self):
+        # Validate Node.js version
         try:
-            # Check Node.js version
             result = subprocess.run(
                 ["node", "--version"], capture_output=True, text=True, check=True
             )
@@ -38,12 +40,38 @@ class AssertNodeVersion(install):
                 "Download from https://nodejs.org."
             )
 
-        # Proceed with the standard installation if checks pass
+        # Run yarn install in the js directory to install JavaScript dependencies
+        js_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "semantic_steve", "js"
+        )
+
+        if not os.path.exists(js_dir):
+            print(f"Warning: JavaScript directory not found at {js_dir}")
+        else:
+            try:
+                print(f"Running yarn install in {js_dir}")
+                subprocess.run(
+                    ["yarn", "install"],
+                    cwd=js_dir,
+                    check=True,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
+                )
+                print("yarn install completed successfully.")
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"Failed to run yarn install: {e}")
+            except FileNotFoundError:
+                raise RuntimeError(
+                    "yarn is not installed or not found in PATH. "
+                    "Please install yarn using npm: `npm install -g yarn`"
+                )
+
+        # Proceed with the standard installation
         install.run(self)
 
 
 setup(
     cmdclass={
-        "install": AssertNodeVersion,
+        "install": InstallNodeModules,
     },
 )

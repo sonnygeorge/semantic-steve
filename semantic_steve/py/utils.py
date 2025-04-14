@@ -1,7 +1,6 @@
 import ast
-import os
 import json
-
+import os
 import subprocess
 import sys
 
@@ -143,21 +142,21 @@ def ascertain_js_dependencies():
                 f"Node.js version {version} found, but version 22 is required. "
                 + invalid_node_version_recommendation
             )
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise RuntimeError(
             "Node.js is not installed or not found in PATH. "
             + "Please install Node.js 22 from https://nodejs.org or use a version manager"
             " like nvm: `nvm install 22`. The command `node --version` must return a "
             "version starting with 'v22'. in order to run SemanticSteve."
-        )
-    except subprocess.CalledProcessError:
+        ) from e
+    except subprocess.CalledProcessError as e:
         raise RuntimeError(
             "Failed to run `node --version`. " + invalid_node_version_recommendation
-        )
-    except ValueError:
+        ) from e
+    except ValueError as e:
         raise RuntimeError(
             "Could not parse Node.js version. " + invalid_node_version_recommendation
-        )
+        ) from e
 
     # Ensure JS dependencies are installed
     try:
@@ -172,9 +171,9 @@ def ascertain_js_dependencies():
         raise RuntimeError(
             f"The following error occurred while trying to run `yarn "
             f"install` to ascertain the JS dependencies: {e}"
-        )
-    except FileNotFoundError:
+        ) from e
+    except FileNotFoundError as e:
         raise RuntimeError(
             "yarn is not installed or not found in PATH. "
             "Please install yarn using npm: `npm install -g yarn`"
-        )
+        ) from e

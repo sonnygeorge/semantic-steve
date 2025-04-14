@@ -150,10 +150,10 @@ export class ImmediateSurroundings {
         [...this.blocksToAllCoords.entries()].map(([block, allCoords]) => [
           block,
           allCoords.map((coords) => [coords.x, coords.y, coords.z]),
-        ])
+        ]),
       ),
       visibleBiomes: Array.from(this.biomes).map(
-        (biomeId) => this.bot.registry.biomes[biomeId].name
+        (biomeId) => this.bot.registry.biomes[biomeId].name,
       ),
     };
   }
@@ -197,7 +197,7 @@ export class DistantSurroundingsInADirection {
     return {
       visibleBlockCounts: Object.fromEntries(this.blocksToCounts),
       visibleBiomes: Array.from(this.biomesToClosestCoords.keys()).map(
-        (biomeId) => this.bot.registry.biomes[biomeId].name
+        (biomeId) => this.bot.registry.biomes[biomeId].name,
       ),
     };
   }
@@ -275,7 +275,7 @@ export class _Surroundings {
       Object.values(Direction).map((dir) => [
         dir,
         new DistantSurroundingsInADirection(bot),
-      ])
+      ]),
     );
   }
 
@@ -283,7 +283,7 @@ export class _Surroundings {
     return {
       immediateSurroundings: this.immediate.getDTO(),
       distantSurroundings: Object.fromEntries(
-        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()])
+        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()]),
       ),
     };
   }

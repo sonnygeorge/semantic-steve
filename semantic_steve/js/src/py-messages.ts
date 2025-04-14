@@ -11,5 +11,5 @@ export type SkillInvocation = {
 export type DataFromMinecraft = {
   envState: EnvStateDTO;
   skillInvocationResults?: string;
-  inventoryChanges?: InventoryDifferential
+  inventoryChanges?: InventoryDifferential;
 };

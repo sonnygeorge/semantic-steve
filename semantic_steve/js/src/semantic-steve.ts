@@ -66,7 +66,7 @@ export class SemanticSteve {
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig()
+    config: SemanticSteveConfig = new SemanticSteveConfig(),
   ) {
     this.bot = bot;
 
@@ -78,13 +78,13 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS
+      config.selfPreservationCheckThrottleMS,
     );
 
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this)
+      this.handleSkillResolution.bind(this),
     );
   }
 
@@ -92,14 +92,14 @@ export class SemanticSteve {
     const window: PWindow<StorageEvents> = this.PWindow.createWindow(
       0,
       "minecraft:inventory",
-      "Inventory"
+      "Inventory",
     );
     const slots = this.bot.inventory.slots;
     slots.forEach((slot, idx) => {
       if (slot) {
         const newItem = this.PItem.fromNotch(
           this.PItem.toNotch(slot, true),
-          slot.stackId ?? undefined
+          slot.stackId ?? undefined,
         );
         if (newItem != null) {
           newItem.slot = idx;
@@ -141,7 +141,7 @@ export class SemanticSteve {
       } catch (error) {
         const result = new GenericSkillResults.UnhandledRuntimeError(
           skillInvocation.skillName,
-          error as Error
+          error as Error,
         );
         this.handleSkillResolution(result);
       }
@@ -179,7 +179,7 @@ export class SemanticSteve {
   private getInventoryChangesSinceCurrentSkillWasInvoked(): InventoryDifferential {
     if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
       throw new Error(
-        "This should never occur when the last known inventory is not ran"
+        "This should never occur when the last known inventory is not ran",
       );
     }
 
@@ -203,7 +203,7 @@ export class SemanticSteve {
         oldItem.type,
         oldItem.metadata,
         false,
-        oldItem.nbt
+        oldItem.nbt,
       );
 
       if (!found) {
@@ -245,7 +245,7 @@ export class SemanticSteve {
     result: SkillResult,
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated?: boolean
+    envStateIsHydrated?: boolean,
   ): void {
     // Hydrate the envState if it wasn't just hydrated by a skill
     if (!envStateIsHydrated) {
@@ -326,14 +326,14 @@ export class SemanticSteve {
         if (this.hasDiedWhileAwaitingInvocation) {
           this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
           const result = new GenericSkillResults.DeathWhileAwaitingInvocation(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           this.handleSkillResolution(result);
         } else if (skillInvocation.skillName in this.skills) {
           this.invokeSkill(skillInvocation);
         } else {
           const result = new GenericSkillResults.SkillNotFound(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           this.handleSkillResolution(result);
         }

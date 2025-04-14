@@ -102,7 +102,7 @@ function getBestToolForBlock(bot, blockType) {
  * @returns True if a specific tool is required, false otherwise
  */
 function blockRequiresTool(bot, blockType) {
-    // This is a simplified check - in real implementation, 
+    // This is a simplified check - in real implementation,
     // you would check block hardness and required tool level
     const hardBlocks = [
         'stone', 'cobblestone', 'ores', 'obsidian',

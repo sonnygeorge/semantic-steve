@@ -1,6 +1,5 @@
-import assert from "assert";
 import { Bot } from "mineflayer";
-import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
+import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import * as THREE from "three";
 import { Worker } from "worker_threads";
 const { createCanvas } = require("node-canvas-webgl/lib");
@@ -12,8 +11,8 @@ const {
   WorldView,
   getBufferFromStream,
 } = require("prismarine-viewer/viewer");
-import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
-import { SkillResult, TakeScreenshotOfResults } from "../skill-results";
+import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../../thing";
+import { TakeScreenshotOfResults } from "./results";
 
 export class TakeScreenshotOf extends Skill {
   public static readonly metadata: SkillMetadata = {
@@ -142,11 +141,11 @@ export class TakeScreenshotOf extends Skill {
         console.error(`Could not find ${thing.name}`);
         return null;
       }
-      
-    //   const thingDetails = await this.getThingDetails(thing);
-    //   if (!thingDetails) return null;
 
-    //   const { position } = thingDetails!;
+      //   const thingDetails = await this.getThingDetails(thing);
+      //   if (!thingDetails) return null;
+
+      //   const { position } = thingDetails!;
 
       // Use bot's head position and viewing angle for the camera
       // This is a simplified approach - we'll just position the camera where the bot is
@@ -170,15 +169,15 @@ export class TakeScreenshotOf extends Skill {
       const dy = targetPosition.y - cameraPosition.y;
       const dz = targetPosition.z - cameraPosition.z;
       const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      
+
       // Calculate pitch (vertical angle) - in Minecraft/Mineflayer coordinate system
       const pitch = Math.asin(dy / distance); // Negative because looking up is negative in Minecraft
-      
+
       // Calculate yaw (horizontal angle) - in Minecraft/Mineflayer coordinate system
       const yaw = Math.atan2(-dx, -dz); // Adjust for Minecraft's coordinate system
 
       // Set the camera rotation
-      viewer.camera.rotation.set(pitch, yaw, 0, 'ZYX')
+      viewer.camera.rotation.set(pitch, yaw, 0, "ZYX");
       // TODO: In the future, implement smart camera positioning logic to frame the target
       // This would involve calculating an offset based on the thing's type and size
       // For now, we're just using the bot's viewpoint
@@ -191,9 +190,13 @@ export class TakeScreenshotOf extends Skill {
         for (const entityId in this.bot.entities) {
           const e = this.bot.entities[entityId];
           if (e !== this.bot.entity) {
-            
             // Add other entities to the world view
-            viewer.updateEntity({ id: e.id, pos: e.position, pitch: e.pitch, yaw: e.yaw });
+            viewer.updateEntity({
+              id: e.id,
+              pos: e.position,
+              pitch: e.pitch,
+              yaw: e.yaw,
+            });
           }
         }
       }
@@ -215,8 +218,8 @@ export class TakeScreenshotOf extends Skill {
       const buffer = await getBufferFromStream(imageStream);
 
       // Clean up resources
-    //   viewer.dispose();
-    //   renderer.dispose();
+      //   viewer.dispose();
+      //   renderer.dispose();
 
       return buffer;
     } catch (error) {

@@ -46,14 +46,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TakeScreenshotOf = void 0;
-const skill_1 = require("./skill");
+const skill_1 = require("../skill");
 const THREE = __importStar(require("three"));
 const { createCanvas } = require("node-canvas-webgl/lib");
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const { Viewer, WorldView, getBufferFromStream, } = require("prismarine-viewer/viewer");
-const thing_1 = require("../thing");
-const skill_results_1 = require("../skill-results");
+const thing_1 = require("../../thing");
+const results_1 = require("./results");
 class TakeScreenshotOf extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
@@ -72,7 +72,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                     console.log(error);
                     if (error instanceof thing_1.InvalidThingError) {
                         // Invalid thing name
-                        this.onResolution(new skill_results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                        this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
                         return;
                     }
                     // Other errors
@@ -81,25 +81,25 @@ class TakeScreenshotOf extends skill_1.Skill {
                 // Check if the Thing is visible in immediate surroundings
                 if (!targetThing.isVisibleInImmediateSurroundings()) {
                     // The thing exists but isn't visible in immediate surroundings
-                    this.onResolution(new skill_results_1.TakeScreenshotOfResults.InvalidThing(thing, `${thing_1.SUPPORTED_THING_TYPES} that are visible in immediate surroundings`));
+                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, `${thing_1.SUPPORTED_THING_TYPES} that are visible in immediate surroundings`));
                     return;
                 }
                 // Take the screenshot
                 const screenshotBuffer = yield this.captureScreenshot(targetThing);
                 if (!screenshotBuffer) {
                     // Screenshot capture failed
-                    this.onResolution(new skill_results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
                     return;
                 }
                 // Save the screenshot
                 const screenshotPath = yield this.saveScreenshot(screenshotBuffer, thing);
                 // Return success with the appropriate result type
-                this.onResolution(new skill_results_1.TakeScreenshotOfResults.Success(thing, screenshotPath));
+                this.onResolution(new results_1.TakeScreenshotOfResults.Success(thing, screenshotPath));
             }
             catch (error) {
                 console.log("error", error);
                 // Use InvalidThing result for any errors
-                this.onResolution(new skill_results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
             }
         });
     }
@@ -162,7 +162,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                 // Calculate yaw (horizontal angle) - in Minecraft/Mineflayer coordinate system
                 const yaw = Math.atan2(-dx, -dz); // Adjust for Minecraft's coordinate system
                 // Set the camera rotation
-                viewer.camera.rotation.set(pitch, yaw, 0, 'ZYX');
+                viewer.camera.rotation.set(pitch, yaw, 0, "ZYX");
                 // TODO: In the future, implement smart camera positioning logic to frame the target
                 // This would involve calculating an offset based on the thing's type and size
                 // For now, we're just using the bot's viewpoint
@@ -174,7 +174,12 @@ class TakeScreenshotOf extends skill_1.Skill {
                         const e = this.bot.entities[entityId];
                         if (e !== this.bot.entity) {
                             // Add other entities to the world view
-                            viewer.updateEntity({ id: e.id, pos: e.position, pitch: e.pitch, yaw: e.yaw });
+                            viewer.updateEntity({
+                                id: e.id,
+                                pos: e.position,
+                                pitch: e.pitch,
+                                yaw: e.yaw,
+                            });
                         }
                     }
                 }
@@ -282,7 +287,7 @@ TakeScreenshotOf.metadata = {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the
+       * @param atCoordinates - Optional coordinates to disamiguate where the 
        * thing is located.
        */
     `,

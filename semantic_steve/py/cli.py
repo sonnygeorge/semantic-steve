@@ -9,7 +9,7 @@ from semantic_steve.py.semantic_steve import SemanticSteve
 
 async def run_as_cli(semantic_steve: SemanticSteve):
     history_dir = os.path.expanduser("~/.semantic_steve")
-    os.makedirs(history_dir, exist_ok=True)    
+    os.makedirs(history_dir, exist_ok=True)
     history_file = os.path.join(history_dir, "history.txt")
     history = FileHistory(history_file)
     session = PromptSession(

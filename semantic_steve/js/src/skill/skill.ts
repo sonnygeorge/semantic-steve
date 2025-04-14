@@ -3,7 +3,7 @@ import { SkillResult } from "../skill-results";
 
 export type SkillResolutionHandler = (
   result: SkillResult,
-  envStateIsHydrated?: boolean
+  envStateIsHydrated?: boolean,
 ) => void;
 
 /**

@@ -12,34 +12,36 @@ export class Block implements Thing {
     this.name = name;
   }
 
-
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name
+      this.name,
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name)
+      dir.blocksToCounts.has(this.name),
     );
   }
 
   locateNearest(direction?: Vicinity): Vec3 | null {
     // Check immediate surroundings first (regardless of direction parameter)
-    const immediate = this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
+    const immediate =
+      this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
     if (immediate != null && immediate.length > 0) {
       return immediate[0];
     }
-    
+
     // If direction is explicitly set to "immediate", we've already checked and didn't find it
     if (direction === "immediate") {
       return null;
     }
-    
+
     // If a specific direction is provided (and it's not "immediate"), check only that direction
     if (direction) {
-      const distant = this.bot.envState.surroundings.distant.get(direction as unknown as Direction);
+      const distant = this.bot.envState.surroundings.distant.get(
+        direction as unknown as Direction,
+      );
       if (distant != null) {
         const count = distant.blocksToCounts.get(this.name);
         if (count != null && count > 0) {
@@ -48,15 +50,17 @@ export class Block implements Thing {
       }
       return null;
     }
-    
+
     // If no direction specified, check all directions
     // Get all directions from the surroundings map
-    const directions = Array.from(this.bot.envState.surroundings.distant.keys());
-    
+    const directions = Array.from(
+      this.bot.envState.surroundings.distant.keys(),
+    );
+
     // Find the closest coordinates across all directions
     let closestCoords: Vec3 | null = null;
     let minDistance = Infinity;
-    
+
     for (const dir of directions) {
       const distant = this.bot.envState.surroundings.distant.get(dir);
       if (distant != null) {
@@ -66,7 +70,7 @@ export class Block implements Thing {
           if (coords != null) {
             // Calculate distance to these coordinates
             const distance = coords.distanceTo(this.bot.entity.position);
-            
+
             // Update closest if this is closer than what we've found so far
             if (distance < minDistance) {
               minDistance = distance;
@@ -76,7 +80,7 @@ export class Block implements Thing {
         }
       }
     }
-    
+
     return closestCoords;
   }
 }

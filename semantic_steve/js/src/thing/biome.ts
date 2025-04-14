@@ -36,25 +36,27 @@ export class Biome implements Thing {
 
   locateNearest(direction?: Vicinity): Vec3 | null {
     const id = this.bot.registry.biomesByName[this.name]?.id;
-    
+
     // Check immediate surroundings first (regardless of direction parameter)
     if (!id) {
       return null;
     }
-    
+
     // If in immediate surroundings, return current position
     if (this.bot.envState.surroundings.immediate.biomes.has(id)) {
       return this.bot.entity.position.clone(); // assume we are in it
     }
-    
+
     // If direction is explicitly set to "immediate", we've already checked and didn't find it
     if (direction === "immediate") {
       return null;
     }
-    
+
     // If a specific direction is provided (and it's not "immediate"), check only that direction
     if (direction) {
-      const distant = this.bot.envState.surroundings.distant.get(direction as unknown as Direction);
+      const distant = this.bot.envState.surroundings.distant.get(
+        direction as unknown as Direction,
+      );
       if (distant != null) {
         const coords = distant.biomesToClosestCoords.get(id);
         if (coords != null) {
@@ -63,15 +65,17 @@ export class Biome implements Thing {
       }
       return null;
     }
-    
+
     // If no direction specified, check all directions
     // Get all directions from the surroundings map
-    const directions = Array.from(this.bot.envState.surroundings.distant.keys());
-    
+    const directions = Array.from(
+      this.bot.envState.surroundings.distant.keys(),
+    );
+
     // Find the closest coordinates across all directions
     let closestCoords: Vec3 | null = null;
     let minDistance = Infinity;
-    
+
     for (const dir of directions) {
       const distant = this.bot.envState.surroundings.distant.get(dir);
       if (distant != null) {
@@ -79,7 +83,7 @@ export class Biome implements Thing {
         if (coords != null) {
           // Calculate distance to these coordinates
           const distance = coords.distanceTo(this.bot.entity.position);
-          
+
           // Update closest if this is closer than what we've found so far
           if (distance < minDistance) {
             minDistance = distance;
@@ -88,7 +92,7 @@ export class Biome implements Thing {
         }
       }
     }
-    
+
     return closestCoords;
   }
 }

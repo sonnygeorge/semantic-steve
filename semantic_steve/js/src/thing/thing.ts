@@ -1,5 +1,5 @@
 import type { Bot } from "mineflayer";
-import type {Vec3} from 'vec3'
+import type { Vec3 } from "vec3";
 import { Vicinity } from "../env-state/surroundings";
 export interface Thing {
   bot: Bot;
@@ -8,5 +8,5 @@ export interface Thing {
   isVisibleInImmediateSurroundings(): boolean;
   isVisibleInDistantSurroundings(): boolean;
 
-  locateNearest(direction?: Vicinity):  Promise<Vec3 | null> | Vec3 | null;
+  locateNearest(direction?: Vicinity): Promise<Vec3 | null> | Vec3 | null;
 }

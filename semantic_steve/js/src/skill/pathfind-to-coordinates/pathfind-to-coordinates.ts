@@ -2,9 +2,9 @@ import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot, BotEvents } from "mineflayer";
 import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
-import { PathfindToCoordinatesResults as Results } from "../skill-results";
-import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../thing";
-import { Skill, SkillMetadata, SkillResolutionHandler } from "./skill";
+import { PathfindToCoordinatesResults } from "./results";
+import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../../thing";
+import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 
 const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
 
@@ -15,9 +15,14 @@ export class PathfindToCoordinates extends Skill {
       "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
     docstring: `
       /**
-       * Attempt to pathfind to or near a set of coordinates (digging and bridging as
-       * needed), stopping early if something from the stopIfFound list becomes visible in
-       * the bot's surroundings.
+       * Attempt to pathfind to or near a set of in-dimension coordinates (digging and
+       * bridging as needed), stopping early if something from the stopIfFound list
+       * becomes visible in the bot's surroundings.
+       * 
+       * TIP: Do not call this function with very distant coordinates, as this will likely
+       * result in a timeout. Instead, prefer incremental invocations of this skill for
+       * traversing long distances. 
+       * 
        * @param coordinates - The target coordinates as an array ordered [x, y, z].
        * @param stopIfFound - An optional array of strings representing things that, if
        * found, should cause the pathdinding to stop (e.g., useful things).
@@ -73,18 +78,18 @@ export class PathfindToCoordinates extends Skill {
    * @returns The result of the check, or undefined if no stopIfFound things are found.
    */
   private getResultIfAnyStopIfFoundThingInSurroundings():
-    | Results.FoundThingInDistantSurroundings
-    | Results.FoundThingInImmediateSurroundings
+    | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
+    | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
     | undefined {
     assert(this.targetCoords);
     for (const thing of this.stopIfFound) {
       if (thing.isVisibleInImmediateSurroundings()) {
-        return new Results.FoundThingInImmediateSurroundings(
+        return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
           this.targetCoords,
           thing.name
         );
       } else if (thing.isVisibleInDistantSurroundings()) {
-        return new Results.FoundThingInDistantSurroundings(
+        return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
           this.targetCoords,
           thing.name
         );
@@ -98,19 +103,22 @@ export class PathfindToCoordinates extends Skill {
 
   private resolveInvalidCoords(coords: [number, number, number]): void {
     console.log("Resolving pathfinding as invalid coordinates");
-    this.onResolution(new Results.InvalidCoords(coords));
+    this.onResolution(new PathfindToCoordinatesResults.InvalidCoords(coords));
   }
 
   private resolveInvalidThing(thingName: string): void {
     console.log("Resolving pathfinding as invalid thing");
-    const result = new Results.InvalidThing(thingName, SUPPORTED_THING_TYPES);
+    const result = new PathfindToCoordinatesResults.InvalidThing(
+      thingName,
+      SUPPORTED_THING_TYPES
+    );
     this.onResolution(result);
   }
 
   private resolveThingFound(
     result:
-      | Results.FoundThingInDistantSurroundings
-      | Results.FoundThingInImmediateSurroundings
+      | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
+      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
   ): void {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
@@ -124,7 +132,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as partial success");
     assert(this.targetCoords);
     this.cleanupListeners();
-    const result = new Results.PartialSuccess(
+    const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
       this.targetCoords
     );
@@ -145,7 +153,7 @@ export class PathfindToCoordinates extends Skill {
     // something from stopIfFound, even if they reached their pathfinding goal as well.
     const result =
       this.getResultIfAnyStopIfFoundThingInSurroundings() ??
-      new Results.Success(this.targetCoords);
+      new PathfindToCoordinatesResults.Success(this.targetCoords);
     this.unsetPathfindingParams();
     this.onResolution(result, true); // NOTE: true = envStateIsHydrated
   }

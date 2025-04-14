@@ -59,14 +59,16 @@ export class SemanticSteve {
   private selfPreserver: SelfPreserver;
   private skills: { [key: string]: Skill };
   private currentSkill?: Skill;
-  private inventoryAtTimeOfCurrentSkillInvocation?: Bot["inventory"]; // Not implemented (placeholder)
+  private timeOfLastSkillInvocation?: number;
+  private inventoryAtTimeOfCurrentSkillInvocation?: Bot["inventory"];
+
   private hasDiedWhileAwaitingInvocation: boolean = false;
   private PWindow: WindowsExports;
   private PItem: typeof PItem;
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig(),
+    config: SemanticSteveConfig = new SemanticSteveConfig()
   ) {
     this.bot = bot;
 
@@ -78,13 +80,13 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS,
+      config.selfPreservationCheckThrottleMS
     );
 
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this),
+      this.handleSkillResolution.bind(this)
     );
   }
 
@@ -92,14 +94,14 @@ export class SemanticSteve {
     const window: PWindow<StorageEvents> = this.PWindow.createWindow(
       0,
       "minecraft:inventory",
-      "Inventory",
+      "Inventory"
     );
     const slots = this.bot.inventory.slots;
     slots.forEach((slot, idx) => {
       if (slot) {
         const newItem = this.PItem.fromNotch(
           this.PItem.toNotch(slot, true),
-          slot.stackId ?? undefined,
+          slot.stackId ?? undefined
         );
         if (newItem != null) {
           newItem.slot = idx;
@@ -141,13 +143,14 @@ export class SemanticSteve {
       } catch (error) {
         const result = new GenericSkillResults.UnhandledRuntimeError(
           skillInvocation.skillName,
-          error as Error,
+          error as Error
         );
         this.handleSkillResolution(result);
       }
     }, 0);
     // Set fields that are to be set while skills are running
     this.currentSkill = skillToInvoke;
+    this.timeOfLastSkillInvocation = Date.now();
     this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
   }
 
@@ -176,10 +179,11 @@ export class SemanticSteve {
 
     return 0;
   }
+
   private getInventoryChangesSinceCurrentSkillWasInvoked(): InventoryDifferential {
     if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
       throw new Error(
-        "This should never occur when the last known inventory is not ran",
+        "This should never occur when the last known inventory is not ran"
       );
     }
 
@@ -203,7 +207,7 @@ export class SemanticSteve {
         oldItem.type,
         oldItem.metadata,
         false,
-        oldItem.nbt,
+        oldItem.nbt
       );
 
       if (!found) {
@@ -245,7 +249,7 @@ export class SemanticSteve {
     result: SkillResult,
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated?: boolean,
+    envStateIsHydrated?: boolean
   ): void {
     // Hydrate the envState if it wasn't just hydrated by a skill
     if (!envStateIsHydrated) {
@@ -257,6 +261,7 @@ export class SemanticSteve {
 
     // Unset fields that are only to be set while skills are running
     this.currentSkill = undefined;
+    this.timeOfLastSkillInvocation = undefined;
     this.inventoryAtTimeOfCurrentSkillInvocation = undefined;
 
     // Prepare the data to send to Python
@@ -273,6 +278,40 @@ export class SemanticSteve {
   // ==============
   // Other helpers
   // ==============
+
+  private async checkForAndHandleSkillTimeout(): Promise<undefined> {
+    if (!this.currentSkill) {
+      assert(
+        !this.timeOfLastSkillInvocation,
+        "No skill running, but time of last invocation is set"
+      );
+      assert(
+        !this.inventoryAtTimeOfCurrentSkillInvocation,
+        "No skill running, but inventory at time of invocation is set"
+      );
+    } else {
+      assert(
+        this.timeOfLastSkillInvocation,
+        "A skill is running, but time of last invocation is not set"
+      );
+      assert(
+        this.inventoryAtTimeOfCurrentSkillInvocation,
+        "A skill is running, but inventory at time of invocation is not set"
+      );
+      const curSkillClass = this.currentSkill.constructor as typeof Skill;
+      if (
+        Date.now() - this.timeOfLastSkillInvocation >
+        curSkillClass.TIMEOUT_MS
+      ) {
+        const skillClass = this.currentSkill.constructor as typeof Skill;
+        const result = new GenericSkillResults.SkillTimeout(
+          skillClass.METADATA.name,
+          curSkillClass.TIMEOUT_MS / 1000
+        );
+        this.handleSkillResolution(result);
+      }
+    }
+  }
 
   public async initializeSocket(): Promise<void> {
     // Now we bind and properly await it
@@ -326,14 +365,14 @@ export class SemanticSteve {
         if (this.hasDiedWhileAwaitingInvocation) {
           this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
           const result = new GenericSkillResults.DeathWhileAwaitingInvocation(
-            skillInvocation.skillName,
+            skillInvocation.skillName
           );
           this.handleSkillResolution(result);
         } else if (skillInvocation.skillName in this.skills) {
           this.invokeSkill(skillInvocation);
         } else {
           const result = new GenericSkillResults.SkillNotFound(
-            skillInvocation.skillName,
+            skillInvocation.skillName
           );
           this.handleSkillResolution(result);
         }
@@ -342,11 +381,24 @@ export class SemanticSteve {
       // 10 ms non-blocking sleep to allow current skill to run / avoid busy-waiting
       await new Promise((res) => setTimeout(res, 10));
 
+      // Check for and handle skill timeout
+      await this.checkForAndHandleSkillTimeout();
+
+      // Self-preservation
       if (this.selfPreserver.shouldSelfPreserve()) {
         if (this.currentSkill) {
           await this.currentSkill.pause();
         }
+        const start = Date.now();
         await this.selfPreserver.invoke(); // Await resolution before continuing
+        const elapsed = Date.now() - start;
+        if (this.timeOfLastSkillInvocation) {
+          // We don't want to count self-preservation time against the skill timeout
+          this.timeOfLastSkillInvocation += elapsed;
+          // TODO: Come up with better system/naming--updating "timeOfLastSkillInvocation"
+          // like this means the variable won't necessarily reflect what its name implies
+          // (nitpick, not urgent)
+        }
         if (this.currentSkill) {
           await this.currentSkill.resume();
         }

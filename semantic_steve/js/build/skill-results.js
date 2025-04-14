@@ -28,4 +28,10 @@ var GenericSkillResults;
         }
     }
     GenericSkillResults.DeathWhileAwaitingInvocation = DeathWhileAwaitingInvocation;
+    class SkillTimeout {
+        constructor(skillName, timeoutSeconds) {
+            this.message = `SkillTimeoutError: The execution of skill '${skillName}' passed the hard-coded time limit of '${timeoutSeconds}' seconds. If your arguments make the skill take a long time; try changing them. Otherwise, the player likely found its way into a bad state that caused it to get stuck; try doing something else and coming back to this skill later. If the issue persists, perhaps the skill is broken for your use case.`;
+        }
+    }
+    GenericSkillResults.SkillTimeout = SkillTimeout;
 })(GenericSkillResults || (exports.GenericSkillResults = GenericSkillResults = {}));

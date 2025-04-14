@@ -31,4 +31,11 @@ export namespace GenericSkillResults {
       this.message = `For some reason, before your skill could be invoked, you died. Since death results in a respawn (changed state), the invocation '${skillName}' was never attempted. This is your new state after respawning.`;
     }
   }
+
+  export class SkillTimeout implements SkillResult {
+    message: string;
+    constructor(skillName: string, timeoutSeconds: number) {
+      this.message = `SkillTimeoutError: The execution of skill '${skillName}' passed the hard-coded time limit of '${timeoutSeconds}' seconds. If your arguments make the skill take a long time; try changing them. Otherwise, the player likely found its way into a bad state that caused it to get stuck; try doing something else and coming back to this skill later. If the issue persists, perhaps the skill is broken for your use case.`;
+    }
+  }
 }

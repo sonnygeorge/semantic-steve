@@ -12,11 +12,11 @@ const smelt_items_1 = require("./smelt-items/smelt-items");
 const take_screenshot_of_1 = require("./take-screenshot-of/take-screenshot-of");
 function buildSkillsRegistry(bot, onResolution) {
     return {
-        [pathfind_to_coordinates_1.PathfindToCoordinates.metadata.name]: new pathfind_to_coordinates_1.PathfindToCoordinates(bot, onResolution),
-        [take_screenshot_of_1.TakeScreenshotOf.metadata.name]: new take_screenshot_of_1.TakeScreenshotOf(bot, onResolution),
-        [craft_items_1.CraftItems.metadata.name]: new craft_items_1.CraftItems(bot, onResolution),
-        [mine_blocks_1.MineBlocks.metadata.name]: new mine_blocks_1.MineBlocks(bot, onResolution),
-        [place_block_1.PlaceBlock.metadata.name]: new place_block_1.PlaceBlock(bot, onResolution),
-        [smelt_items_1.SmeltItems.metadata.name]: new smelt_items_1.SmeltItems(bot, onResolution),
+        [pathfind_to_coordinates_1.PathfindToCoordinates.METADATA.name]: new pathfind_to_coordinates_1.PathfindToCoordinates(bot, onResolution),
+        [take_screenshot_of_1.TakeScreenshotOf.METADATA.name]: new take_screenshot_of_1.TakeScreenshotOf(bot, onResolution),
+        [craft_items_1.CraftItems.METADATA.name]: new craft_items_1.CraftItems(bot, onResolution),
+        [mine_blocks_1.MineBlocks.METADATA.name]: new mine_blocks_1.MineBlocks(bot, onResolution),
+        [place_block_1.PlaceBlock.METADATA.name]: new place_block_1.PlaceBlock(bot, onResolution),
+        [smelt_items_1.SmeltItems.METADATA.name]: new smelt_items_1.SmeltItems(bot, onResolution),
     };
 }

@@ -155,7 +155,8 @@ class CraftItems extends skill_1.Skill {
     }
 }
 exports.CraftItems = CraftItems;
-CraftItems.metadata = {
+CraftItems.TIMEOUT_MS = 10000; // 10 seconds
+CraftItems.METADATA = {
     name: "craftItems",
     signature: "craftItems(item: string, quantity: number = 1)",
     docstring: `

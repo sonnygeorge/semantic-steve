@@ -68,7 +68,7 @@ class MineBlocks extends skill_1.Skill {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.isMining) {
                 this.isMining = false;
-                console.log(`Pausing '${MineBlocks.metadata.name}'`);
+                console.log(`Pausing '${MineBlocks.METADATA.name}'`);
                 // Stop current mining activity if possible
                 try {
                     this.bot.stopDigging();
@@ -85,7 +85,7 @@ class MineBlocks extends skill_1.Skill {
             if (!this.isMining &&
                 this.blockToMine &&
                 this.currentQuantity < this.targetQuantity) {
-                console.log(`Resuming '${MineBlocks.metadata.name}'`);
+                console.log(`Resuming '${MineBlocks.METADATA.name}'`);
                 this.isMining = true;
                 // Re-find blocks in case the world changed while paused
                 this.blockPositions = (0, utils_1.findBlocksOfType)(this.bot, this.blockToMine);
@@ -163,7 +163,8 @@ class MineBlocks extends skill_1.Skill {
     }
 }
 exports.MineBlocks = MineBlocks;
-MineBlocks.metadata = {
+MineBlocks.TIMEOUT_MS = 20000; // 20 seconds
+MineBlocks.METADATA = {
     name: "mineBlocks",
     signature: "mineBlocks(item: string, quantity: number = 1)",
     docstring: `

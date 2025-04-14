@@ -3,7 +3,7 @@ import { SkillResult } from "../skill-results";
 
 export type SkillResolutionHandler = (
   result: SkillResult,
-  envStateIsHydrated?: boolean,
+  envStateIsHydrated?: boolean
 ) => void;
 
 /**
@@ -19,7 +19,8 @@ export interface SkillMetadata {
  * The interface that all skills must implement.
  */
 export abstract class Skill {
-  public static readonly metadata: SkillMetadata;
+  public static readonly METADATA: SkillMetadata;
+  public static readonly TIMEOUT_MS: number = 40000;
   protected bot: Bot;
   protected onResolution: SkillResolutionHandler;
 

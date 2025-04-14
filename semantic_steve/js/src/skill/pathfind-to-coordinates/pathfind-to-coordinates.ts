@@ -9,7 +9,8 @@ import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
 
 export class PathfindToCoordinates extends Skill {
-  public static readonly metadata: SkillMetadata = {
+  public static readonly TIMEOUT_MS: number = 25000; // 25 seconds
+  public static readonly METADATA: SkillMetadata = {
     name: "pathfindToCoordinates",
     signature:
       "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
@@ -29,6 +30,7 @@ export class PathfindToCoordinates extends Skill {
        */
     `,
   };
+
   private targetCoords?: Vec3;
   private stopIfFound: Thing[] = [];
   private activeListeners: {
@@ -263,7 +265,7 @@ export class PathfindToCoordinates extends Skill {
   }
 
   public async pause(): Promise<void> {
-    console.log(`Pausing '${PathfindToCoordinates.metadata.name}'`);
+    console.log(`Pausing '${PathfindToCoordinates.METADATA.name}'`);
     this.cleanupListeners();
     this.stopPathfindingPrematurely();
     // NOTE: We don't call unsetPathfindingParams (we need to be able to resume)
@@ -271,7 +273,7 @@ export class PathfindToCoordinates extends Skill {
 
   public async resume(): Promise<void> {
     assert(this.targetCoords);
-    console.log(`Resuming '${PathfindToCoordinates.metadata.name}'`);
+    console.log(`Resuming '${PathfindToCoordinates.METADATA.name}'`);
     this.beginPathfinding();
   }
 }

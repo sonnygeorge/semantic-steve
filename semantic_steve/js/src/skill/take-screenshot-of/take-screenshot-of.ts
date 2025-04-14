@@ -15,7 +15,8 @@ import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../../thing";
 import { TakeScreenshotOfResults } from "./results";
 
 export class TakeScreenshotOf extends Skill {
-  public static readonly metadata: SkillMetadata = {
+  public static readonly TIMEOUT_MS: number = 18000; // 18 seconds
+  public static readonly METADATA: SkillMetadata = {
     name: "takeScreenshotOf",
     signature:
       "takeScreenshotOf(thing: string, atCoordinates?: [number, number, number])",
@@ -300,10 +301,10 @@ export class TakeScreenshotOf extends Skill {
   }
 
   public async pause(): Promise<void> {
-    console.log(`Pausing '${TakeScreenshotOf.metadata.name}'`);
+    console.log(`Pausing '${TakeScreenshotOf.METADATA.name}'`);
   }
 
   public async resume(): Promise<void> {
-    console.log(`Resuming '${TakeScreenshotOf.metadata.name}'`);
+    console.log(`Resuming '${TakeScreenshotOf.METADATA.name}'`);
   }
 }

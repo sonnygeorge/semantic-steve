@@ -130,6 +130,7 @@ class SemanticSteve {
         }), 0);
         // Set fields that are to be set while skills are running
         this.currentSkill = skillToInvoke;
+        this.timeOfLastSkillInvocation = Date.now();
         this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
     }
     getToolDamage(item) {
@@ -212,6 +213,7 @@ class SemanticSteve {
         const invChanges = this.getInventoryChangesSinceCurrentSkillWasInvoked();
         // Unset fields that are only to be set while skills are running
         this.currentSkill = undefined;
+        this.timeOfLastSkillInvocation = undefined;
         this.inventoryAtTimeOfCurrentSkillInvocation = undefined;
         // Prepare the data to send to Python
         // TODO: Add invChanges to what we send to Python once getting this (maybe someday) gets implemented
@@ -225,6 +227,25 @@ class SemanticSteve {
     // ==============
     // Other helpers
     // ==============
+    checkForAndHandleSkillTimeout() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.currentSkill) {
+                (0, assert_1.default)(!this.timeOfLastSkillInvocation, "No skill running, but time of last invocation is set");
+                (0, assert_1.default)(!this.inventoryAtTimeOfCurrentSkillInvocation, "No skill running, but inventory at time of invocation is set");
+            }
+            else {
+                (0, assert_1.default)(this.timeOfLastSkillInvocation, "A skill is running, but time of last invocation is not set");
+                (0, assert_1.default)(this.inventoryAtTimeOfCurrentSkillInvocation, "A skill is running, but inventory at time of invocation is not set");
+                const curSkillClass = this.currentSkill.constructor;
+                if (Date.now() - this.timeOfLastSkillInvocation >
+                    curSkillClass.TIMEOUT_MS) {
+                    const skillClass = this.currentSkill.constructor;
+                    const result = new skill_results_1.GenericSkillResults.SkillTimeout(skillClass.METADATA.name, curSkillClass.TIMEOUT_MS / 1000);
+                    this.handleSkillResolution(result);
+                }
+            }
+        });
+    }
     initializeSocket() {
         return __awaiter(this, void 0, void 0, function* () {
             // Now we bind and properly await it
@@ -288,11 +309,23 @@ class SemanticSteve {
                 }
                 // 10 ms non-blocking sleep to allow current skill to run / avoid busy-waiting
                 yield new Promise((res) => setTimeout(res, 10));
+                // Check for and handle skill timeout
+                yield this.checkForAndHandleSkillTimeout();
+                // Self-preservation
                 if (this.selfPreserver.shouldSelfPreserve()) {
                     if (this.currentSkill) {
                         yield this.currentSkill.pause();
                     }
+                    const start = Date.now();
                     yield this.selfPreserver.invoke(); // Await resolution before continuing
+                    const elapsed = Date.now() - start;
+                    if (this.timeOfLastSkillInvocation) {
+                        // We don't want to count self-preservation time against the skill timeout
+                        this.timeOfLastSkillInvocation += elapsed;
+                        // TODO: Come up with better system/naming--updating "timeOfLastSkillInvocation"
+                        // like this means the variable won't necessarily reflect what its name implies
+                        // (nitpick, not urgent)
+                    }
                     if (this.currentSkill) {
                         yield this.currentSkill.resume();
                     }

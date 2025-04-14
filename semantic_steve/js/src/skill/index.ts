@@ -11,17 +11,17 @@ export { Skill, SkillMetadata, SkillResolutionHandler };
 
 export function buildSkillsRegistry(
   bot: Bot,
-  onResolution: SkillResolutionHandler,
+  onResolution: SkillResolutionHandler
 ): { [key: string]: Skill } {
   return {
-    [PathfindToCoordinates.metadata.name]: new PathfindToCoordinates(
+    [PathfindToCoordinates.METADATA.name]: new PathfindToCoordinates(
       bot,
-      onResolution,
+      onResolution
     ),
-    [TakeScreenshotOf.metadata.name]: new TakeScreenshotOf(bot, onResolution),
-    [CraftItems.metadata.name]: new CraftItems(bot, onResolution),
-    [MineBlocks.metadata.name]: new MineBlocks(bot, onResolution),
-    [PlaceBlock.metadata.name]: new PlaceBlock(bot, onResolution),
-    [SmeltItems.metadata.name]: new SmeltItems(bot, onResolution),
+    [TakeScreenshotOf.METADATA.name]: new TakeScreenshotOf(bot, onResolution),
+    [CraftItems.METADATA.name]: new CraftItems(bot, onResolution),
+    [MineBlocks.METADATA.name]: new MineBlocks(bot, onResolution),
+    [PlaceBlock.METADATA.name]: new PlaceBlock(bot, onResolution),
+    [SmeltItems.METADATA.name]: new SmeltItems(bot, onResolution),
   };
 }

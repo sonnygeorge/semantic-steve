@@ -21,13 +21,8 @@ function areCoordinatesInRange(
 }
 
 export class PlaceBlock extends Skill {
-  private isPlacing: boolean = false;
-  private blockId: number = -1;
-  private blockName: string = "";
-  private targetPosition: Vec3 | null = null;
-  private inventoryItem: any = null;
-
-  public static readonly metadata: SkillMetadata = {
+  public static readonly TIMEOUT_MS: number = 7000; // 7 seconds
+  public static readonly METADATA: SkillMetadata = {
     name: "placeBlock",
     signature:
       "placeBlock(block: string, atCoordinates?: [number, number, number])",
@@ -41,6 +36,12 @@ export class PlaceBlock extends Skill {
          */
       `,
   };
+
+  private isPlacing: boolean = false;
+  private blockId: number = -1;
+  private blockName: string = "";
+  private targetPosition: Vec3 | null = null;
+  private inventoryItem: any = null;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
@@ -132,14 +133,14 @@ export class PlaceBlock extends Skill {
   public async pause(): Promise<void> {
     if (this.isPlacing) {
       this.isPlacing = false;
-      console.log(`Pausing '${PlaceBlock.metadata.name}'`);
+      console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
     }
     return Promise.resolve();
   }
 
   public async resume(): Promise<void> {
     if (!this.isPlacing && this.blockId !== -1 && this.targetPosition) {
-      console.log(`Resuming '${PlaceBlock.metadata.name}'`);
+      console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
 
       // Check if the target position is still in range
       if (!areCoordinatesInRange(this.bot, this.targetPosition)) {

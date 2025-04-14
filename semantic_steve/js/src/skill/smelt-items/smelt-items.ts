@@ -5,6 +5,28 @@ import type { Item as PItem } from "prismarine-item";
 import { SmeltItemsResults } from "./results";
 
 export class SmeltItems extends Skill {
+  public static readonly TIMEOUT_MS: number = 60000; // 60 seconds
+  public static readonly METADATA: SkillMetadata = {
+    name: "smeltItems",
+    signature:
+      "smeltItems(item: string, fuelItem?: string, quantity: number = 1)",
+    docstring: `
+        /**
+         * Smelts items, assuming a furnace (or, e.g., blast furnace or smoker) is in
+         * inventory or in the immediate surroundings.
+         * 
+         * TIP: Do not call this function with very high quantities that will take a long
+         * time to smelt and likely result in a timeout. Instead, prefer smelting large
+         * quantities in smaller incremental batches.
+         * 
+         * @param item - The item to smelt.
+         * @param fuelItem - Optional fuel item to use (e.g., coal). Defaults to whatever
+         * fuel-appropriate item is in inventory.
+         * @param quantity - Optional quantity to smelt. Defaults to 1.
+         */
+      `,
+  };
+
   private isSmelting: boolean = false;
   private itemToSmelt: string = "";
   private fuelItem: string = "";
@@ -14,22 +36,6 @@ export class SmeltItems extends Skill {
   private resultQuantity: number = 0;
   private furnaceBlock: PBlock | null = null;
   private furnaceObj: Furnace | null = null;
-
-  public static readonly metadata: SkillMetadata = {
-    name: "smeltItems",
-    signature:
-      "smeltItems(item: string, fuelItem?: string, quantity: number = 1)",
-    docstring: `
-        /**
-         * Smelts items, assuming a furnace (or, e.g., blast furnace or smoker) is in
-         * inventory or in the immediate surroundings.
-         * @param item - The item to smelt.
-         * @param fuelItem - Optional fuel item to use (e.g., coal). Defaults to whatever
-         * fuel-appropriate item is in inventory.
-         * @param quantity - Optional quantity to smelt. Defaults to 1.
-         */
-      `,
-  };
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
@@ -95,7 +101,7 @@ export class SmeltItems extends Skill {
   public async pause(): Promise<void> {
     if (this.isSmelting) {
       this.isSmelting = false;
-      console.log(`Pausing '${SmeltItems.metadata.name}'`);
+      console.log(`Pausing '${SmeltItems.METADATA.name}'`);
 
       if (this.furnaceObj && this.bot.currentWindow) {
         await this.bot.closeWindow(this.bot.currentWindow);
@@ -110,7 +116,7 @@ export class SmeltItems extends Skill {
       this.itemToSmelt &&
       this.smeltedQuantity < this.targetQuantity
     ) {
-      console.log(`Resuming '${SmeltItems.metadata.name}'`);
+      console.log(`Resuming '${SmeltItems.METADATA.name}'`);
 
       const smeltItem = this.getItemFromInventory(this.itemToSmelt);
       if (!smeltItem) {

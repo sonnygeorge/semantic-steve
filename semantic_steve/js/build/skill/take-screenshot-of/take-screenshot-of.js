@@ -269,17 +269,18 @@ class TakeScreenshotOf extends skill_1.Skill {
     }
     pause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${TakeScreenshotOf.metadata.name}'`);
+            console.log(`Pausing '${TakeScreenshotOf.METADATA.name}'`);
         });
     }
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Resuming '${TakeScreenshotOf.metadata.name}'`);
+            console.log(`Resuming '${TakeScreenshotOf.METADATA.name}'`);
         });
     }
 }
 exports.TakeScreenshotOf = TakeScreenshotOf;
-TakeScreenshotOf.metadata = {
+TakeScreenshotOf.TIMEOUT_MS = 18000; // 18 seconds
+TakeScreenshotOf.METADATA = {
     name: "takeScreenshotOf",
     signature: "takeScreenshotOf(thing: string, atCoordinates?: [number, number, number])",
     docstring: `

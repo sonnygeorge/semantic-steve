@@ -73,7 +73,7 @@ class SmeltItems extends skill_1.Skill {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.isSmelting) {
                 this.isSmelting = false;
-                console.log(`Pausing '${SmeltItems.metadata.name}'`);
+                console.log(`Pausing '${SmeltItems.METADATA.name}'`);
                 if (this.furnaceObj && this.bot.currentWindow) {
                     yield this.bot.closeWindow(this.bot.currentWindow);
                 }
@@ -86,7 +86,7 @@ class SmeltItems extends skill_1.Skill {
             if (!this.isSmelting &&
                 this.itemToSmelt &&
                 this.smeltedQuantity < this.targetQuantity) {
-                console.log(`Resuming '${SmeltItems.metadata.name}'`);
+                console.log(`Resuming '${SmeltItems.METADATA.name}'`);
                 const smeltItem = this.getItemFromInventory(this.itemToSmelt);
                 if (!smeltItem) {
                     return this.onResolution(new results_1.SmeltItemsResults.InvalidItem(this.itemToSmelt));
@@ -237,13 +237,19 @@ class SmeltItems extends skill_1.Skill {
     }
 }
 exports.SmeltItems = SmeltItems;
-SmeltItems.metadata = {
+SmeltItems.TIMEOUT_MS = 60000; // 60 seconds
+SmeltItems.METADATA = {
     name: "smeltItems",
     signature: "smeltItems(item: string, fuelItem?: string, quantity: number = 1)",
     docstring: `
         /**
          * Smelts items, assuming a furnace (or, e.g., blast furnace or smoker) is in
          * inventory or in the immediate surroundings.
+         * 
+         * TIP: Do not call this function with very high quantities that will take a long
+         * time to smelt and likely result in a timeout. Instead, prefer smelting large
+         * quantities in smaller incremental batches.
+         * 
          * @param item - The item to smelt.
          * @param fuelItem - Optional fuel item to use (e.g., coal). Defaults to whatever
          * fuel-appropriate item is in inventory.

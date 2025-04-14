@@ -185,7 +185,7 @@ class PathfindToCoordinates extends skill_1.Skill {
     }
     pause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${PathfindToCoordinates.metadata.name}'`);
+            console.log(`Pausing '${PathfindToCoordinates.METADATA.name}'`);
             this.cleanupListeners();
             this.stopPathfindingPrematurely();
             // NOTE: We don't call unsetPathfindingParams (we need to be able to resume)
@@ -194,13 +194,14 @@ class PathfindToCoordinates extends skill_1.Skill {
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.targetCoords);
-            console.log(`Resuming '${PathfindToCoordinates.metadata.name}'`);
+            console.log(`Resuming '${PathfindToCoordinates.METADATA.name}'`);
             this.beginPathfinding();
         });
     }
 }
 exports.PathfindToCoordinates = PathfindToCoordinates;
-PathfindToCoordinates.metadata = {
+PathfindToCoordinates.TIMEOUT_MS = 25000; // 25 seconds
+PathfindToCoordinates.METADATA = {
     name: "pathfindToCoordinates",
     signature: "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
     docstring: `

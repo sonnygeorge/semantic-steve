@@ -9,14 +9,8 @@ import {
 } from "./utils";
 
 export class MineBlocks extends Skill {
-  private isMining: boolean = false;
-  private blockToMine: string = "";
-  private targetQuantity: number = 0;
-  private currentQuantity: number = 0;
-  private blockPositions: any[] = [];
-  private bestTool: any = null;
-
-  public static readonly metadata: SkillMetadata = {
+  public static readonly TIMEOUT_MS: number = 20000; // 20 seconds
+  public static readonly METADATA: SkillMetadata = {
     name: "mineBlocks",
     signature: "mineBlocks(item: string, quantity: number = 1)",
     docstring: `
@@ -29,6 +23,13 @@ export class MineBlocks extends Skill {
          */
       `,
   };
+
+  private isMining: boolean = false;
+  private blockToMine: string = "";
+  private targetQuantity: number = 0;
+  private currentQuantity: number = 0;
+  private blockPositions: any[] = [];
+  private bestTool: any = null;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
@@ -95,7 +96,7 @@ export class MineBlocks extends Skill {
   public async pause(): Promise<void> {
     if (this.isMining) {
       this.isMining = false;
-      console.log(`Pausing '${MineBlocks.metadata.name}'`);
+      console.log(`Pausing '${MineBlocks.METADATA.name}'`);
       // Stop current mining activity if possible
       try {
         this.bot.stopDigging();
@@ -112,7 +113,7 @@ export class MineBlocks extends Skill {
       this.blockToMine &&
       this.currentQuantity < this.targetQuantity
     ) {
-      console.log(`Resuming '${MineBlocks.metadata.name}'`);
+      console.log(`Resuming '${MineBlocks.METADATA.name}'`);
       this.isMining = true;
 
       // Re-find blocks in case the world changed while paused

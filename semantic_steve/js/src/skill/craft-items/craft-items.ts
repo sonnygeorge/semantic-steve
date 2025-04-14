@@ -8,13 +8,8 @@ import {
 } from "./utils";
 
 export class CraftItems extends Skill {
-  private isCrafting: boolean = false;
-  private craftItem: string = "";
-  private craftQuantity: number = 0;
-  private selectedRecipe: any = null;
-  private craftingTableRequired: boolean = false;
-
-  public static readonly metadata: SkillMetadata = {
+  public static readonly TIMEOUT_MS: number = 10000; // 10 seconds
+  public static readonly METADATA: SkillMetadata = {
     name: "craftItems",
     signature: "craftItems(item: string, quantity: number = 1)",
     docstring: `
@@ -26,6 +21,12 @@ export class CraftItems extends Skill {
          */
       `,
   };
+
+  private isCrafting: boolean = false;
+  private craftItem: string = "";
+  private craftQuantity: number = 0;
+  private selectedRecipe: any = null;
+  private craftingTableRequired: boolean = false;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);

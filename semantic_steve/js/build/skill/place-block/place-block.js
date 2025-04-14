@@ -92,7 +92,7 @@ class PlaceBlock extends skill_1.Skill {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.isPlacing) {
                 this.isPlacing = false;
-                console.log(`Pausing '${PlaceBlock.metadata.name}'`);
+                console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
             }
             return Promise.resolve();
         });
@@ -100,7 +100,7 @@ class PlaceBlock extends skill_1.Skill {
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isPlacing && this.blockId !== -1 && this.targetPosition) {
-                console.log(`Resuming '${PlaceBlock.metadata.name}'`);
+                console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
                 // Check if the target position is still in range
                 if (!areCoordinatesInRange(this.bot, this.targetPosition)) {
                     return this.onResolution(new results_1.PlaceBlockResults.CoordinatesTooFar());
@@ -182,7 +182,8 @@ class PlaceBlock extends skill_1.Skill {
     }
 }
 exports.PlaceBlock = PlaceBlock;
-PlaceBlock.metadata = {
+PlaceBlock.TIMEOUT_MS = 7000; // 7 seconds
+PlaceBlock.METADATA = {
     name: "placeBlock",
     signature: "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `

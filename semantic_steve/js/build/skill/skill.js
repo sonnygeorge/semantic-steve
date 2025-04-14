@@ -11,3 +11,4 @@ class Skill {
     }
 }
 exports.Skill = Skill;
+Skill.TIMEOUT_MS = 40000;

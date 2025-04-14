@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getToolDamage = getToolDamage;
-function getToolDamage(bot, item) {
+exports.getDurability = getDurability;
+function getDurability(bot, item) {
     // For newer Mineflayer versions that use the `durabilityUsed` property
     if (item.durabilityUsed) {
         return item.durabilityUsed;

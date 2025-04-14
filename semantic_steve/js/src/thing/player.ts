@@ -11,19 +11,20 @@ export class Player implements Thing {
     this.bot = bot;
     this.name = name;
   }
+
   locateNearest(direction: Vicinity): Vec3 | Promise<Vec3 | null> | null {
     throw new Error("Method not implemented.");
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name,
+      this.name
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name),
+      dir.blocksToCounts.has(this.name)
     );
   }
 }

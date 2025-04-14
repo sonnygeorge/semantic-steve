@@ -15,7 +15,7 @@ import {
   getInventoryChangesDTO,
 } from "./inventory-changes";
 import { GenericSkillResults } from "./skill/generic-results";
-import { getToolDamage as getDurability } from "./utils";
+import { getDurability as getDurability } from "./utils";
 import { exit } from "process";
 
 export class SemanticSteve {

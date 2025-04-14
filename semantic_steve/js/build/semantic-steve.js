@@ -164,7 +164,7 @@ class SemanticSteve {
             if (!itemFromOldInv) {
                 continue;
             }
-            const oldDurability = (0, utils_1.getToolDamage)(this.bot, itemFromOldInv);
+            const oldDurability = (0, utils_1.getDurability)(this.bot, itemFromOldInv);
             // find item in the current inventory
             const itemFromCurrentInv = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, itemFromOldInv.type, itemFromOldInv.metadata, false, itemFromOldInv.nbt);
             if (!itemFromCurrentInv) {
@@ -183,7 +183,7 @@ class SemanticSteve {
             }
             else if (oldDurability !== undefined) {
                 // item is a non-stackable item with a durability value, check for changes
-                const curDurability = (0, utils_1.getToolDamage)(this.bot, itemFromCurrentInv);
+                const curDurability = (0, utils_1.getDurability)(this.bot, itemFromCurrentInv);
                 (0, assert_1.default)(curDurability !== undefined, "Should be defined if oldDurability is defined");
                 if (oldDurability !== curDurability) {
                     differential[itemFromOldInv.type] = {

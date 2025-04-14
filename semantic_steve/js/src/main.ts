@@ -20,10 +20,12 @@ const config = new SemanticSteveConfig(
     distantSurroundingsRadius: parseInt(
       process.env.DISTANT_SURROUNDINGS_RADIUS || "13"
     ),
+    username: process.env.MC_USERNAME || "SemanticSteve",
+    password: process.env.MC_PASSWORD || undefined,
   } as SemanticSteveConfigOptions
 );
 
-const bot = createBot({ username: "SemanticSteve", port: config.botPort, host: config.botHost });
+const bot = createBot({ port: config.botPort, host: config.botHost, username: config.username, password: config.password });
 bot.once("spawn", async () => {
   bot.loadPlugin(
     createPlugin({

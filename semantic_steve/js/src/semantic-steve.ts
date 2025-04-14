@@ -26,6 +26,8 @@ export interface SemanticSteveConfigOptions {
   botPort?: number;
   mfViewerPort?: number;
   zmqPort?: number;
+  username?: string;
+  password?: string;
 }
 
 export class SemanticSteveConfig {
@@ -36,6 +38,8 @@ export class SemanticSteveConfig {
   botPort: number;
   mfViewerPort: number;
   zmqPort: number;
+  username: string;
+  password: string | undefined;
 
   constructor(options: SemanticSteveConfigOptions = {}) {
     this.selfPreservationCheckThrottleMS =
@@ -46,6 +50,8 @@ export class SemanticSteveConfig {
     this.botPort = options.botPort ?? 25565;
     this.mfViewerPort = options.mfViewerPort ?? 3000;
     this.zmqPort = options.zmqPort ?? 5555;
+    this.username = options.username ?? "SemanticSteve";
+    this.password = options.password ?? undefined;
   }
 }
 

@@ -53,7 +53,7 @@ const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 class SemanticSteveConfig {
     constructor(options = {}) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         this.selfPreservationCheckThrottleMS =
             (_a = options.selfPreservationCheckThrottleMS) !== null && _a !== void 0 ? _a : 1500;
         this.immediateSurroundingsRadius = (_b = options.immediateSurroundingsRadius) !== null && _b !== void 0 ? _b : 5;
@@ -62,6 +62,8 @@ class SemanticSteveConfig {
         this.botPort = (_e = options.botPort) !== null && _e !== void 0 ? _e : 25565;
         this.mfViewerPort = (_f = options.mfViewerPort) !== null && _f !== void 0 ? _f : 3000;
         this.zmqPort = (_g = options.zmqPort) !== null && _g !== void 0 ? _g : 5555;
+        this.username = (_h = options.username) !== null && _h !== void 0 ? _h : "SemanticSteve";
+        this.password = (_j = options.password) !== null && _j !== void 0 ? _j : undefined;
     }
 }
 exports.SemanticSteveConfig = SemanticSteveConfig;

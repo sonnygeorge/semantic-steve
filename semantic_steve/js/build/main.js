@@ -20,8 +20,10 @@ const config = new semantic_steve_1.SemanticSteveConfig({
     zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
     immediateSurroundingsRadius: parseInt(process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"),
     distantSurroundingsRadius: parseInt(process.env.DISTANT_SURROUNDINGS_RADIUS || "13"),
+    username: process.env.MC_USERNAME || "SemanticSteve",
+    password: process.env.MC_PASSWORD || undefined,
 });
-const bot = (0, mineflayer_1.createBot)({ username: "SemanticSteve", port: config.botPort, host: config.botHost });
+const bot = (0, mineflayer_1.createBot)({ port: config.botPort, host: config.botHost, username: config.username, password: config.password });
 bot.once("spawn", () => __awaiter(void 0, void 0, void 0, function* () {
     bot.loadPlugin((0, _1.createPlugin)({
         immediateSurroundingsRadius: config.immediateSurroundingsRadius,

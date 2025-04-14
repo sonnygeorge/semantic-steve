@@ -70,7 +70,7 @@ def extract_docstring_and_signature_from_ts_file(
             )
         return content[start_pos:end_pos]
 
-    metadata_index = ts_file.find("metadata: SkillMetadata")
+    metadata_index = ts_file.find("METADATA: SkillMetadata")
     if metadata_index == -1:
         raise SkillMetadataExtractionError("No metadata found in TypeScript file.")
     start_pos = ts_file.find("{", metadata_index)

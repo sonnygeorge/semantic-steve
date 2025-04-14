@@ -8,24 +8,31 @@ import {
   SemanticSteveConfigOptions,
 } from "./semantic-steve";
 
-const config = new SemanticSteveConfig(
-  {
-    botHost: process.env.BOT_HOST || 'localhost',
-    botPort: parseInt(process.env.BOT_PORT || "25565"),
-    mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
-    zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
-    immediateSurroundingsRadius: parseInt(
-      process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"
-    ),
-    distantSurroundingsRadius: parseInt(
-      process.env.DISTANT_SURROUNDINGS_RADIUS || "13"
-    ),
-    username: process.env.MC_USERNAME || "SemanticSteve",
-    password: process.env.MC_PASSWORD || undefined,
-  } as SemanticSteveConfigOptions
-);
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
 
-const bot = createBot({ port: config.botPort, host: config.botHost, username: config.username, password: config.password });
+const config = new SemanticSteveConfig({
+  botHost: process.env.BOT_HOST || "localhost",
+  botPort: parseInt(process.env.BOT_PORT || "25565"),
+  mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
+  zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
+  immediateSurroundingsRadius: parseInt(
+    process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"
+  ),
+  distantSurroundingsRadius: parseInt(
+    process.env.DISTANT_SURROUNDINGS_RADIUS || "13"
+  ),
+  username: process.env.MC_USERNAME || "SemanticSteve",
+} as SemanticSteveConfigOptions);
+
+const bot = createBot({
+  port: config.botPort,
+  host: config.botHost,
+  username: config.username,
+  auth: isValidEmail(config.username) ? "microsoft" : "offline",
+});
 bot.once("spawn", async () => {
   bot.loadPlugin(
     createPlugin({

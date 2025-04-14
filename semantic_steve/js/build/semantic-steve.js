@@ -53,7 +53,7 @@ const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 class SemanticSteveConfig {
     constructor(options = {}) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         this.selfPreservationCheckThrottleMS =
             (_a = options.selfPreservationCheckThrottleMS) !== null && _a !== void 0 ? _a : 1500;
         this.immediateSurroundingsRadius = (_b = options.immediateSurroundingsRadius) !== null && _b !== void 0 ? _b : 5;
@@ -63,7 +63,6 @@ class SemanticSteveConfig {
         this.mfViewerPort = (_f = options.mfViewerPort) !== null && _f !== void 0 ? _f : 3000;
         this.zmqPort = (_g = options.zmqPort) !== null && _g !== void 0 ? _g : 5555;
         this.username = (_h = options.username) !== null && _h !== void 0 ? _h : "SemanticSteve";
-        this.password = (_j = options.password) !== null && _j !== void 0 ? _j : undefined;
     }
 }
 exports.SemanticSteveConfig = SemanticSteveConfig;
@@ -80,7 +79,7 @@ class SemanticSteve {
         this.skills = (0, skill_1.buildSkillsRegistry)(this.bot, this.handleSkillResolution.bind(this));
     }
     buildInventoryCopy() {
-        const window = this.PWindow.createWindow(0, 'minecraft:inventory', 'Inventory');
+        const window = this.PWindow.createWindow(0, "minecraft:inventory", "Inventory");
         const slots = this.bot.inventory.slots;
         slots.forEach((slot, idx) => {
             var _a;
@@ -147,7 +146,7 @@ class SemanticSteve {
         if (item.durabilityUsed) {
             return item.durabilityUsed;
         }
-        if (this.bot.registry.supportFeature('nbtOnMetadata')) {
+        if (this.bot.registry.supportFeature("nbtOnMetadata")) {
             if (item.metadata !== undefined) {
                 return item.metadata;
             }
@@ -170,7 +169,10 @@ class SemanticSteve {
             const found = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt);
             if (!found) {
                 // item was removed
-                differential[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
+                differential[oldItem.type] = {
+                    metadata: oldItem.metadata,
+                    count: -oldItem.count,
+                };
             }
             // item exists, but count is different
             if (found && found.count !== oldItem.count) {
@@ -182,11 +184,17 @@ class SemanticSteve {
                 const oldDmg = this.getToolDamage(oldItem);
                 const newDmg = this.getToolDamage(found);
                 if (oldDmg !== newDmg) {
-                    differential[oldItem.type] = { damageDifferential: oldDmg - newDmg, count: found.count - oldItem.count };
+                    differential[oldItem.type] = {
+                        damageDifferential: oldDmg - newDmg,
+                        count: found.count - oldItem.count,
+                    };
                 }
                 else {
                     // check if the nbt is different
-                    differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+                    differential[oldItem.type] = {
+                        metadata: oldItem.metadata,
+                        count: found.count - oldItem.count,
+                    };
                 }
             }
         }

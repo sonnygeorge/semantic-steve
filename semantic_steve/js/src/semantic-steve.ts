@@ -6,16 +6,16 @@ import { SkillResult, GenericSkillResults } from "./skill-results";
 import { SelfPreserver } from "./self-preserver";
 import { Skill } from "./skill";
 import { buildSkillsRegistry } from "./skill";
-import PItemLoader, {Item as PItem} from 'prismarine-item'
-import {Window as PWindow, WindowsExports} from 'prismarine-windows'
-import nbt from 'prismarine-nbt'
+import PItemLoader, { Item as PItem } from "prismarine-item";
+import { Window as PWindow, WindowsExports } from "prismarine-windows";
+import nbt from "prismarine-nbt";
 
 export interface InventoryDifferential {
   [id: number]: {
     metadata?: any;
     damageDifferential?: number;
     count: number;
-  }
+  };
 }
 
 export interface SemanticSteveConfigOptions {
@@ -27,7 +27,6 @@ export interface SemanticSteveConfigOptions {
   mfViewerPort?: number;
   zmqPort?: number;
   username?: string;
-  password?: string;
 }
 
 export class SemanticSteveConfig {
@@ -39,7 +38,6 @@ export class SemanticSteveConfig {
   mfViewerPort: number;
   zmqPort: number;
   username: string;
-  password: string | undefined;
 
   constructor(options: SemanticSteveConfigOptions = {}) {
     this.selfPreservationCheckThrottleMS =
@@ -51,7 +49,6 @@ export class SemanticSteveConfig {
     this.mfViewerPort = options.mfViewerPort ?? 3000;
     this.zmqPort = options.zmqPort ?? 5555;
     this.username = options.username ?? "SemanticSteve";
-    this.password = options.password ?? undefined;
   }
 }
 
@@ -74,7 +71,7 @@ export class SemanticSteve {
     this.bot = bot;
 
     this.PWindow = require("prismarine-windows")(bot.version);
-    this.PItem = require("prismarine-item")(bot.registry)
+    this.PItem = require("prismarine-item")(bot.registry);
 
     this.socket = new zmq.Pair({ receiveTimeout: 0 });
     this.zmqPort = config.zmqPort;
@@ -84,8 +81,6 @@ export class SemanticSteve {
       config.selfPreservationCheckThrottleMS
     );
 
-
-
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
@@ -94,18 +89,24 @@ export class SemanticSteve {
   }
 
   private buildInventoryCopy(): PWindow<StorageEvents> {
-    const window: PWindow<StorageEvents> = this.PWindow.createWindow(0, 'minecraft:inventory', 'Inventory');
+    const window: PWindow<StorageEvents> = this.PWindow.createWindow(
+      0,
+      "minecraft:inventory",
+      "Inventory"
+    );
     const slots = this.bot.inventory.slots;
     slots.forEach((slot, idx) => {
       if (slot) {
-        
-        const newItem = this.PItem.fromNotch(this.PItem.toNotch(slot, true), slot.stackId ?? undefined);
+        const newItem = this.PItem.fromNotch(
+          this.PItem.toNotch(slot, true),
+          slot.stackId ?? undefined
+        );
         if (newItem != null) {
           newItem.slot = idx;
         }
         window.updateSlot(idx, newItem as PItem);
       }
-    })
+    });
     return window;
   }
 
@@ -149,11 +150,10 @@ export class SemanticSteve {
     this.currentSkill = skillToInvoke;
     this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
   }
-  
 
   private getToolDamage(item: PItem) {
     // if (!item || !item.nbt) return 0;
-    
+
     // const raw = item.nbt.value as any;
     // const simplified = nbt.simplify(raw.Damage);
     // // Check if the item has NBT data and a Damage tag
@@ -166,41 +166,52 @@ export class SemanticSteve {
     if (item.durabilityUsed) {
       return item.durabilityUsed;
     }
-    
-    if (this.bot.registry.supportFeature('nbtOnMetadata')) {
+
+    if (this.bot.registry.supportFeature("nbtOnMetadata")) {
       if (item.metadata !== undefined) {
         return item.metadata;
       }
     }
     // For older Mineflayer versions that use metadata directly
-    
-    
+
     return 0;
   }
   private getInventoryChangesSinceCurrentSkillWasInvoked(): InventoryDifferential {
-
-    
-
     if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
-      throw new Error("This should never occur when the last known inventory is not ran");
+      throw new Error(
+        "This should never occur when the last known inventory is not ran"
+      );
     }
 
     const differential: InventoryDifferential = {};
 
     // iterate over slots, report the item differential.
-    for (let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart; i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd; i++) {
+    for (
+      let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart;
+      i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd;
+      i++
+    ) {
       const oldItem = this.inventoryAtTimeOfCurrentSkillInvocation.slots[i];
       if (!oldItem) {
         continue;
       }
-    
+
       // find item in the current inventory
       const found = this.bot.inventory.findItemRange(
-        this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt)
-      
+        this.bot.inventory.inventoryStart,
+        this.bot.inventory.inventoryEnd,
+        oldItem.type,
+        oldItem.metadata,
+        false,
+        oldItem.nbt
+      );
+
       if (!found) {
         // item was removed
-        differential[oldItem.type] = { metadata: oldItem.metadata, count: -oldItem.count };
+        differential[oldItem.type] = {
+          metadata: oldItem.metadata,
+          count: -oldItem.count,
+        };
       }
 
       // item exists, but count is different
@@ -214,14 +225,18 @@ export class SemanticSteve {
         const oldDmg = this.getToolDamage(oldItem);
         const newDmg = this.getToolDamage(found);
         if (oldDmg !== newDmg) {
-          differential[oldItem.type] = { damageDifferential: oldDmg - newDmg, count: found.count - oldItem.count };
+          differential[oldItem.type] = {
+            damageDifferential: oldDmg - newDmg,
+            count: found.count - oldItem.count,
+          };
         } else {
           // check if the nbt is different
-          differential[oldItem.type] = { metadata: oldItem.metadata, count: found.count - oldItem.count };
+          differential[oldItem.type] = {
+            metadata: oldItem.metadata,
+            count: found.count - oldItem.count,
+          };
         }
-
       }
-    
     }
     return differential;
   }

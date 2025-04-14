@@ -1,6 +1,4 @@
-export interface SkillResult {
-  message: string;
-}
+import { SkillResult } from "../types";
 
 export namespace GenericSkillResults {
   export class SkillNotFound implements SkillResult {

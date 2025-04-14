@@ -45,29 +45,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SemanticSteve = exports.SemanticSteveConfig = void 0;
+exports.SemanticSteve = void 0;
 const zmq = __importStar(require("zeromq"));
 const assert_1 = __importDefault(require("assert"));
-const skill_results_1 = require("./skill-results");
 const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
-class SemanticSteveConfig {
-    constructor(options = {}) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        this.selfPreservationCheckThrottleMS =
-            (_a = options.selfPreservationCheckThrottleMS) !== null && _a !== void 0 ? _a : 1500;
-        this.immediateSurroundingsRadius = (_b = options.immediateSurroundingsRadius) !== null && _b !== void 0 ? _b : 5;
-        this.distantSurroundingsRadius = (_c = options.distantSurroundingsRadius) !== null && _c !== void 0 ? _c : 13;
-        this.botHost = (_d = options.botHost) !== null && _d !== void 0 ? _d : "localhost";
-        this.botPort = (_e = options.botPort) !== null && _e !== void 0 ? _e : 25565;
-        this.mfViewerPort = (_f = options.mfViewerPort) !== null && _f !== void 0 ? _f : 3000;
-        this.zmqPort = (_g = options.zmqPort) !== null && _g !== void 0 ? _g : 5555;
-        this.username = (_h = options.username) !== null && _h !== void 0 ? _h : "SemanticSteve";
-    }
-}
-exports.SemanticSteveConfig = SemanticSteveConfig;
+const types_1 = require("./types");
+const inventory_changes_1 = require("./inventory-changes");
+const generic_results_1 = require("./skill/generic-results");
+const utils_1 = require("./utils");
 class SemanticSteve {
-    constructor(bot, config = new SemanticSteveConfig()) {
+    constructor(bot, config = new types_1.SemanticSteveConfig()) {
         this.hasDiedWhileAwaitingInvocation = false;
         this.bot = bot;
         this.PWindow = require("prismarine-windows")(bot.version);
@@ -98,6 +86,7 @@ class SemanticSteve {
     // =======================================
     sendDataToPython(data) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.invAtTimeOfLastMsgToPython = this.buildInventoryCopy();
             yield this.socket.send(JSON.stringify(data));
         });
     }
@@ -117,89 +106,26 @@ class SemanticSteve {
     // Skill invocation and resolution
     // ================================
     invokeSkill(skillInvocation) {
-        const skillToInvoke = this.skills[skillInvocation.skillName];
+        var _a;
         // Add skill invocation to the macrotask queue (wrapped w/ handling of errors)
         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
             try {
+                if (!this.skills[skillInvocation.skillName]) {
+                    const result = new generic_results_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
+                    this.handleSkillResolution(result);
+                    return;
+                }
+                const skillToInvoke = this.skills[skillInvocation.skillName];
                 yield skillToInvoke.invoke(...skillInvocation.args);
             }
             catch (error) {
-                const result = new skill_results_1.GenericSkillResults.UnhandledRuntimeError(skillInvocation.skillName, error);
+                const result = new generic_results_1.GenericSkillResults.UnhandledRuntimeError(skillInvocation.skillName, error);
                 this.handleSkillResolution(result);
             }
         }), 0);
         // Set fields that are to be set while skills are running
-        this.currentSkill = skillToInvoke;
+        this.currentSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
         this.timeOfLastSkillInvocation = Date.now();
-        this.inventoryAtTimeOfCurrentSkillInvocation = this.buildInventoryCopy(); // Not implemented (placeholder)
-    }
-    getToolDamage(item) {
-        // if (!item || !item.nbt) return 0;
-        // const raw = item.nbt.value as any;
-        // const simplified = nbt.simplify(raw.Damage);
-        // // Check if the item has NBT data and a Damage tag
-        // // if (item.nbt && item.nbt.value && item.nbt.value.Damage) {
-        // //   return item.nbt.value.Damage.value;
-        // // }
-        // if (simplified !== undefined) {
-        //   return simplified;
-        // }
-        if (item.durabilityUsed) {
-            return item.durabilityUsed;
-        }
-        if (this.bot.registry.supportFeature("nbtOnMetadata")) {
-            if (item.metadata !== undefined) {
-                return item.metadata;
-            }
-        }
-        // For older Mineflayer versions that use metadata directly
-        return 0;
-    }
-    getInventoryChangesSinceCurrentSkillWasInvoked() {
-        if (!this.inventoryAtTimeOfCurrentSkillInvocation) {
-            throw new Error("This should never occur when the last known inventory is not ran");
-        }
-        const differential = {};
-        // iterate over slots, report the item differential.
-        for (let i = this.inventoryAtTimeOfCurrentSkillInvocation.inventoryStart; i < this.inventoryAtTimeOfCurrentSkillInvocation.inventoryEnd; i++) {
-            const oldItem = this.inventoryAtTimeOfCurrentSkillInvocation.slots[i];
-            if (!oldItem) {
-                continue;
-            }
-            // find item in the current inventory
-            const found = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, oldItem.type, oldItem.metadata, false, oldItem.nbt);
-            if (!found) {
-                // item was removed
-                differential[oldItem.type] = {
-                    metadata: oldItem.metadata,
-                    count: -oldItem.count,
-                };
-            }
-            // item exists, but count is different
-            if (found && found.count !== oldItem.count) {
-                differential[oldItem.type] = { count: found.count - oldItem.count };
-            }
-            // item exists, but nbt is different
-            if (found && found.nbt && found.nbt !== oldItem.nbt) {
-                // check damage first
-                const oldDmg = this.getToolDamage(oldItem);
-                const newDmg = this.getToolDamage(found);
-                if (oldDmg !== newDmg) {
-                    differential[oldItem.type] = {
-                        damageDifferential: oldDmg - newDmg,
-                        count: found.count - oldItem.count,
-                    };
-                }
-                else {
-                    // check if the nbt is different
-                    differential[oldItem.type] = {
-                        metadata: oldItem.metadata,
-                        count: found.count - oldItem.count,
-                    };
-                }
-            }
-        }
-        return differential;
     }
     handleSkillResolution(result, 
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
@@ -210,37 +136,85 @@ class SemanticSteve {
             this.bot.envState.hydrate();
         }
         // Get Inventory changes since the skill was invoked
-        const invChanges = this.getInventoryChangesSinceCurrentSkillWasInvoked();
+        const invChanges = this.getInventoryChanges();
         // Unset fields that are only to be set while skills are running
         this.currentSkill = undefined;
         this.timeOfLastSkillInvocation = undefined;
-        this.inventoryAtTimeOfCurrentSkillInvocation = undefined;
         // Prepare the data to send to Python
         // TODO: Add invChanges to what we send to Python once getting this (maybe someday) gets implemented
         const toSendToPython = {
             envState: this.bot.envState.getDTO(),
             skillInvocationResults: result.message,
-            inventoryChanges: invChanges,
+            inventoryChanges: (0, inventory_changes_1.getInventoryChangesDTO)(this.bot, invChanges),
         };
         this.sendDataToPython(toSendToPython);
     }
     // ==============
     // Other helpers
     // ==============
+    getInventoryChanges() {
+        console.log("Getting inventory changes...");
+        if (!this.invAtTimeOfLastMsgToPython) {
+            throw new Error("This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set");
+        }
+        const differential = {};
+        // iterate over slots, report the item differential.
+        for (let i = this.invAtTimeOfLastMsgToPython.inventoryStart; i < this.invAtTimeOfLastMsgToPython.inventoryEnd; i++) {
+            const itemFromOldInv = this.invAtTimeOfLastMsgToPython.slots[i];
+            if (!itemFromOldInv) {
+                continue;
+            }
+            const oldDurability = (0, utils_1.getToolDamage)(this.bot, itemFromOldInv);
+            // find item in the current inventory
+            const itemFromCurrentInv = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, itemFromOldInv.type, itemFromOldInv.metadata, false, itemFromOldInv.nbt);
+            if (!itemFromCurrentInv) {
+                // item was lost or consumed
+                differential[itemFromOldInv.type] = {
+                    metadata: itemFromOldInv.metadata,
+                    countDifferential: -itemFromOldInv.count,
+                };
+            }
+            else if (itemFromCurrentInv &&
+                itemFromCurrentInv.count !== itemFromOldInv.count) {
+                // item exists, but count is different
+                differential[itemFromOldInv.type] = {
+                    countDifferential: itemFromCurrentInv.count - itemFromOldInv.count,
+                };
+            }
+            else if (oldDurability !== undefined) {
+                // item is a non-stackable item with a durability value, check for changes
+                const curDurability = (0, utils_1.getToolDamage)(this.bot, itemFromCurrentInv);
+                (0, assert_1.default)(curDurability !== undefined, "Should be defined if oldDurability is defined");
+                if (oldDurability !== curDurability) {
+                    differential[itemFromOldInv.type] = {
+                        durabilityUsed: oldDurability - curDurability,
+                        curDurability: curDurability,
+                    };
+                }
+                // } else {
+                //   // check if the nbt is different
+                //   differential[itemFromOldInv.type] = {
+                //     metadata: itemFromOldInv.metadata,
+                //     countDifferential: itemFromCurrentInv.count - itemFromOldInv.count,
+                //   };
+                // }
+            }
+        }
+        return differential;
+    }
     checkForAndHandleSkillTimeout() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.currentSkill) {
                 (0, assert_1.default)(!this.timeOfLastSkillInvocation, "No skill running, but time of last invocation is set");
-                (0, assert_1.default)(!this.inventoryAtTimeOfCurrentSkillInvocation, "No skill running, but inventory at time of invocation is set");
             }
             else {
                 (0, assert_1.default)(this.timeOfLastSkillInvocation, "A skill is running, but time of last invocation is not set");
-                (0, assert_1.default)(this.inventoryAtTimeOfCurrentSkillInvocation, "A skill is running, but inventory at time of invocation is not set");
+                (0, assert_1.default)(this.invAtTimeOfLastMsgToPython, "A skill is running, but inventory at time of last outgoing python msg is not set");
                 const curSkillClass = this.currentSkill.constructor;
                 if (Date.now() - this.timeOfLastSkillInvocation >
                     curSkillClass.TIMEOUT_MS) {
                     const skillClass = this.currentSkill.constructor;
-                    const result = new skill_results_1.GenericSkillResults.SkillTimeout(skillClass.METADATA.name, curSkillClass.TIMEOUT_MS / 1000);
+                    const result = new generic_results_1.GenericSkillResults.SkillTimeout(skillClass.METADATA.name, curSkillClass.TIMEOUT_MS / 1000);
                     this.handleSkillResolution(result);
                 }
             }
@@ -258,6 +232,7 @@ class SemanticSteve {
             let toSendToPython = {
                 envState: this.bot.envState.getDTO(),
                 // NOTE: No skill invocation results yet
+                // NOTE: No inventory changes yet
             };
             yield this.sendDataToPython(toSendToPython);
         });
@@ -275,7 +250,7 @@ class SemanticSteve {
             this.currentSkill.pause();
             this.currentSkill = undefined;
             // Now we resolve the skill with a DeathDuringExecution result
-            const result = new skill_results_1.GenericSkillResults.DeathDuringExecution();
+            const result = new generic_results_1.GenericSkillResults.DeathDuringExecution();
             this.handleSkillResolution(result);
         }
     }
@@ -296,15 +271,11 @@ class SemanticSteve {
                     const skillInvocation = JSON.parse(msgFromPython);
                     if (this.hasDiedWhileAwaitingInvocation) {
                         this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
-                        const result = new skill_results_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
+                        const result = new generic_results_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
                         this.handleSkillResolution(result);
-                    }
-                    else if (skillInvocation.skillName in this.skills) {
-                        this.invokeSkill(skillInvocation);
                     }
                     else {
-                        const result = new skill_results_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
-                        this.handleSkillResolution(result);
+                        this.invokeSkill(skillInvocation);
                     }
                 }
                 // 10 ms non-blocking sleep to allow current skill to run / avoid busy-waiting

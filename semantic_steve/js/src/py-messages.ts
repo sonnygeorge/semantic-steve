@@ -1,5 +1,5 @@
 import { EnvStateDTO } from "./env-state/env-state";
-import { InventoryDifferential } from "./semantic-steve";
+import { InventoryChangesDTO } from "./inventory-changes";
 
 // We receive these from python
 export type SkillInvocation = {
@@ -11,5 +11,5 @@ export type SkillInvocation = {
 export type DataFromMinecraft = {
   envState: EnvStateDTO;
   skillInvocationResults?: string;
-  inventoryChanges?: InventoryDifferential;
+  inventoryChanges?: InventoryChangesDTO;
 };

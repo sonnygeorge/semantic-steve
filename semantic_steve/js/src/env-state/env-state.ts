@@ -29,7 +29,7 @@ const MINEFLAYER_EQUIPMENT_DESTINATION_ORDER = [
 
 /**
  * "Data Transfer Object" (DTO) version of `EnvState` containing the information that we
- * want to send to the Python client _as_ we want the user (LLM) to see it.
+ * want to send to the Python client in the format we want the user (LLM) to see it.
  *
  * Crucially, only JSON-serializable types are used in this DTO (e.g., no `Vec3` objects).
  */
@@ -65,7 +65,7 @@ export class EnvState {
 
   public get inventory(): PItem[] {
     return this.bot.inventory.slots.filter(
-      (item) => item !== null,
+      (item) => item !== null
     ) as unknown as PItem[];
   }
 
@@ -95,13 +95,13 @@ export class EnvState {
       health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
       inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count]),
+        this.inventory.map((item) => [item.name, item.count])
       ) as Record<string, number>,
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ]),
+        ])
       ) as Map<EquipmentDestination, string | undefined>,
       surroundings: this.surroundings.getDTO(),
     };

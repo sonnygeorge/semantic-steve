@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { SkillResult } from "../../skill-results";
+import { SkillResult } from "../../types";
 
 export namespace PathfindToCoordinatesResults {
   export class InvalidThing implements SkillResult {

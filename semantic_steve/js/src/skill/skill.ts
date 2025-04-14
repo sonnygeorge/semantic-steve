@@ -1,5 +1,5 @@
 import { Bot } from "mineflayer";
-import { SkillResult } from "../skill-results";
+import { SkillResult } from "../types";
 
 export type SkillResolutionHandler = (
   result: SkillResult,

@@ -1,4 +1,4 @@
-import { SkillResult } from "../../skill-results";
+import { SkillResult } from "../../types";
 
 export namespace SmeltItemsResults {
   export class InvalidItem implements SkillResult {

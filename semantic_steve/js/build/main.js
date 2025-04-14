@@ -13,11 +13,12 @@ const mineflayer_1 = require("mineflayer");
 const _1 = require(".");
 const prismarine_viewer_1 = require("prismarine-viewer");
 const semantic_steve_1 = require("./semantic-steve");
+const types_1 = require("./types");
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
-const config = new semantic_steve_1.SemanticSteveConfig({
+const config = new types_1.SemanticSteveConfig({
     botHost: process.env.BOT_HOST || "localhost",
     botPort: parseInt(process.env.BOT_PORT || "25565"),
     mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),

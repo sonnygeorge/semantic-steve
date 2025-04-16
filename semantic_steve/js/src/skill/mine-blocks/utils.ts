@@ -1,4 +1,5 @@
 import { Bot } from "mineflayer";
+import { isBlockVisible } from "../../utils";
 
 /**
  * Find blocks of the specified type near the bot
@@ -15,7 +16,8 @@ export function findBlocksOfType(
   count = 64
 ): any[] {
   const blockPositions = bot.findBlocks({
-    matching: (block) => block.name === blockType,
+    matching: (block) => block.name === blockType && isBlockVisible(bot, block, block.position),
+    useExtraInfo: true,
     maxDistance: maxDistance,
     count: count,
   });

@@ -10,6 +10,7 @@ import {
 
 export class MineBlocks extends Skill {
   public static readonly TIMEOUT_MS: number = 20000; // 20 seconds
+  public static readonly REACH_DISTANCE: number = 5; // MineBlocks.REACH_DISTANCE blocks
   public static readonly METADATA: SkillMetadata = {
     name: "mineBlocks",
     signature: "mineBlocks(item: string, quantity: number = 1)",
@@ -50,7 +51,7 @@ export class MineBlocks extends Skill {
       }
 
       // Find blocks of the specified type nearby
-      this.blockPositions = findBlocksOfType(this.bot, block);
+      this.blockPositions = findBlocksOfType(this.bot, block, MineBlocks.REACH_DISTANCE);
 
       if (this.blockPositions.length === 0) {
         this.isMining = false;
@@ -117,7 +118,7 @@ export class MineBlocks extends Skill {
       this.isMining = true;
 
       // Re-find blocks in case the world changed while paused
-      this.blockPositions = findBlocksOfType(this.bot, this.blockToMine);
+      this.blockPositions = findBlocksOfType(this.bot, this.blockToMine, MineBlocks.REACH_DISTANCE);
 
       if (this.blockPositions.length === 0) {
         this.isMining = false;
@@ -170,9 +171,9 @@ export class MineBlocks extends Skill {
             // If we need more blocks, update nearby blocks
             if (
               this.currentQuantity < this.targetQuantity &&
-              this.blockPositions.length < 5
+              this.blockPositions.length < MineBlocks.REACH_DISTANCE
             ) {
-              const newBlocks = findBlocksOfType(this.bot, this.blockToMine);
+              const newBlocks = findBlocksOfType(this.bot, this.blockToMine, MineBlocks.REACH_DISTANCE);
               this.blockPositions = [...newBlocks];
             }
           } catch (error) {

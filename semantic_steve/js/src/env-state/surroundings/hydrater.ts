@@ -5,8 +5,8 @@ import { Entity } from "prismarine-entity";
 import { Direction, Vicinity, SurroundingsRadii, _Surroundings, ImmediateSurroundings, DistantSurroundingsInADirection } from "./types";
 
 import type { Item as PItem } from "prismarine-item";
-import { AABB } from "@nxg-org/mineflayer-util-plugin";
-export const BOT_EYE_HEIGHT = 1.62;
+import {isBlockVisible} from "../../utils"
+
 export const BLOCKS_TO_IGNORE = ["air"];
 
 export class SurroundingsHydrater {
@@ -115,45 +115,7 @@ export class SurroundingsHydrater {
   }
 
 
-  private isBlockVisible(block: Block, blockCoords: Vec3): boolean {
-    // Check if block has exposed sides
-    const offsets = [
-      new Vec3(1, 0, 0), new Vec3(-1, 0, 0), 
-      new Vec3(0, 1, 0), new Vec3(0, -1, 0), 
-      new Vec3(0, 0, 1), new Vec3(0, 0, -1)
-    ];
-    
-    // Check if at least one side is exposed
-    let isExposed = false;
-    for (const offset of offsets) {
-      const blockAtOffset = this.bot.blockAt(blockCoords.plus(offset));
-      if (!blockAtOffset || !blockAtOffset.shapes.some(s => 
-        s[0] === 0 && s[3] === 1 && 
-        s[1] === 0 && s[4] === 1 && 
-        s[2] === 0 && s[5] === 1)) {
-        isExposed = true;
-        break;
-      }
-    }
-    
-    if (!isExposed) return false;
-    
-    // Raycast to check visibility
-    const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
-    
-    for (const shape of block.shapes) {
-      const bb = AABB.fromShape(shape, blockCoords);
-      const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
-      
-      for (const vertex of vertices) {
-        const dir = vertex.minus(eyePosition).normalize().scale(0.3);
-        const hit = this.bot.world.raycast(eyePosition, dir, 256 * 10);
-        if (hit?.position?.equals(blockCoords)) return true;
-      }
-    }
-    
-    return false;
-  }
+ 
 
   private processChunk(chunkX: number, chunkZ: number): void {
     const column = this.bot.world.getColumn(chunkX, chunkZ);
@@ -214,7 +176,7 @@ export class SurroundingsHydrater {
       return;
     }
 
-    if (!this.isBlockVisible(block, pos)) {
+    if (!isBlockVisible(this.bot, block, pos)) {
       this.removeBlock(pos);
       return;
     }

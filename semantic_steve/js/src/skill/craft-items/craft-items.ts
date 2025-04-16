@@ -6,6 +6,7 @@ import {
   findNearbyCraftingTable,
   placeCraftingTable,
 } from "./utils";
+import type {Recipe} from "prismarine-recipe";
 
 export class CraftItems extends Skill {
   public static readonly TIMEOUT_MS: number = 10000; // 10 seconds
@@ -24,8 +25,9 @@ export class CraftItems extends Skill {
 
   private isCrafting: boolean = false;
   private craftItem: string = "";
-  private craftQuantity: number = 0;
-  private selectedRecipe: any = null;
+  private wantedItemQuantity: number = 0;
+  private craftCount: number = 0;
+  private selectedRecipe: Recipe | null = null;
   private craftingTableRequired: boolean = false;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
@@ -35,7 +37,7 @@ export class CraftItems extends Skill {
   public async invoke(item: string, quantity: number = 1): Promise<void> {
     this.isCrafting = true;
     this.craftItem = item;
-    this.craftQuantity = quantity;
+    this.wantedItemQuantity = quantity;
 
     try {
       // Normalize item name
@@ -74,6 +76,7 @@ export class CraftItems extends Skill {
         // }
       }
 
+  
       // If no recipe was found that we can craft
       if (!this.selectedRecipe) {
         this.isCrafting = false;
@@ -91,6 +94,9 @@ export class CraftItems extends Skill {
           return this.onResolution(new CraftItemsResults.NoCraftingTable(item));
         }
       }
+
+      this.craftCount = Math.ceil(this.wantedItemQuantity / this.selectedRecipe.result.count)
+
 
       // Perform the actual crafting operation
       return this.doCrafting();
@@ -135,7 +141,7 @@ export class CraftItems extends Skill {
         if (craftingTable) {
           await this.bot.craft(
             this.selectedRecipe,
-            this.craftQuantity,
+            this.craftCount,
             craftingTable
           );
         } else {
@@ -143,13 +149,13 @@ export class CraftItems extends Skill {
         }
       } else {
         // Otherwise craft without a crafting table
-        await this.bot.craft(this.selectedRecipe, this.craftQuantity);
+        await this.bot.craft(this.selectedRecipe, this.craftCount);
       }
 
       // Successfully crafted all requested items
       this.isCrafting = false;
       return this.onResolution(
-        new CraftItemsResults.Success(this.craftItem, this.craftQuantity)
+        new CraftItemsResults.Success(this.craftItem, this.wantedItemQuantity)
       );
     } catch (error) {
       // Handle unexpected errors
@@ -158,7 +164,7 @@ export class CraftItems extends Skill {
       return this.onResolution(
         new CraftItemsResults.InsufficientRecipeIngredients(
           this.craftItem,
-          this.craftQuantity
+          this.wantedItemQuantity
         )
       );
     }

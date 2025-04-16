@@ -16,7 +16,8 @@ export class SurroundingsHydrater {
 
   // Cache maps for fast lookups
   private blockLookup: Map<string, { name: string; vicinity: Vicinity }> = new Map();
-  private entityLookup: Map<number, { name: string; vicinity: Vicinity }> = new Map();
+  private entityLookup: Map<number, { name: string; vicinity: Vicinity }> = new Map();  
+
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
     this.bot = bot;

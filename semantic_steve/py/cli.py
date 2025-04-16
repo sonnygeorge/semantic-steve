@@ -33,6 +33,9 @@ async def run_as_cli(semantic_steve: SemanticSteve):
                 print("\n\n".join(ss.get_skills_docs()))
                 print()
             else:
-                data_from_minecraft = await ss.invoke(skill_invocation_str)
-                print(SEMANTIC_STEVE_ASCII_ART)
-                print(data_from_minecraft.get_readable_string())
+                try:
+                    data_from_minecraft = await ss.invoke(skill_invocation_str)
+                    print(SEMANTIC_STEVE_ASCII_ART)
+                    print(data_from_minecraft.get_readable_string())
+                except Exception as e:
+                    print(f"Error invoking skill: {e}")

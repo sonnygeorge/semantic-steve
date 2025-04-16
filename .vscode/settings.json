@@ -5,5 +5,7 @@
         "*.cuh": "cuda-cpp",
         "cstdint": "cpp",
         "climits": "cpp"
-    }
+    },
+    "ecl.launchConfiguration": "not found",
+    "ecl.targetCluster": {}
 }

@@ -114,12 +114,10 @@ export class PathfindToItem extends Skill {
 
         this.bot.inventory.on("updateSlot", listener);
         setTimeout(() => {
-            rej(new Error("Timed out waiting for item to be picked up."));
-            this.bot.inventory.off("updateSlot", listener); // Remove the listener
-            }, PathfindToItem.TIMEOUT_MS);
+          rej(new Error("Timed out waiting for item to be picked up."));
+          this.bot.inventory.off("updateSlot", listener); // Remove the listener
+        }, PathfindToItem.TIMEOUT_MS);
       });
-
-      
     } catch (error) {
       if (error instanceof InvalidThingError) {
         this.resolveInvalidItem(itemName);

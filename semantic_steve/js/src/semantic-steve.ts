@@ -177,7 +177,19 @@ export class SemanticSteve {
       i++
     ) {
       const itemFromOldInv = this.invAtTimeOfLastMsgToPython.slots[i];
+  
       if (!itemFromOldInv) {
+
+        // check if we have an item in this slot now.
+        const newItemFromSlot = this.bot.inventory.slots[i];
+        if (newItemFromSlot) {
+          // item was acquired
+          differential[newItemFromSlot.type] = {
+            metadata: newItemFromSlot.metadata,
+            countDifferential: newItemFromSlot.count,
+          };
+        }
+
         continue;
       }
 

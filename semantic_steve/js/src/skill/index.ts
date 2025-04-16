@@ -6,6 +6,7 @@ import { MineBlocks } from "./mine-blocks/mine-blocks";
 import { PlaceBlock } from "./place-block/place-block";
 import { SmeltItems } from "./smelt-items/smelt-items";
 import { TakeScreenshotOf } from "./take-screenshot-of/take-screenshot-of";
+import { PathfindToItem } from "./pathfind-to-item/pathfind-to-item";
 
 export { Skill, SkillMetadata, SkillResolutionHandler };
 
@@ -15,6 +16,10 @@ export function buildSkillsRegistry(
 ): { [key: string]: Skill } {
   return {
     [PathfindToCoordinates.METADATA.name]: new PathfindToCoordinates(
+      bot,
+      onResolution
+    ),
+    [PathfindToItem.METADATA.name]: new PathfindToItem(
       bot,
       onResolution
     ),

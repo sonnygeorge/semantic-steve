@@ -102,7 +102,7 @@ export enum Vicinity {
   IMMEDIATE_SURROUNDINGS = "immediate",
   DISTANT_SURROUNDINGS_UP = Direction.UP,
   DISTANT_SURROUNDINGS_DOWN = Direction.DOWN,
-  DISTANT_SURROUNDINGS_NOTH = Direction.NORTH,
+  DISTANT_SURROUNDINGS_NORTH = Direction.NORTH,
   DISTANT_SURROUNDINGS_NORTHEAST = Direction.NORTHEAST,
   DISTANT_SURROUNDINGS_EAST = Direction.EAST,
   DISTANT_SURROUNDINGS_SOUTHEAST = Direction.SOUTHEAST,
@@ -127,6 +127,7 @@ export enum Vicinity {
 export type ImmediateSurroundingsDTO = {
   visibleBlocks: { [key: string]: [number, number, number][] };
   visibleBiomes: string[];
+  visibleItems: { [key: string]: [number, number, number][] };
 };
 
 /**
@@ -137,11 +138,14 @@ export class ImmediateSurroundings {
   bot: Bot;
   blocksToAllCoords: Map<string, Vec3[]>;
   biomes: Set<number>;
+  // this is currently dropped item name mapped to coords, not the entity name.
+  itemEntitiesToAllCoords: Map<string, Vec3[]>;
 
   constructor(bot: Bot) {
     this.bot = bot;
     this.blocksToAllCoords = new Map<string, Vec3[]>();
     this.biomes = new Set<number>();
+    this.itemEntitiesToAllCoords = new Map<string, Vec3[]>();
   }
 
   getDTO(): ImmediateSurroundingsDTO {
@@ -154,6 +158,12 @@ export class ImmediateSurroundings {
       ),
       visibleBiomes: Array.from(this.biomes).map(
         (biomeId) => this.bot.registry.biomes[biomeId].name,
+      ),
+      visibleItems: Object.fromEntries(
+        [...this.itemEntitiesToAllCoords.entries()].map(([item, allCoords]) => [
+          item,
+          allCoords.map((coords) => [coords.x, coords.y, coords.z]),
+        ]),
       ),
     };
   }
@@ -174,6 +184,7 @@ export class ImmediateSurroundings {
 export type DistantSurroundingsInADirectionDTO = {
   visibleBlockCounts: { [key: string]: number };
   visibleBiomes: string[];
+  visibleItemCounts: { [key: string]: number };
 };
 
 /**
@@ -185,12 +196,16 @@ export class DistantSurroundingsInADirection {
   blocksToCounts: Map<string, number>;
   blocksToClosestCoords: Map<string, Vec3>;
   biomesToClosestCoords: Map<number, Vec3>;
+  itemEntitiesToCounts: Map<string, number>;
+  itemEntitiesToClosestCoords: Map<string, Vec3>;
 
   constructor(bot: Bot) {
     this.bot = bot;
     this.blocksToCounts = new Map<string, number>();
     this.blocksToClosestCoords = new Map<string, Vec3>();
     this.biomesToClosestCoords = new Map<number, Vec3>();
+    this.itemEntitiesToCounts = new Map<string, number>();
+    this.itemEntitiesToClosestCoords = new Map<string, Vec3>();
   }
 
   getDTO(): DistantSurroundingsInADirectionDTO {
@@ -199,6 +214,7 @@ export class DistantSurroundingsInADirection {
       visibleBiomes: Array.from(this.biomesToClosestCoords.keys()).map(
         (biomeId) => this.bot.registry.biomes[biomeId].name,
       ),
+      visibleItemCounts: Object.fromEntries(this.itemEntitiesToCounts),
     };
   }
 }

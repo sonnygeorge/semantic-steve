@@ -1,6 +1,8 @@
 import type { Bot } from "mineflayer";
 import type { Vec3 } from "vec3";
 import { Vicinity } from "../env-state/surroundings";
+import { MaybePromise } from "../types";
+
 
 export interface Thing {
   bot: Bot;
@@ -9,5 +11,9 @@ export interface Thing {
   isVisibleInImmediateSurroundings(): boolean;
   isVisibleInDistantSurroundings(): boolean;
 
-  locateNearest(direction?: Vicinity): Promise<Vec3 | null> | Vec3 | null;
+  locateNearest(direction?: Vicinity): MaybePromise<Vec3>;
+
+  locateNearest(): MaybePromise<Vec3>// E.g., calls this.locateNearestInImmediateSurroundings() first, then if undefined, tries this.locateNearestInDistantSurroundings()
+  locateNearestInImmediateSurroundings(): MaybePromise<Vec3>
+  locateNearestInDistantSurroundings(direction?: Vicinity): MaybePromise<Vec3>;
 }

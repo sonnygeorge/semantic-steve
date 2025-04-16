@@ -2,6 +2,7 @@ import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction, Vicinity } from "../env-state/surroundings";
+import { MaybePromise } from "../types";
 
 export class Block implements Thing {
   bot: Bot;
@@ -24,21 +25,32 @@ export class Block implements Thing {
     );
   }
 
-  locateNearest(direction?: Vicinity): Vec3 | null {
-    // Check immediate surroundings first (regardless of direction parameter)
-    const immediate =
+  // Main locateNearest method that follows the interface pattern
+  locateNearest(): MaybePromise<Vec3> {
+    // Try immediate surroundings first
+    const immediateResult = this.locateNearestInImmediateSurroundings();
+    if (immediateResult !== null) {
+      return immediateResult;
+    }
+    
+    // If not found in immediate surroundings, try distant surroundings
+    return this.locateNearestInDistantSurroundings();
+  }
+
+  // Method to locate in immediate surroundings
+  locateNearestInImmediateSurroundings(): MaybePromise<Vec3> {
+    const immediate = 
       this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
     if (immediate != null && immediate.length > 0) {
       return immediate[0];
     }
+    return null;
+  }
 
-    // If direction is explicitly set to "immediate", we've already checked and didn't find it
-    if (direction === "immediate") {
-      return null;
-    }
-
-    // If a specific direction is provided (and it's not "immediate"), check only that direction
-    if (direction) {
+  // Method to locate in distant surroundings with optional direction
+  locateNearestInDistantSurroundings(direction?: Vicinity): MaybePromise<Vec3> {
+    // If a specific direction is provided, check only that direction
+    if (direction && direction !== "immediate") {
       const distant = this.bot.envState.surroundings.distant.get(
         direction as unknown as Direction,
       );
@@ -52,7 +64,6 @@ export class Block implements Thing {
     }
 
     // If no direction specified, check all directions
-    // Get all directions from the surroundings map
     const directions = Array.from(
       this.bot.envState.surroundings.distant.keys(),
     );

@@ -1,36 +1,30 @@
-import assert from "assert";
 import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction, Vicinity } from "../env-state/surroundings";
 import { MaybePromise } from "../types";
-export class Biome implements Thing {
+
+/**
+ * An item type that is "dropped", is hovering on the ground, and can be picked up.
+ */
+export class ItemEntity implements Thing {
   bot: Bot;
-  name: string;
-  id: number;
+  name: string; // "dirt", "diamond_pickaxe", etc.
 
   constructor(bot: Bot, name: string) {
     this.bot = bot;
     this.name = name;
-    this.id = -1;
-    for (const [id, biome] of Object.entries(this.bot.registry.biomes)) {
-      if (biome.name === this.name) {
-        this.id = parseInt(id);
-      }
-    }
-    assert(
-      this.id !== -1,
-      `This should be impossible if this object is being created by the factory`,
-    );
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
-    return this.bot.envState.surroundings.immediate.biomes.has(this.id);
+    return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(
+      this.name,
+    );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.biomesToClosestCoords.has(this.id),
+      dir.itemEntitiesToCounts.has(this.name),
     );
   }
 
@@ -47,26 +41,26 @@ export class Biome implements Thing {
   }
 
   // Method to locate in immediate surroundings
-  locateNearestInImmediateSurroundings():  MaybePromise<Vec3> {
-    if (this.isVisibleInImmediateSurroundings()) {
-      return this.bot.entity.position.clone(); // assume we are in it
+  locateNearestInImmediateSurroundings(): MaybePromise<Vec3> {
+    const immediate = 
+      this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(this.name);
+    if (immediate != null && immediate.length > 0) {
+      return immediate[0];
     }
     return null;
   }
 
   // Method to locate in distant surroundings with optional direction
   locateNearestInDistantSurroundings(direction?: Vicinity): MaybePromise<Vec3> {
-    const id = this.id;
-    
     // If a specific direction is provided, check only that direction
     if (direction && direction !== "immediate") {
       const distant = this.bot.envState.surroundings.distant.get(
         direction as unknown as Direction,
       );
       if (distant != null) {
-        const coords = distant.biomesToClosestCoords.get(id);
-        if (coords != null) {
-          return coords.clone();
+        const count = distant.itemEntitiesToCounts.get(this.name);
+        if (count != null && count > 0) {
+          return distant.itemEntitiesToClosestCoords.get(this.name) ?? null;
         }
       }
       return null;
@@ -84,15 +78,18 @@ export class Biome implements Thing {
     for (const dir of directions) {
       const distant = this.bot.envState.surroundings.distant.get(dir);
       if (distant != null) {
-        const coords = distant.biomesToClosestCoords.get(id);
-        if (coords != null) {
-          // Calculate distance to these coordinates
-          const distance = coords.distanceTo(this.bot.entity.position);
+        const count = distant.itemEntitiesToCounts.get(this.name);
+        if (count != null && count > 0) {
+          const coords = distant.itemEntitiesToClosestCoords.get(this.name);
+          if (coords != null) {
+            // Calculate distance to these coordinates
+            const distance = coords.distanceTo(this.bot.entity.position);
 
-          // Update closest if this is closer than what we've found so far
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestCoords = coords.clone();
+            // Update closest if this is closer than what we've found so far
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestCoords = coords.clone();
+            }
           }
         }
       }

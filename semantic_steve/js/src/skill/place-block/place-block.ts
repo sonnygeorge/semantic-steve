@@ -3,6 +3,7 @@ import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { Vec3 } from "vec3";
 import type { Block as PBlock } from "prismarine-block";
 import { PlaceBlockResults } from "./results";
+import { isBlockVisible } from "../../utils";
 
 /**
  * Check if coordinates are within a reasonable distance
@@ -213,6 +214,10 @@ export class PlaceBlock extends Skill {
 
         // Skip if the adjacent block doesn't exist or is air
         if (!adjacentBlock || adjacentBlock.name === "air") {
+          continue;
+        }
+
+        if (!isBlockVisible(this.bot, adjacentBlock, adjacentPos)) {
           continue;
         }
 

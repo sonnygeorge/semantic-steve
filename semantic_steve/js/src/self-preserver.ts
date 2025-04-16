@@ -19,8 +19,12 @@ export class SelfPreserver {
     this.bot = bot;
     this.checkThrottleMS = checkThrottleMS;
   }
-}
-
+  
+  /**
+   * Checks if the bot should self-preserve based on its current environment and health.
+   * This method should be called periodically to determine if self-preservation actions are needed.
+   * @returns {boolean} - True if self-preservation is needed, false otherwise.
+   */
   public shouldSelfPreserve(): boolean {
     // this.bot.envState.hydrate(this.CheckThrottleMS);
     // TODO: Check hydrated envState for threatening mobs, low hunger, drowning, etc.

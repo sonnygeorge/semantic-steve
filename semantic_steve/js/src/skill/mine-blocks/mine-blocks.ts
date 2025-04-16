@@ -182,8 +182,11 @@ export class MineBlocks extends Skill {
         }
       }
 
-      // allows the item's usage to be updated in the inventory, so we can monitor tool durability usage.
-      await once(this.bot.inventory, "updateSlot");
+      if (this.bestTool != null) {
+        // allows the item's usage to be updated in the inventory, so we can monitor tool durability usage.
+        await once(this.bot.inventory, "updateSlot");
+
+      } // ignore since no durability change. We don't care about picking up the item.
 
       // Resolve with the appropriate result
       this.isMining = false;

@@ -394,7 +394,6 @@ export class SurroundingsHydrater {
   }
   
   private removeItemFromVicinity(itemName: string, entityId: number, vicinity: Vicinity): void {
-    return
     if (vicinity === Vicinity.IMMEDIATE_SURROUNDINGS) {
       const items = this.surroundings.immediate.itemEntitiesToAllCoords.get(itemName)!;
       if (items) {

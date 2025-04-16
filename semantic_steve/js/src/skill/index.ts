@@ -7,6 +7,7 @@ import { PlaceBlock } from "./place-block/place-block";
 import { SmeltItems } from "./smelt-items/smelt-items";
 import { TakeScreenshotOf } from "./take-screenshot-of/take-screenshot-of";
 import { PathfindToItem } from "./pathfind-to-item/pathfind-to-item";
+import { PathfindToBlock } from "./pathfind-to-block/pathfind-to-block";
 
 export { Skill, SkillMetadata, SkillResolutionHandler };
 
@@ -20,6 +21,10 @@ export function buildSkillsRegistry(
       onResolution
     ),
     [PathfindToItem.METADATA.name]: new PathfindToItem(
+      bot,
+      onResolution
+    ),
+    [PathfindToBlock.METADATA.name]: new PathfindToBlock(
       bot,
       onResolution
     ),

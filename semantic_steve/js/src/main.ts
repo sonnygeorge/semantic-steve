@@ -19,7 +19,7 @@ const config = new SemanticSteveConfig({
     process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "5"
   ),
   distantSurroundingsRadius: parseInt(
-    process.env.DISTANT_SURROUNDINGS_RADIUS || "13"
+    process.env.DISTANT_SURROUNDINGS_RADIUS || "32"
   ),
   username: process.env.MC_USERNAME || "SemanticSteve",
 } as SemanticSteveConfigOptions);
@@ -30,13 +30,18 @@ const bot = createBot({
   username: config.username,
   auth: isValidEmail(config.username) ? "microsoft" : "offline",
 });
-bot.once("spawn", async () => {
+
+bot.once('login', () => {
   bot.loadPlugin(
     createPlugin({
       immediateSurroundingsRadius: config.immediateSurroundingsRadius,
       distantSurroundingsRadius: config.distantSurroundingsRadius,
     })
   );
+})
+
+bot.once("spawn", async () => {
+
   await bot.waitForChunksToLoad();
   mfViewer(bot, { port: config.mfViewerPort, firstPerson: true });
   const semanticSteve = new SemanticSteve(bot, config);

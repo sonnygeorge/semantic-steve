@@ -4,7 +4,7 @@ import { Block } from "./block";
 import { Biome } from "./biome";
 import { ItemEntity } from "./itemEntity";
 
-export const SUPPORTED_THING_TYPES: string = "['block', 'biome', 'itemEntity']";
+export const SUPPORTED_THING_TYPES: string[] = ['block', 'biome', 'itemEntity'];
 
 export class InvalidThingError extends Error {
   constructor(message: string) {

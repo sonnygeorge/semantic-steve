@@ -28,12 +28,13 @@ export class PlaceBlock extends Skill {
     signature:
       "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `
-        /**
-         * Attempts to place a block at the specified coordinates, assuming these
-         * coordinates are within the immediate surroundings.
+        /** 
+         * Places a block. 
+         * If provided coordinates, it will attempt to place the block at those coordinates.
+         * If not provided coordinates, it will attempt to place the block in front of the player.
+         * Both options are acceptable.
          * @param block - The block to place.
          * @param atCoordinates - Optional target coordinates for block placement.
-         * Defaults to an arbitrary location adjacent to the player.
          */
       `,
   };

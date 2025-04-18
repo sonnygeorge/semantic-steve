@@ -7,6 +7,11 @@ type Octant = {
   zDirection: "north" | "south";
 };
 
+function hasBlock(bot: Bot, coords: Vec3): boolean {
+  const block = bot.blockAt(coords);
+  return block !== null && block.type !== 0;
+}
+
 /**
  * Finds a good pathfinding target by searching in the octant opposite to the bot's position
  * relative to the target coordinates for an empty block, within the immediate surroundings
@@ -20,7 +25,7 @@ type Octant = {
  * @returns A Vec3 coordinate to a valid pathfinding target, or null if none found
  */
 export function getGoodPathfindingTarget(bot: Bot, targetCoords: Vec3): Vec3 {
-  if (!bot.blockAt(targetCoords)) {
+  if (!hasBlock(bot, targetCoords)) {
     return targetCoords; // If the target coordinates are already empty, return them
   }
 
@@ -57,8 +62,7 @@ export function getGoodPathfindingTarget(bot: Bot, targetCoords: Vec3): Vec3 {
     checkedPositions.add(posKey);
 
     // Check if the block at this position is empty
-    const block = bot.blockAt(pos);
-    if (!block) {
+    if (!hasBlock(bot, pos)) {
       return pos; // Found an empty block
     }
 

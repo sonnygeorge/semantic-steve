@@ -19,7 +19,9 @@ export namespace PathfindToCoordinatesResults {
 
   export class FoundThingInImmediateSurroundings implements SkillResult {
     message: string;
+    foundThingName: string;
     constructor(targetCoords: Vec3, foundThingName: string) {
+      this.foundThingName = foundThingName;
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
       this.message = `Your pathfinding to or near ${targetCoordsString} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`;
     }
@@ -27,7 +29,9 @@ export namespace PathfindToCoordinatesResults {
 
   export class FoundThingInDistantSurroundings implements SkillResult {
     message: string;
+    foundThingName: string;
     constructor(targetCoords: Vec3, foundThingName: string) {
+      this.foundThingName = foundThingName;
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
       this.message = `Your pathfinding to or near ${targetCoordsString} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`;
     }

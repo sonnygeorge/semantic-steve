@@ -245,11 +245,11 @@ SmeltItems.METADATA = {
         /**
          * Smelts items, assuming a furnace (or, e.g., blast furnace or smoker) is in
          * inventory or in the immediate surroundings.
-         * 
+         *
          * TIP: Do not call this function with very high quantities that will take a long
          * time to smelt and likely result in a timeout. Instead, prefer smelting large
          * quantities in smaller incremental batches.
-         * 
+         *
          * @param item - The item to smelt.
          * @param fuelItem - Optional fuel item to use (e.g., coal). Defaults to whatever
          * fuel-appropriate item is in inventory.

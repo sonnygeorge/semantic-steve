@@ -72,7 +72,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                     console.log(error);
                     if (error instanceof thing_1.InvalidThingError) {
                         // Invalid thing name
-                        this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                        this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
                         return;
                     }
                     // Other errors
@@ -88,7 +88,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                 const screenshotBuffer = yield this.captureScreenshot(targetThing);
                 if (!screenshotBuffer) {
                     // Screenshot capture failed
-                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
                     return;
                 }
                 // Save the screenshot
@@ -99,7 +99,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             catch (error) {
                 console.log("error", error);
                 // Use InvalidThing result for any errors
-                this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES));
+                this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
             }
         });
     }
@@ -288,7 +288,7 @@ TakeScreenshotOf.METADATA = {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the 
+       * @param atCoordinates - Optional coordinates to disamiguate where the
        * thing is located.
        */
     `,

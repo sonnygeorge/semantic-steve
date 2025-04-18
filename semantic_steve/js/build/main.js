@@ -33,7 +33,7 @@ const bot = (0, mineflayer_1.createBot)({
     username: config.username,
     auth: isValidEmail(config.username) ? "microsoft" : "offline",
 });
-bot.once('login', () => {
+bot.once("login", () => {
     bot.loadPlugin((0, _1.createPlugin)({
         immediateSurroundingsRadius: config.immediateSurroundingsRadius,
         distantSurroundingsRadius: config.distantSurroundingsRadius,

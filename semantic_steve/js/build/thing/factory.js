@@ -4,7 +4,7 @@ exports.ThingFactory = exports.InvalidThingError = exports.SUPPORTED_THING_TYPES
 const block_1 = require("./block");
 const biome_1 = require("./biome");
 const item_entity_1 = require("./item-entity");
-exports.SUPPORTED_THING_TYPES = "['block', 'biome', 'itemEntity']";
+exports.SUPPORTED_THING_TYPES = ['block', 'biome', 'itemEntity'];
 class InvalidThingError extends Error {
     constructor(message) {
         super(message);

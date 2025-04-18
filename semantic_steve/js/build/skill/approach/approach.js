@@ -20,6 +20,7 @@ const results_1 = require("./results");
 const thing_1 = require("../../thing");
 const skill_1 = require("../skill");
 const thing_2 = require("../../thing");
+const results_2 = require("../pathfind-to-coordinates/results");
 class Approach extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
@@ -29,6 +30,20 @@ class Approach extends skill_1.Skill {
         (0, assert_1.default)(this.thing);
         (0, assert_1.default)(this.targetThingCoords);
         (0, assert_1.default)(this.direction);
+        // Handle if stopIfFound thing was found
+        if (result instanceof
+            results_2.PathfindToCoordinatesResults.FoundThingInDistantSurroundings) {
+            result = new results_1.ApproachResults.FoundThingInDistantSurroundings(this.thing.name, result.foundThingName);
+            this.onResolution(result, envStateIsHydrated);
+            return;
+        }
+        else if (result instanceof
+            results_2.PathfindToCoordinatesResults.FoundThingInImmediateSurroundings) {
+            result = new results_1.ApproachResults.FoundThingInImmediateSurroundings(this.thing.name, result.foundThingName);
+            this.onResolution(result, envStateIsHydrated);
+            return;
+        }
+        // Otherwise, check to see if the approach was successful & handle
         const vicinityOfTargetThing = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
         if (vicinityOfTargetThing == types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
             const successResult = new results_1.ApproachResults.Success(this.thing.name, this.direction);
@@ -42,7 +57,7 @@ class Approach extends skill_1.Skill {
     // ==================================
     // Implementation of Skill interface
     // ==================================
-    invoke(thing, direction) {
+    invoke(thing, direction, stopIfFound) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
@@ -50,7 +65,7 @@ class Approach extends skill_1.Skill {
             }
             catch (err) {
                 if (err instanceof thing_1.InvalidThingError) {
-                    const result = new results_1.ApproachResults.InvalidThing(thing, thing_2.SUPPORTED_THING_TYPES);
+                    const result = new results_1.ApproachResults.InvalidThing(thing, thing_2.SUPPORTED_THING_TYPES.toString());
                     this.onResolution(result);
                     return;
                 }
@@ -66,15 +81,18 @@ class Approach extends skill_1.Skill {
             // Check if the thing is visible in distant surroundings in given direction and get its coordinates
             this.targetThingCoords =
                 yield ((_a = this.thing) === null || _a === void 0 ? void 0 : _a.locateNearestInDistantSurroundings(this.direction));
+            console.log(this.targetThingCoords);
+            console.log();
             if (!this.targetThingCoords) {
                 const result = new results_1.ApproachResults.ThingNotInDistantSurroundingsDirection(thing, direction);
+                this.onResolution(result);
                 return;
             }
             yield this.pathfindToCoordinates.invoke([
                 this.targetThingCoords.x,
                 this.targetThingCoords.y,
                 this.targetThingCoords.z,
-            ]);
+            ], stopIfFound);
         });
     }
     pause() {
@@ -94,15 +112,17 @@ exports.Approach = Approach;
 Approach.TIMEOUT_MS = 23000; // 23 seconds
 Approach.METADATA = {
     name: "approach",
-    signature: "approach(thing: string)",
+    signature: "approach(thing: string, direction: string, stopIfFound?: string[])",
     docstring: `
       /**
        * Attempt to pathfind to something visible in a direction of the bot's distant
        * surroundings.
-       * 
+       *
        * @param thing - The name of the thing to approach.
        * @param direction - The direction of the distant surroundings in which the thing
        * you want to approach is located.
+       * @param stopIfFound - An optional array of strings representing things that, if
+       * found, should cause the pathdinding to stop (e.g., useful things).
        */
     `,
 };

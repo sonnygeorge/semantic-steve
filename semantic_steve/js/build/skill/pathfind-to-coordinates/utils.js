@@ -2,6 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getGoodPathfindingTarget = getGoodPathfindingTarget;
 const vec3_1 = require("vec3");
+function hasBlock(bot, coords) {
+    const block = bot.blockAt(coords);
+    return block !== null && block.type !== 0;
+}
 /**
  * Finds a good pathfinding target by searching in the octant opposite to the bot's position
  * relative to the target coordinates for an empty block, within the immediate surroundings
@@ -15,7 +19,7 @@ const vec3_1 = require("vec3");
  * @returns A Vec3 coordinate to a valid pathfinding target, or null if none found
  */
 function getGoodPathfindingTarget(bot, targetCoords) {
-    if (!bot.blockAt(targetCoords)) {
+    if (!hasBlock(bot, targetCoords)) {
         return targetCoords; // If the target coordinates are already empty, return them
     }
     const maxSearchRadius = bot.envState.surroundings.radii.immediateSurroundingsRadius - 1;
@@ -39,8 +43,7 @@ function getGoodPathfindingTarget(bot, targetCoords) {
         // Mark as checked
         checkedPositions.add(posKey);
         // Check if the block at this position is empty
-        const block = bot.blockAt(pos);
-        if (!block) {
+        if (!hasBlock(bot, pos)) {
             return pos; // Found an empty block
         }
         // Stop if we've reached the maximum search radius

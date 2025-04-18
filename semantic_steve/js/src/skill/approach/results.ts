@@ -35,4 +35,18 @@ export namespace ApproachResults {
       this.message = `You were unable to approach thing '${thing}'.`;
     }
   }
+
+  export class FoundThingInImmediateSurroundings implements SkillResult {
+    message: string;
+    constructor(thing: string, foundThingName: string) {
+      this.message = `Your approach to '${thing}' was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`;
+    }
+  }
+
+  export class FoundThingInDistantSurroundings implements SkillResult {
+    message: string;
+    constructor(thing: string, foundThingName: string) {
+      this.message = `Your approach to '${thing}' was terminated early since '${foundThingName}' was found visible in the distant surroundings.`;
+    }
+  }
 }

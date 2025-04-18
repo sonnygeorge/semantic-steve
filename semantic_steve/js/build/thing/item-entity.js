@@ -31,6 +31,7 @@ class ItemEntity {
         }
     }
     locateNearestInDistantSurroundings(direction) {
+        console.log(`Attempting to locate nearest of ${this.name} in direction: ${direction}`);
         // If a specific direction is provided, check only that direction
         if (direction) {
             const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);
@@ -40,6 +41,7 @@ class ItemEntity {
                     return surroundingsInDirection.itemEntitiesToClosestCoords.get(this.name);
                 }
             }
+            return undefined; // No item entities found in the specified direction
         }
         // If no direction specified, check all directions
         const directions = Array.from(this.bot.envState.surroundings.distant.keys());

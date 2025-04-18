@@ -8,12 +8,14 @@ import { InvalidThingError } from "../../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { SkillResult } from "../../types";
 import { Thing, SUPPORTED_THING_TYPES } from "../../thing";
+import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 
 export class Approach extends Skill {
   public static readonly TIMEOUT_MS: number = 23000; // 23 seconds
   public static readonly METADATA: SkillMetadata = {
     name: "approach",
-    signature: "approach(thing: string)",
+    signature:
+      "approach(thing: string, direction: string, stopIfFound?: string[])",
     docstring: `
       /**
        * Attempt to pathfind to something visible in a direction of the bot's distant
@@ -22,6 +24,8 @@ export class Approach extends Skill {
        * @param thing - The name of the thing to approach.
        * @param direction - The direction of the distant surroundings in which the thing
        * you want to approach is located.
+       * @param stopIfFound - An optional array of strings representing things that, if
+       * found, should cause the pathdinding to stop (e.g., useful things).
        */
     `,
   };
@@ -47,6 +51,30 @@ export class Approach extends Skill {
     assert(this.targetThingCoords);
     assert(this.direction);
 
+    // Handle if stopIfFound thing was found
+    if (
+      result instanceof
+      PathfindToCoordinatesResults.FoundThingInDistantSurroundings
+    ) {
+      result = new ApproachResults.FoundThingInDistantSurroundings(
+        this.thing.name,
+        result.foundThingName
+      );
+      this.onResolution(result, envStateIsHydrated);
+      return;
+    } else if (
+      result instanceof
+      PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
+    ) {
+      result = new ApproachResults.FoundThingInImmediateSurroundings(
+        this.thing.name,
+        result.foundThingName
+      );
+      this.onResolution(result, envStateIsHydrated);
+      return;
+    }
+
+    // Otherwise, check to see if the approach was successful & handle
     const vicinityOfTargetThing =
       this.bot.envState.surroundings.getVicinityForPosition(
         this.targetThingCoords
@@ -71,7 +99,11 @@ export class Approach extends Skill {
   // Implementation of Skill interface
   // ==================================
 
-  public async invoke(thing: string, direction: string): Promise<void> {
+  public async invoke(
+    thing: string,
+    direction: string,
+    stopIfFound?: string[]
+  ): Promise<void> {
     try {
       this.thing = this.bot.thingFactory.createThing(thing);
     } catch (err) {
@@ -98,19 +130,26 @@ export class Approach extends Skill {
     // Check if the thing is visible in distant surroundings in given direction and get its coordinates
     this.targetThingCoords =
       await this.thing?.locateNearestInDistantSurroundings(this.direction);
+
+    console.log(this.targetThingCoords);
+    console.log();
     if (!this.targetThingCoords) {
       const result = new ApproachResults.ThingNotInDistantSurroundingsDirection(
         thing,
         direction
       );
+      this.onResolution(result);
       return;
     }
 
-    await this.pathfindToCoordinates.invoke([
-      this.targetThingCoords.x,
-      this.targetThingCoords.y,
-      this.targetThingCoords.z,
-    ]);
+    await this.pathfindToCoordinates.invoke(
+      [
+        this.targetThingCoords.x,
+        this.targetThingCoords.y,
+        this.targetThingCoords.z,
+      ],
+      stopIfFound
+    );
   }
 
   public async pause(): Promise<void> {

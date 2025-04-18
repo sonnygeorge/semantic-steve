@@ -19,8 +19,7 @@ const vec3_1 = require("vec3");
  * @returns The crafting table item if found, null otherwise
  */
 function hasCraftingTableInInventory(bot) {
-    const craftingTableItem = bot.inventory.slots
-        .find((item) => item && item.name === "crafting_table");
+    const craftingTableItem = bot.inventory.slots.find((item) => item && item.name === "crafting_table");
     return craftingTableItem || null;
 }
 /**

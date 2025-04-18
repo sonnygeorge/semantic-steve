@@ -74,7 +74,7 @@ class PathfindToCoordinates extends skill_1.Skill {
     }
     resolveInvalidThing(thingName) {
         console.log("Resolving pathfinding as invalid thing");
-        const result = new results_1.PathfindToCoordinatesResults.InvalidThing(thingName, thing_1.SUPPORTED_THING_TYPES);
+        const result = new results_1.PathfindToCoordinatesResults.InvalidThing(thingName, thing_1.SUPPORTED_THING_TYPES.toString());
         this.onResolution(result);
     }
     resolveThingFound(result) {
@@ -210,11 +210,11 @@ PathfindToCoordinates.METADATA = {
        * Attempt to pathfind to or near a set of in-dimension coordinates (digging and
        * bridging as needed), stopping early if something from the stopIfFound list
        * becomes visible in the bot's surroundings.
-       * 
+       *
        * TIP: Do not call this function with very distant coordinates, as this will likely
        * result in a timeout. Instead, prefer incremental invocations of this skill for
-       * traversing long distances. 
-       * 
+       * traversing long distances.
+       *
        * @param coordinates - The target coordinates as an array ordered [x, y, z].
        * @param stopIfFound - An optional array of strings representing things that, if
        * found, should cause the pathdinding to stop (e.g., useful things).

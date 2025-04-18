@@ -18,6 +18,7 @@ var PathfindToCoordinatesResults;
     PathfindToCoordinatesResults.InvalidCoords = InvalidCoords;
     class FoundThingInImmediateSurroundings {
         constructor(targetCoords, foundThingName) {
+            this.foundThingName = foundThingName;
             const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
             this.message = `Your pathfinding to or near ${targetCoordsString} was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`;
         }
@@ -25,6 +26,7 @@ var PathfindToCoordinatesResults;
     PathfindToCoordinatesResults.FoundThingInImmediateSurroundings = FoundThingInImmediateSurroundings;
     class FoundThingInDistantSurroundings {
         constructor(targetCoords, foundThingName) {
+            this.foundThingName = foundThingName;
             const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
             this.message = `Your pathfinding to or near ${targetCoordsString} was terminated early since '${foundThingName}' was found visible in the distant surroundings.`;
         }

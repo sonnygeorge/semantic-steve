@@ -15,13 +15,13 @@ export class Block implements Thing {
 
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name,
+      this.name
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name),
+      dir.blocksToCounts.has(this.name)
     );
   }
 
@@ -45,9 +45,14 @@ export class Block implements Thing {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: Direction,
+    direction?: Direction
   ): MaybePromise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
+
+    console.log(
+      `Attempting to locate nearest of ${this.name} in direction: ${direction}`
+    );
+
     if (direction) {
       const surroundingsInDirection =
         this.bot.envState.surroundings.distant.get(direction);
@@ -57,11 +62,12 @@ export class Block implements Thing {
           return surroundingsInDirection.blocksToClosestCoords.get(this.name);
         }
       }
+      return undefined; // No blocks found in the specified direction
     }
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions

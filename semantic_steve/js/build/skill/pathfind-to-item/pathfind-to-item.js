@@ -131,10 +131,10 @@ PathfindToItem.METADATA = {
       /**
        * Attempt to pathfind to a specific item if it is visible in the bot's surroundings.
        * If the item is not visible, the skill will fail immediately.
-       * 
+       *
        * This skill is a specialized version of pathfindToCoordinates that only works
        * when an item with the given name is found in the bot's surroundings.
-       * 
+       *
        * @param itemName - The name of the item to pathfind to (e.g., "diamond", "apple").
        */
     `,

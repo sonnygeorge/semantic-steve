@@ -33,4 +33,16 @@ var ApproachResults;
         }
     }
     ApproachResults.Failure = Failure;
+    class FoundThingInImmediateSurroundings {
+        constructor(thing, foundThingName) {
+            this.message = `Your approach to '${thing}' was terminated early since '${foundThingName}' was found visible in the immediate surroundings.`;
+        }
+    }
+    ApproachResults.FoundThingInImmediateSurroundings = FoundThingInImmediateSurroundings;
+    class FoundThingInDistantSurroundings {
+        constructor(thing, foundThingName) {
+            this.message = `Your approach to '${thing}' was terminated early since '${foundThingName}' was found visible in the distant surroundings.`;
+        }
+    }
+    ApproachResults.FoundThingInDistantSurroundings = FoundThingInDistantSurroundings;
 })(ApproachResults || (exports.ApproachResults = ApproachResults = {}));

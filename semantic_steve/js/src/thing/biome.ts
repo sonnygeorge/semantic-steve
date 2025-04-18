@@ -21,7 +21,7 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be impossible if this object is being created by the factory`,
+      `This should be impossible if this object is being created by the factory`
     );
   }
 
@@ -31,7 +31,7 @@ export class Biome implements Thing {
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.biomesToClosestCoords.has(this.id),
+      dir.biomesToClosestCoords.has(this.id)
     );
   }
 
@@ -53,21 +53,27 @@ export class Biome implements Thing {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: Direction,
+    direction?: Direction
   ): MaybePromise<Vec3 | undefined> {
-    const id = this.id;
+    console.log(
+      `Attempting to locate nearest of ${this.name} in direction: ${direction}`
+    );
+
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =
         this.bot.envState.surroundings.distant.get(direction);
       if (surroundingsInDirection) {
-        return surroundingsInDirection.biomesToClosestCoords.get(id)?.clone();
+        return surroundingsInDirection.biomesToClosestCoords
+          .get(this.id)
+          ?.clone();
       }
+      return undefined; // No blocks found in the specified direction
     }
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -76,7 +82,7 @@ export class Biome implements Thing {
     for (const dir of directions) {
       const distant = this.bot.envState.surroundings.distant.get(dir);
       if (distant) {
-        const coords = distant.biomesToClosestCoords.get(id);
+        const coords = distant.biomesToClosestCoords.get(this.id);
         if (coords) {
           const distance = coords.distanceTo(this.bot.entity.position);
           if (distance < minDistance) {

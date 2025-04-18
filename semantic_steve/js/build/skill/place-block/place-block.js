@@ -50,8 +50,7 @@ class PlaceBlock extends skill_1.Skill {
                 // Check if we have the block in inventory
                 this.inventoryItem = this.bot.inventory.items().find((item) => item.name === block ||
                     item.name === block + "_block" || // Handle special cases like 'diamond' vs 'diamond_block'
-                    block === item.name + "_block" // Handle reverse case
-                );
+                    block === item.name + "_block");
                 if (!this.inventoryItem) {
                     this.isPlacing = false;
                     return this.onResolution(new results_1.PlaceBlockResults.BlockNotInInventory(block));
@@ -191,12 +190,13 @@ PlaceBlock.METADATA = {
     name: "placeBlock",
     signature: "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `
-        /**
-         * Attempts to place a block at the specified coordinates, assuming these
-         * coordinates are within the immediate surroundings.
+        /** 
+         * Places a block. 
+         * If provided coordinates, it will attempt to place the block at those coordinates.
+         * If not provided coordinates, it will attempt to place the block in front of the player.
+         * Both options are acceptable.
          * @param block - The block to place.
          * @param atCoordinates - Optional target coordinates for block placement.
-         * Defaults to an arbitrary location adjacent to the player.
          */
       `,
 };

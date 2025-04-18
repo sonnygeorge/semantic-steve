@@ -39,13 +39,15 @@ class Biome {
     }
     locateNearestInDistantSurroundings(direction) {
         var _a;
-        const id = this.id;
+        console.log(`Attempting to locate nearest of ${this.name} in direction: ${direction}`);
         // If a specific direction is provided, check only that direction
         if (direction) {
             const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);
             if (surroundingsInDirection) {
-                return (_a = surroundingsInDirection.biomesToClosestCoords.get(id)) === null || _a === void 0 ? void 0 : _a.clone();
+                return (_a = surroundingsInDirection.biomesToClosestCoords
+                    .get(this.id)) === null || _a === void 0 ? void 0 : _a.clone();
             }
+            return undefined; // No blocks found in the specified direction
         }
         // If no direction specified, check all directions
         const directions = Array.from(this.bot.envState.surroundings.distant.keys());
@@ -55,7 +57,7 @@ class Biome {
         for (const dir of directions) {
             const distant = this.bot.envState.surroundings.distant.get(dir);
             if (distant) {
-                const coords = distant.biomesToClosestCoords.get(id);
+                const coords = distant.biomesToClosestCoords.get(this.id);
                 if (coords) {
                     const distance = coords.distanceTo(this.bot.entity.position);
                     if (distance < minDistance) {

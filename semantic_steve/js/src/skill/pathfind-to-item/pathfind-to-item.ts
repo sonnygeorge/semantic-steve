@@ -4,10 +4,9 @@ import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 import { PathfindToItemResults } from "./results";
-import { InvalidThingError } from "../../thing";
+import { InvalidThingError, ItemEntity } from "../../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { SkillResult } from "../../types";
-import { ItemEntity } from "../../thing/itemEntity";
 import type { Item as PItem } from "prismarine-item";
 
 export class PathfindToItem extends Skill {
@@ -19,10 +18,10 @@ export class PathfindToItem extends Skill {
       /**
        * Attempt to pathfind to a specific item if it is visible in the bot's surroundings.
        * If the item is not visible, the skill will fail immediately.
-       * 
+       *
        * This skill is a specialized version of pathfindToCoordinates that only works
        * when an item with the given name is found in the bot's surroundings.
-       * 
+       *
        * @param itemName - The name of the item to pathfind to (e.g., "diamond", "apple").
        */
     `,
@@ -34,18 +33,31 @@ export class PathfindToItem extends Skill {
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
-    this.pathfindToCoordinates = new PathfindToCoordinates(bot, this.handlePathfindingResult.bind(this));
+    this.pathfindToCoordinates = new PathfindToCoordinates(
+      bot,
+      this.handlePathfindingResult.bind(this),
+    );
   }
 
-  private handlePathfindingResult(result: SkillResult, envStateIsHydrated?: boolean): void {
+  private handlePathfindingResult(
+    result: SkillResult,
+    envStateIsHydrated?: boolean,
+  ): void {
     assert(this.itemCoords);
 
     // Map PathfindToCoordinates results to our own result types
     if (result instanceof PathfindToCoordinatesResults.Success) {
-      const successResult = new PathfindToItemResults.Success(this.itemCoords, this.itemName);
+      const successResult = new PathfindToItemResults.Success(
+        this.itemCoords,
+        this.itemName,
+      );
       this.onResolution(successResult, envStateIsHydrated);
     } else if (result instanceof PathfindToCoordinatesResults.PartialSuccess) {
-      const partialResult = new PathfindToItemResults.PartialSuccess(this.bot.entity.position, this.itemCoords, this.itemName);
+      const partialResult = new PathfindToItemResults.PartialSuccess(
+        this.bot.entity.position,
+        this.itemCoords,
+        this.itemName,
+      );
       this.onResolution(partialResult, envStateIsHydrated);
     } else {
       // For other result types, just pass them through
@@ -73,7 +85,10 @@ export class PathfindToItem extends Skill {
 
     try {
       // Create the item entity to check if it's a valid thing type
-      const itemEntity = this.bot.thingFactory.createThing(itemName, ItemEntity);
+      const itemEntity = this.bot.thingFactory.createThing(
+        itemName,
+        ItemEntity,
+      );
 
       // Ensure the item is actually an ItemEntity
       if (!(itemEntity instanceof ItemEntity)) {
@@ -101,13 +116,19 @@ export class PathfindToItem extends Skill {
 
       await new Promise((res, rej) => {
         // await updateSlot event listener
-        const listener = (slot: number, oldItem: PItem | null, newItem: PItem | null) => {
+        const listener = (
+          slot: number,
+          oldItem: PItem | null,
+          newItem: PItem | null,
+        ) => {
           // Check if the item in the slot is the one we are looking for
           if (newItem && newItem.name === this.itemName) {
             res(true); // Resolve the promise
             this.bot.inventory.off("updateSlot", listener); // Remove the listener
           } else if (oldItem && oldItem.name === this.itemName) {
-            rej(new Error("Item was removed from inventory before reaching it."));
+            rej(
+              new Error("Item was removed from inventory before reaching it."),
+            );
             this.bot.inventory.off("updateSlot", listener); // Remove the listener
           }
         };

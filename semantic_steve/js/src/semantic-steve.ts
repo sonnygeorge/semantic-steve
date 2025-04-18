@@ -34,7 +34,7 @@ export class SemanticSteve {
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig()
+    config: SemanticSteveConfig = new SemanticSteveConfig(),
   ) {
     this.bot = bot;
 
@@ -46,13 +46,13 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS
+      config.selfPreservationCheckThrottleMS,
     );
 
     // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this)
+      this.handleSkillResolution.bind(this),
     );
   }
 
@@ -60,14 +60,14 @@ export class SemanticSteve {
     const window: PWindow<StorageEvents> = this.PWindow.createWindow(
       0,
       "minecraft:inventory",
-      "Inventory"
+      "Inventory",
     );
     const slots = this.bot.inventory.slots;
     slots.forEach((slot, idx) => {
       if (slot) {
         const newItem = this.PItem.fromNotch(
           this.PItem.toNotch(slot, true),
-          slot.stackId ?? undefined
+          slot.stackId ?? undefined,
         );
         if (newItem != null) {
           newItem.slot = idx;
@@ -107,7 +107,7 @@ export class SemanticSteve {
       try {
         if (!this.skills[skillInvocation.skillName]) {
           const result = new GenericSkillResults.SkillNotFound(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           this.handleSkillResolution(result);
           return;
@@ -117,7 +117,7 @@ export class SemanticSteve {
       } catch (error) {
         const result = new GenericSkillResults.UnhandledRuntimeError(
           skillInvocation.skillName,
-          error as Error
+          error as Error,
         );
         this.handleSkillResolution(result);
       }
@@ -131,7 +131,7 @@ export class SemanticSteve {
     result: SkillResult,
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated?: boolean
+    envStateIsHydrated?: boolean,
   ): void {
     // Hydrate the envState if it wasn't just hydrated by a skill
     if (!envStateIsHydrated) {
@@ -164,7 +164,7 @@ export class SemanticSteve {
     console.log("Getting inventory changes...");
     if (!this.invAtTimeOfLastMsgToPython) {
       throw new Error(
-        "This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set"
+        "This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set",
       );
     }
 
@@ -177,9 +177,8 @@ export class SemanticSteve {
       i++
     ) {
       const itemFromOldInv = this.invAtTimeOfLastMsgToPython.slots[i];
-  
-      if (!itemFromOldInv) {
 
+      if (!itemFromOldInv) {
         // check if we have an item in this slot now.
         const newItemFromSlot = this.bot.inventory.slots[i];
         if (newItemFromSlot) {
@@ -202,7 +201,7 @@ export class SemanticSteve {
         itemFromOldInv.type,
         itemFromOldInv.metadata,
         false,
-        itemFromOldInv.nbt
+        itemFromOldInv.nbt,
       );
 
       if (!itemFromCurrentInv) {
@@ -224,7 +223,7 @@ export class SemanticSteve {
         const curDurability = getDurability(this.bot, itemFromCurrentInv);
         assert(
           curDurability !== undefined,
-          "Should be defined if oldDurability is defined"
+          "Should be defined if oldDurability is defined",
         );
         if (oldDurability !== curDurability) {
           differential[itemFromOldInv.type] = {
@@ -248,16 +247,16 @@ export class SemanticSteve {
     if (!this.currentSkill) {
       assert(
         !this.timeOfLastSkillInvocation,
-        "No skill running, but time of last invocation is set"
+        "No skill running, but time of last invocation is set",
       );
     } else {
       assert(
         this.timeOfLastSkillInvocation,
-        "A skill is running, but time of last invocation is not set"
+        "A skill is running, but time of last invocation is not set",
       );
       assert(
         this.invAtTimeOfLastMsgToPython,
-        "A skill is running, but inventory at time of last outgoing python msg is not set"
+        "A skill is running, but inventory at time of last outgoing python msg is not set",
       );
       const curSkillClass = this.currentSkill.constructor as typeof Skill;
       if (
@@ -267,7 +266,7 @@ export class SemanticSteve {
         const skillClass = this.currentSkill.constructor as typeof Skill;
         const result = new GenericSkillResults.SkillTimeout(
           skillClass.METADATA.name,
-          curSkillClass.TIMEOUT_MS / 1000
+          curSkillClass.TIMEOUT_MS / 1000,
         );
         this.handleSkillResolution(result);
       }
@@ -327,7 +326,7 @@ export class SemanticSteve {
         if (this.hasDiedWhileAwaitingInvocation) {
           this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
           const result = new GenericSkillResults.DeathWhileAwaitingInvocation(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           this.handleSkillResolution(result);
         } else {

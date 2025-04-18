@@ -13,10 +13,11 @@ export function findBlocksOfType(
   bot: Bot,
   blockType: string,
   maxDistance = 16,
-  count = 64
+  count = 64,
 ): any[] {
   const blockPositions = bot.findBlocks({
-    matching: (block) => block.name === blockType && isBlockVisible(bot, block, block.position),
+    matching: (block) =>
+      block.name === blockType && isBlockVisible(bot, block, block.position),
     useExtraInfo: true,
     maxDistance: maxDistance,
     count: count,
@@ -42,7 +43,7 @@ export function getBestToolForBlock(bot: Bot, blockType: string): any {
         item.name.endsWith("_pickaxe") ||
         item.name.endsWith("_axe") ||
         item.name.endsWith("_shovel") ||
-        item.name.endsWith("_hoe")
+        item.name.endsWith("_hoe"),
     );
 
   // If no tools, return null

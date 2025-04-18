@@ -162,7 +162,11 @@ export class ImmediateSurroundings {
       visibleItems: Object.fromEntries(
         [...this.itemEntitiesToAllCoords.entries()].map(([item, allCoords]) => [
           item,
-          allCoords.map((coords) => [Number(coords.x.toFixed(2)), Number(coords.y.toFixed(2)), Number(coords.z.toFixed(2))]),
+          allCoords.map((coords) => [
+            Number(coords.x.toFixed(2)),
+            Number(coords.y.toFixed(2)),
+            Number(coords.z.toFixed(2)),
+          ]),
         ]),
       ),
     };

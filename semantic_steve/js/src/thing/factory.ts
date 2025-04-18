@@ -2,7 +2,7 @@ import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Block } from "./block";
 import { Biome } from "./biome";
-import { ItemEntity } from "./itemEntity";
+import { ItemEntity } from "./item-entity";
 
 export const SUPPORTED_THING_TYPES: string = "['block', 'biome', 'itemEntity']";
 
@@ -22,7 +22,7 @@ export class ThingFactory {
 
   public createBlock(thing: string): Block | null {
     const blockNames = Object.values(this.bot.registry.blocksByName).map(
-      (b) => b.name
+      (b) => b.name,
     );
     if (blockNames.includes(thing)) {
       return new Block(this.bot, thing);
@@ -32,7 +32,7 @@ export class ThingFactory {
 
   public createBiome(thing: string): Biome | null {
     const biomeNames = Object.values(this.bot.registry.biomes).map(
-      (b) => b.name
+      (b) => b.name,
     );
     if (biomeNames.includes(thing)) {
       return new Biome(this.bot, thing);
@@ -41,15 +41,14 @@ export class ThingFactory {
   }
 
   public createItemEntity(thing: string): ItemEntity | null {
-    const itemEntityNames = Object.values(
-      this.bot.registry.itemsByName
-    ).map((i) => i.name);
+    const itemEntityNames = Object.values(this.bot.registry.itemsByName).map(
+      (i) => i.name,
+    );
     if (itemEntityNames.includes(thing)) {
       return new ItemEntity(this.bot, thing);
     }
     return null;
   }
-
 
   /**
    * Creates a Thing object based on the provided input string.
@@ -57,7 +56,10 @@ export class ThingFactory {
    * @returns {Thing} The created Thing object.
    * @throws {InvalidThingError} If the input string does not correspond to a valid (supported) thing.
    */
-  public createThing(thing: string, preferred?: (new(...args: any[]) => Thing)): Thing {
+  public createThing(
+    thing: string,
+    preferred?: new (...args: any[]) => Thing,
+  ): Thing {
     if (preferred != null) {
       switch (preferred.name) {
         case "Block":
@@ -96,7 +98,7 @@ export class ThingFactory {
     }
 
     throw new InvalidThingError(
-      `Invalid thing type: ${thing}. Supported types are: ${SUPPORTED_THING_TYPES}`
+      `Invalid thing type: ${thing}. Supported types are: ${SUPPORTED_THING_TYPES}`,
     );
   }
 }

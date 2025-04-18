@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Vec3 } from "vec3";
-import { Direction, Vicinity } from "../env-state/surroundings";
+import { Direction } from "../env-state/surroundings";
 import { MaybePromise } from "../types";
 
 export class Block implements Thing {
@@ -25,42 +25,38 @@ export class Block implements Thing {
     );
   }
 
-  // Main locateNearest method that follows the interface pattern
-  locateNearest(): MaybePromise<Vec3> {
+  locateNearest(): MaybePromise<Vec3 | undefined> {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
-    if (immediateResult !== null) {
+    if (immediateResult) {
       return immediateResult;
     }
-    
+
     // If not found in immediate surroundings, try distant surroundings
     return this.locateNearestInDistantSurroundings();
   }
 
-  // Method to locate in immediate surroundings
-  locateNearestInImmediateSurroundings(): MaybePromise<Vec3> {
-    const immediate = 
+  locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined> {
+    const immediate =
       this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
-    if (immediate != null && immediate.length > 0) {
+    if (immediate && immediate.length > 0) {
       return immediate[0];
     }
-    return null;
   }
 
-  // Method to locate in distant surroundings with optional direction
-  locateNearestInDistantSurroundings(direction?: Vicinity): MaybePromise<Vec3> {
+  locateNearestInDistantSurroundings(
+    direction?: Direction,
+  ): MaybePromise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
-    if (direction && direction !== "immediate") {
-      const distant = this.bot.envState.surroundings.distant.get(
-        direction as unknown as Direction,
-      );
-      if (distant != null) {
-        const count = distant.blocksToCounts.get(this.name);
-        if (count != null && count > 0) {
-          return distant.blocksToClosestCoords.get(this.name) ?? null;
+    if (direction) {
+      const surroundingsInDirection =
+        this.bot.envState.surroundings.distant.get(direction);
+      if (surroundingsInDirection) {
+        const count = surroundingsInDirection.blocksToCounts.get(this.name);
+        if (count && count > 0) {
+          return surroundingsInDirection.blocksToClosestCoords.get(this.name);
         }
       }
-      return null;
     }
 
     // If no direction specified, check all directions
@@ -69,20 +65,16 @@ export class Block implements Thing {
     );
 
     // Find the closest coordinates across all directions
-    let closestCoords: Vec3 | null = null;
+    let closestCoords: Vec3 | undefined = undefined;
     let minDistance = Infinity;
-
     for (const dir of directions) {
-      const distant = this.bot.envState.surroundings.distant.get(dir);
-      if (distant != null) {
-        const count = distant.blocksToCounts.get(this.name);
-        if (count != null && count > 0) {
-          const coords = distant.blocksToClosestCoords.get(this.name);
-          if (coords != null) {
-            // Calculate distance to these coordinates
+      const surroundingsInDir = this.bot.envState.surroundings.distant.get(dir);
+      if (surroundingsInDir) {
+        const count = surroundingsInDir.blocksToCounts.get(this.name);
+        if (count && count > 0) {
+          const coords = surroundingsInDir.blocksToClosestCoords.get(this.name);
+          if (coords) {
             const distance = coords.distanceTo(this.bot.entity.position);
-
-            // Update closest if this is closer than what we've found so far
             if (distance < minDistance) {
               minDistance = distance;
               closestCoords = coords.clone();

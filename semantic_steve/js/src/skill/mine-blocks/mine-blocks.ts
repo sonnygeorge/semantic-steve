@@ -51,12 +51,16 @@ export class MineBlocks extends Skill {
       }
 
       // Find blocks of the specified type nearby
-      this.blockPositions = findBlocksOfType(this.bot, block, MineBlocks.REACH_DISTANCE);
+      this.blockPositions = findBlocksOfType(
+        this.bot,
+        block,
+        MineBlocks.REACH_DISTANCE,
+      );
 
       if (this.blockPositions.length === 0) {
         this.isMining = false;
         return this.onResolution(
-          new MineBlocksResults.BlockNotInSurroundings(block)
+          new MineBlocksResults.BlockNotInSurroundings(block),
         );
       }
 
@@ -67,7 +71,7 @@ export class MineBlocks extends Skill {
         if (!this.bestTool) {
           this.isMining = false;
           return this.onResolution(
-            new MineBlocksResults.MissingNecessaryTool(block)
+            new MineBlocksResults.MissingNecessaryTool(block),
           );
         }
       }
@@ -83,13 +87,13 @@ export class MineBlocks extends Skill {
           new MineBlocksResults.PartialSuccess(
             block,
             this.currentQuantity,
-            quantity
-          )
+            quantity,
+          ),
         );
       }
 
       return this.onResolution(
-        new MineBlocksResults.BlockNotInSurroundings(block)
+        new MineBlocksResults.BlockNotInSurroundings(block),
       );
     }
   }
@@ -118,7 +122,11 @@ export class MineBlocks extends Skill {
       this.isMining = true;
 
       // Re-find blocks in case the world changed while paused
-      this.blockPositions = findBlocksOfType(this.bot, this.blockToMine, MineBlocks.REACH_DISTANCE);
+      this.blockPositions = findBlocksOfType(
+        this.bot,
+        this.blockToMine,
+        MineBlocks.REACH_DISTANCE,
+      );
 
       if (this.blockPositions.length === 0) {
         this.isMining = false;
@@ -126,8 +134,8 @@ export class MineBlocks extends Skill {
           new MineBlocksResults.PartialSuccess(
             this.blockToMine,
             this.currentQuantity,
-            this.targetQuantity
-          )
+            this.targetQuantity,
+          ),
         );
       }
 
@@ -173,7 +181,11 @@ export class MineBlocks extends Skill {
               this.currentQuantity < this.targetQuantity &&
               this.blockPositions.length < MineBlocks.REACH_DISTANCE
             ) {
-              const newBlocks = findBlocksOfType(this.bot, this.blockToMine, MineBlocks.REACH_DISTANCE);
+              const newBlocks = findBlocksOfType(
+                this.bot,
+                this.blockToMine,
+                MineBlocks.REACH_DISTANCE,
+              );
               this.blockPositions = [...newBlocks];
             }
           } catch (error) {
@@ -186,7 +198,6 @@ export class MineBlocks extends Skill {
       if (this.bestTool != null) {
         // allows the item's usage to be updated in the inventory, so we can monitor tool durability usage.
         await once(this.bot.inventory, "updateSlot");
-
       } // ignore since no durability change. We don't care about picking up the item.
 
       // Resolve with the appropriate result
@@ -194,19 +205,19 @@ export class MineBlocks extends Skill {
 
       if (this.currentQuantity === 0) {
         return this.onResolution(
-          new MineBlocksResults.BlockNotInSurroundings(this.blockToMine)
+          new MineBlocksResults.BlockNotInSurroundings(this.blockToMine),
         );
       } else if (this.currentQuantity < this.targetQuantity) {
         return this.onResolution(
           new MineBlocksResults.PartialSuccess(
             this.blockToMine,
             this.currentQuantity,
-            this.targetQuantity
-          )
+            this.targetQuantity,
+          ),
         );
       } else {
         return this.onResolution(
-          new MineBlocksResults.Success(this.blockToMine, this.currentQuantity)
+          new MineBlocksResults.Success(this.blockToMine, this.currentQuantity),
         );
       }
     } catch (error) {
@@ -218,13 +229,13 @@ export class MineBlocks extends Skill {
           new MineBlocksResults.PartialSuccess(
             this.blockToMine,
             this.currentQuantity,
-            this.targetQuantity
-          )
+            this.targetQuantity,
+          ),
         );
       }
 
       return this.onResolution(
-        new MineBlocksResults.BlockNotInSurroundings(this.blockToMine)
+        new MineBlocksResults.BlockNotInSurroundings(this.blockToMine),
       );
     }
   }

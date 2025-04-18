@@ -27,7 +27,7 @@ export interface InventoryChangesDTO {
 
 export function getInventoryChangesDTO(
   bot: Bot,
-  inventoryDifferential: InventoryChanges
+  inventoryDifferential: InventoryChanges,
 ): InventoryChangesDTO {
   let itemsAcquired: { [key: string]: number } = {};
   let itemsLostOrConsumed: { [key: string]: number } = {};
@@ -40,7 +40,7 @@ export function getInventoryChangesDTO(
     if (itemDiff.countDifferential !== undefined) {
       assert(
         itemDiff.countDifferential !== 0,
-        "We should never save a differential of 0, should be undefined instead"
+        "We should never save a differential of 0, should be undefined instead",
       );
       if (itemDiff.countDifferential > 0) {
         itemsAcquired[itemName] = itemDiff.countDifferential;
@@ -53,10 +53,10 @@ export function getInventoryChangesDTO(
     if (itemDiff.durabilityUsed !== undefined) {
       assert(
         itemDiff.curDurability !== undefined,
-        "This shouldn't be undefined if we have durabilityUsed"
+        "This shouldn't be undefined if we have durabilityUsed",
       );
       durabilityChanges.push(
-        `${itemName} lost ${itemDiff.durabilityUsed} durability and is now at ${itemDiff.curDurability} durability.`
+        `${itemName} lost ${itemDiff.durabilityUsed} durability and is now at ${itemDiff.curDurability} durability.`,
       );
     }
   }

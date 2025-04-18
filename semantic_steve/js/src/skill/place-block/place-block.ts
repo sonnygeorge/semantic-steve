@@ -15,7 +15,7 @@ import { isBlockVisible } from "../../utils";
 function areCoordinatesInRange(
   bot: Bot,
   coordinates: Vec3,
-  maxDistance = 4
+  maxDistance = 4,
 ): boolean {
   const distance = bot.entity.position.distanceTo(coordinates);
   return distance <= maxDistance;
@@ -50,7 +50,7 @@ export class PlaceBlock extends Skill {
 
   public async invoke(
     block: string,
-    atCoordinates?: [number, number, number]
+    atCoordinates?: [number, number, number],
   ): Promise<void> {
     this.isPlacing = true;
     this.blockName = block;
@@ -71,13 +71,13 @@ export class PlaceBlock extends Skill {
         (item) =>
           item.name === block ||
           item.name === block + "_block" || // Handle special cases like 'diamond' vs 'diamond_block'
-          block === item.name + "_block" // Handle reverse case
+          block === item.name + "_block", // Handle reverse case
       );
 
       if (!this.inventoryItem) {
         this.isPlacing = false;
         return this.onResolution(
-          new PlaceBlockResults.BlockNotInInventory(block)
+          new PlaceBlockResults.BlockNotInInventory(block),
         );
       }
 
@@ -86,7 +86,7 @@ export class PlaceBlock extends Skill {
         this.targetPosition = new Vec3(
           atCoordinates[0],
           atCoordinates[1],
-          atCoordinates[2]
+          atCoordinates[2],
         );
 
         // Check if coordinates are within range
@@ -106,7 +106,7 @@ export class PlaceBlock extends Skill {
         this.targetPosition = new Vec3(
           Math.floor(botPos.x + Math.round(dx)),
           Math.floor(botPos.y),
-          Math.floor(botPos.z + Math.round(dz))
+          Math.floor(botPos.z + Math.round(dz)),
         );
       }
 
@@ -120,12 +120,12 @@ export class PlaceBlock extends Skill {
         return this.onResolution(
           new PlaceBlockResults.FailureNoAdjacentBlocks(
             block,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-          )
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          ),
         );
       } else {
         return this.onResolution(
-          new PlaceBlockResults.BlockNotInInventory(block)
+          new PlaceBlockResults.BlockNotInInventory(block),
         );
       }
     }
@@ -155,12 +155,12 @@ export class PlaceBlock extends Skill {
           (item) =>
             item.name === this.blockName ||
             item.name === this.blockName + "_block" ||
-            this.blockName === item.name + "_block"
+            this.blockName === item.name + "_block",
         );
 
       if (!this.inventoryItem) {
         return this.onResolution(
-          new PlaceBlockResults.BlockNotInInventory(this.blockName)
+          new PlaceBlockResults.BlockNotInInventory(this.blockName),
         );
       }
 
@@ -190,8 +190,8 @@ export class PlaceBlock extends Skill {
         return this.onResolution(
           new PlaceBlockResults.FailureNoAdjacentBlocks(
             this.blockName,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-          )
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          ),
         );
       }
 
@@ -232,8 +232,8 @@ export class PlaceBlock extends Skill {
         return this.onResolution(
           new PlaceBlockResults.FailureNoAdjacentBlocks(
             this.blockName,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-          )
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          ),
         );
       }
 
@@ -245,8 +245,8 @@ export class PlaceBlock extends Skill {
       return this.onResolution(
         new PlaceBlockResults.Success(
           this.blockName,
-          `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-        )
+          `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+        ),
       );
     } catch (error) {
       console.error(`Error in doPlacing:`, error);
@@ -257,8 +257,8 @@ export class PlaceBlock extends Skill {
           this.blockName,
           this.targetPosition
             ? `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-            : "unknown"
-        )
+            : "unknown",
+        ),
       );
     }
   }

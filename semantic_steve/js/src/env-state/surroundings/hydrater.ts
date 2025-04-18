@@ -2,10 +2,17 @@ import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { Block } from "prismarine-block";
 import { Entity } from "prismarine-entity";
-import { Direction, Vicinity, SurroundingsRadii, _Surroundings, ImmediateSurroundings, DistantSurroundingsInADirection } from "./types";
+import {
+  Direction,
+  Vicinity,
+  SurroundingsRadii,
+  _Surroundings,
+  ImmediateSurroundings,
+  DistantSurroundingsInADirection,
+} from "./types";
 
 import type { Item as PItem } from "prismarine-item";
-import {isBlockVisible} from "../../utils"
+import { isBlockVisible } from "../../utils";
 
 export const BLOCKS_TO_IGNORE = ["air"];
 
@@ -15,9 +22,10 @@ export class SurroundingsHydrater {
   private surroundings: _Surroundings;
 
   // Cache maps for fast lookups
-  private blockLookup: Map<string, { name: string; vicinity: Vicinity }> = new Map();
-  private entityLookup: Map<number, { name: string; vicinity: Vicinity }> = new Map();  
-
+  private blockLookup: Map<string, { name: string; vicinity: Vicinity }> =
+    new Map();
+  private entityLookup: Map<number, { name: string; vicinity: Vicinity }> =
+    new Map();
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
     this.bot = bot;
@@ -70,17 +78,13 @@ export class SurroundingsHydrater {
     this.bot.on("move", () => {
       this.recalculateVicinities();
     });
-
-    // for (const {chunkX, chunkZ} of this.bot.world.getColumns()) {
-    //   this.processChunk(chunkX >> 4, chunkZ >> 4);
-    // }
   }
 
   private getBlockKey(pos: Vec3): string {
     return `${Math.floor(pos.x)},${Math.floor(pos.y)},${Math.floor(pos.z)}`;
   }
 
-  private getVicinityForPosition(pos: Vec3): Vicinity {
+  public getVicinityForPosition(pos: Vec3): Vicinity {
     const botPos = this.bot.entity.position;
     const distance = botPos.distanceTo(pos);
 
@@ -95,16 +99,23 @@ export class SurroundingsHydrater {
     }
 
     // Check for up/down columns
-    const horizontalDist = Math.sqrt(Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2));
+    const horizontalDist = Math.sqrt(
+      Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2),
+    );
 
     if (horizontalDist <= this.radii.immediateSurroundingsRadius) {
-      return pos.y > botPos.y ? Vicinity.DISTANT_SURROUNDINGS_UP : Vicinity.DISTANT_SURROUNDINGS_DOWN;
+      return pos.y > botPos.y
+        ? Vicinity.DISTANT_SURROUNDINGS_UP
+        : Vicinity.DISTANT_SURROUNDINGS_DOWN;
     }
 
     // Determine direction based on angle
-    const angle = ((Math.atan2(pos.x - botPos.x, botPos.z - pos.z) * 180) / Math.PI + 360) % 360;
+    const angle =
+      ((Math.atan2(pos.x - botPos.x, botPos.z - pos.z) * 180) / Math.PI + 360) %
+      360;
 
-    if (angle < 22.5 || angle >= 337.5) return Vicinity.DISTANT_SURROUNDINGS_NORTH;
+    if (angle < 22.5 || angle >= 337.5)
+      return Vicinity.DISTANT_SURROUNDINGS_NORTH;
     if (angle < 67.5) return Vicinity.DISTANT_SURROUNDINGS_NORTHEAST;
     if (angle < 112.5) return Vicinity.DISTANT_SURROUNDINGS_EAST;
     if (angle < 157.5) return Vicinity.DISTANT_SURROUNDINGS_SOUTHEAST;
@@ -113,9 +124,6 @@ export class SurroundingsHydrater {
     if (angle < 292.5) return Vicinity.DISTANT_SURROUNDINGS_WEST;
     return Vicinity.DISTANT_SURROUNDINGS_NORTHWEST;
   }
-
-
- 
 
   private processChunk(chunkX: number, chunkZ: number): void {
     const column = this.bot.world.getColumn(chunkX, chunkZ);
@@ -127,9 +135,17 @@ export class SurroundingsHydrater {
     // Quick check if chunk is completely out of range
     const chunkCornerX = chunkX << 4;
     const chunkCornerZ = chunkZ << 4;
-    const closestX = Math.max(chunkCornerX, Math.min(botPos.x, chunkCornerX + 15));
-    const closestZ = Math.max(chunkCornerZ, Math.min(botPos.z, chunkCornerZ + 15));
-    const minDist = Math.sqrt(Math.pow(closestX - botPos.x, 2) + Math.pow(closestZ - botPos.z, 2));
+    const closestX = Math.max(
+      chunkCornerX,
+      Math.min(botPos.x, chunkCornerX + 15),
+    );
+    const closestZ = Math.max(
+      chunkCornerZ,
+      Math.min(botPos.z, chunkCornerZ + 15),
+    );
+    const minDist = Math.sqrt(
+      Math.pow(closestX - botPos.x, 2) + Math.pow(closestZ - botPos.z, 2),
+    );
 
     if (minDist > maxDistance + this.radii.distantSurroundingsRadius) return; // Skip chunk if even the closest point is too far
 
@@ -143,7 +159,9 @@ export class SurroundingsHydrater {
         const worldZ = (chunkZ << 4) + z;
 
         // Check if this column is within range
-        const horizontalDist = Math.sqrt(Math.pow(worldX - botPos.x, 2) + Math.pow(worldZ - botPos.z, 2));
+        const horizontalDist = Math.sqrt(
+          Math.pow(worldX - botPos.x, 2) + Math.pow(worldZ - botPos.z, 2),
+        );
         if (horizontalDist > maxDistance + 1) continue;
 
         for (let y = minY; y < maxY; y++) {
@@ -187,7 +205,11 @@ export class SurroundingsHydrater {
     // Remove old entry if it exists and vicinity changed
     const existingData = this.blockLookup.get(blockKey);
     if (existingData && existingData.vicinity !== vicinity) {
-      this.removeBlockFromVicinity(existingData.name, pos, existingData.vicinity);
+      this.removeBlockFromVicinity(
+        existingData.name,
+        pos,
+        existingData.vicinity,
+      );
     }
 
     // Add to appropriate vicinity
@@ -218,10 +240,16 @@ export class SurroundingsHydrater {
       if (!this.surroundings.immediate.blocksToAllCoords.has(block.name)) {
         this.surroundings.immediate.blocksToAllCoords.set(block.name, []);
       }
-      this.surroundings.immediate.blocksToAllCoords.get(block.name)!.push(pos.clone());
+      this.surroundings.immediate.blocksToAllCoords
+        .get(block.name)!
+        .push(pos.clone());
 
       // Add biome if available
-      if (block.biome && block.biome.id !== undefined && block.biome.id !== -1) {
+      if (
+        block.biome &&
+        block.biome.id !== undefined &&
+        block.biome.id !== -1
+      ) {
         this.surroundings.immediate.biomes.add(block.biome.id);
       }
     } else {
@@ -230,7 +258,10 @@ export class SurroundingsHydrater {
       const distantDir = this.surroundings.distant.get(direction)!;
 
       // Add to block counts
-      distantDir.blocksToCounts.set(block.name, (distantDir.blocksToCounts.get(block.name) || 0) + 1);
+      distantDir.blocksToCounts.set(
+        block.name,
+        (distantDir.blocksToCounts.get(block.name) || 0) + 1,
+      );
 
       // Update closest block
       const botPos = this.bot.entity.position;
@@ -242,8 +273,14 @@ export class SurroundingsHydrater {
       }
 
       // Add biome if available
-      if (block.biome && block.biome.id !== undefined && block.biome.id !== -1) {
-        const currentBiome = distantDir.biomesToClosestCoords.get(block.biome.id);
+      if (
+        block.biome &&
+        block.biome.id !== undefined &&
+        block.biome.id !== -1
+      ) {
+        const currentBiome = distantDir.biomesToClosestCoords.get(
+          block.biome.id,
+        );
 
         if (!currentBiome || botPos.distanceTo(currentBiome) > distance) {
           distantDir.biomesToClosestCoords.set(block.biome.id, pos.clone());
@@ -252,13 +289,21 @@ export class SurroundingsHydrater {
     }
   }
 
-  private removeBlockFromVicinity(blockName: string, pos: Vec3, vicinity: Vicinity): void {
+  private removeBlockFromVicinity(
+    blockName: string,
+    pos: Vec3,
+    vicinity: Vicinity,
+  ): void {
     if (vicinity === Vicinity.IMMEDIATE_SURROUNDINGS) {
-      const blocks = this.surroundings.immediate.blocksToAllCoords.get(blockName);
+      const blocks =
+        this.surroundings.immediate.blocksToAllCoords.get(blockName);
       if (blocks) {
         const newBlocks = blocks!.filter((coord) => !coord.equals(pos));
         if (newBlocks.length > 0) {
-          this.surroundings.immediate.blocksToAllCoords.set(blockName, newBlocks);
+          this.surroundings.immediate.blocksToAllCoords.set(
+            blockName,
+            newBlocks,
+          );
         } else {
           this.surroundings.immediate.blocksToAllCoords.delete(blockName);
         }
@@ -349,7 +394,11 @@ export class SurroundingsHydrater {
     const newVicinity = this.getVicinityForPosition(pos);
 
     // we would normally not update if the position is the same, but we don't track that currently.
-    this.removeItemFromVicinity(entityData.name, entity.id, entityData.vicinity);
+    this.removeItemFromVicinity(
+      entityData.name,
+      entity.id,
+      entityData.vicinity,
+    );
 
     // Add to new vicinity
     this.addItemToVicinity(item.name, pos, newVicinity, entity.id);
@@ -366,25 +415,36 @@ export class SurroundingsHydrater {
     this.entityLookup.delete(entityId);
   }
 
-  private addItemToVicinity(itemName: string, pos: Vec3, vicinity: Vicinity, entityId: number): void {
+  private addItemToVicinity(
+    itemName: string,
+    pos: Vec3,
+    vicinity: Vicinity,
+    entityId: number,
+  ): void {
     if (vicinity === Vicinity.IMMEDIATE_SURROUNDINGS) {
       // Add to immediate surroundings
       if (!this.surroundings.immediate.itemEntitiesToAllCoords.has(itemName)) {
         this.surroundings.immediate.itemEntitiesToAllCoords.set(itemName, []);
       }
-      this.surroundings.immediate.itemEntitiesToAllCoords.get(itemName)!.push(pos.clone());
+      this.surroundings.immediate.itemEntitiesToAllCoords
+        .get(itemName)!
+        .push(pos.clone());
     } else {
       // Get direction from vicinity
       const direction = vicinity as unknown as Direction;
       const distantDir = this.surroundings.distant.get(direction)!;
 
       // Add to item counts
-      distantDir.itemEntitiesToCounts.set(itemName, (distantDir.itemEntitiesToCounts.get(itemName) || 0) + 1);
+      distantDir.itemEntitiesToCounts.set(
+        itemName,
+        (distantDir.itemEntitiesToCounts.get(itemName) || 0) + 1,
+      );
 
       // Update closest item
       const botPos = this.bot.entity.position;
       const distance = botPos.distanceTo(pos);
-      const currentClosest = distantDir.itemEntitiesToClosestCoords.get(itemName);
+      const currentClosest =
+        distantDir.itemEntitiesToClosestCoords.get(itemName);
 
       if (!currentClosest || botPos.distanceTo(currentClosest) > distance) {
         distantDir.itemEntitiesToClosestCoords.set(itemName, pos.clone());
@@ -392,9 +452,14 @@ export class SurroundingsHydrater {
     }
   }
 
-  private removeItemFromVicinity(itemName: string, entityId: number, vicinity: Vicinity): void {
+  private removeItemFromVicinity(
+    itemName: string,
+    entityId: number,
+    vicinity: Vicinity,
+  ): void {
     if (vicinity === Vicinity.IMMEDIATE_SURROUNDINGS) {
-      const items = this.surroundings.immediate.itemEntitiesToAllCoords.get(itemName)!;
+      const items =
+        this.surroundings.immediate.itemEntitiesToAllCoords.get(itemName)!;
       if (items) {
         // For immediate vicinity, we need to find the item by its coordinates
         // This is a limitation since we don't store entity IDs
@@ -402,7 +467,10 @@ export class SurroundingsHydrater {
         const newItems = items.filter((_, idx) => idx !== items.length - 1); // Remove last one as approximation
 
         if (newItems.length > 0) {
-          this.surroundings.immediate.itemEntitiesToAllCoords.set(itemName, newItems);
+          this.surroundings.immediate.itemEntitiesToAllCoords.set(
+            itemName,
+            newItems,
+          );
         } else {
           this.surroundings.immediate.itemEntitiesToAllCoords.delete(itemName);
         }
@@ -474,7 +542,12 @@ export class SurroundingsHydrater {
       const item = entity.getDroppedItem()!;
       if (item) {
         this.removeItemFromVicinity(data.name, entityId, data.vicinity);
-        this.addItemToVicinity(item.name, entity.position, newVicinity, entityId);
+        this.addItemToVicinity(
+          item.name,
+          entity.position,
+          newVicinity,
+          entityId,
+        );
         data.vicinity = newVicinity;
       } else {
         this.removeItemEntity(entityId);

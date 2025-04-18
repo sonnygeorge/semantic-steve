@@ -25,7 +25,7 @@ export class TakeScreenshotOf extends Skill {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the 
+       * @param atCoordinates - Optional coordinates to disamiguate where the
        * thing is located.
        */
     `,
@@ -40,7 +40,7 @@ export class TakeScreenshotOf extends Skill {
 
   public async invoke(
     thing: string,
-    atCoordinates?: [number, number, number]
+    atCoordinates?: [number, number, number],
   ): Promise<void> {
     try {
       // Find the Thing object using the bot's thing factory
@@ -54,8 +54,8 @@ export class TakeScreenshotOf extends Skill {
           this.onResolution(
             new TakeScreenshotOfResults.InvalidThing(
               thing,
-              SUPPORTED_THING_TYPES
-            )
+              SUPPORTED_THING_TYPES,
+            ),
           );
           return;
         }
@@ -69,8 +69,8 @@ export class TakeScreenshotOf extends Skill {
         this.onResolution(
           new TakeScreenshotOfResults.InvalidThing(
             thing,
-            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`
-          )
+            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`,
+          ),
         );
         return;
       }
@@ -81,7 +81,10 @@ export class TakeScreenshotOf extends Skill {
       if (!screenshotBuffer) {
         // Screenshot capture failed
         this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            SUPPORTED_THING_TYPES,
+          ),
         );
         return;
       }
@@ -91,13 +94,13 @@ export class TakeScreenshotOf extends Skill {
 
       // Return success with the appropriate result type
       this.onResolution(
-        new TakeScreenshotOfResults.Success(thing, screenshotPath)
+        new TakeScreenshotOfResults.Success(thing, screenshotPath),
       );
     } catch (error) {
       console.log("error", error);
       // Use InvalidThing result for any errors
       this.onResolution(
-        new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
+        new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES),
       );
     }
   }
@@ -161,7 +164,7 @@ export class TakeScreenshotOf extends Skill {
       viewer.camera.position.set(
         cameraPosition.x,
         cameraPosition.y,
-        cameraPosition.z
+        cameraPosition.z,
       );
 
       // calculate the yaw and pitch of the bot's current position to the target
@@ -234,7 +237,7 @@ export class TakeScreenshotOf extends Skill {
    * Necessary for positioning the camera to take a screenshot.
    */
   private async getThingDetails(
-    thing: Thing
+    thing: Thing,
   ): Promise<{ position: Vec3; type: string; object: any } | null> {
     // First, check if it's an entity
     const entities = this.bot.entities;

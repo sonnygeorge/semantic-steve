@@ -36,7 +36,7 @@ export namespace SmeltItemsResults {
       smeltedItemQuantity: number,
       targetItemQuantity: number,
       resultingItem: string,
-      resultingItemQuantity: number
+      resultingItemQuantity: number,
     ) {
       this.message = `You were only able to smelt ${smeltedItemQuantity} of the intended ${targetItemQuantity} of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
     }
@@ -48,7 +48,7 @@ export namespace SmeltItemsResults {
       smeltedItem: string,
       smeltedItemQuantity: number,
       resultingItem: string,
-      resultingItemQuantity: number
+      resultingItemQuantity: number,
     ) {
       this.message = `You successfully smelted '${smeltedItemQuantity}' of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
     }

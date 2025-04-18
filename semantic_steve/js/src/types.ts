@@ -1,5 +1,4 @@
-export type MaybePromise<T, E = null> = Promise<T | E> | T | E;
-
+export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;
 
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;

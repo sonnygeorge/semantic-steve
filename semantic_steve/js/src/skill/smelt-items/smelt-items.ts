@@ -14,11 +14,11 @@ export class SmeltItems extends Skill {
         /**
          * Smelts items, assuming a furnace (or, e.g., blast furnace or smoker) is in
          * inventory or in the immediate surroundings.
-         * 
+         *
          * TIP: Do not call this function with very high quantities that will take a long
          * time to smelt and likely result in a timeout. Instead, prefer smelting large
          * quantities in smaller incremental batches.
-         * 
+         *
          * @param item - The item to smelt.
          * @param fuelItem - Optional fuel item to use (e.g., coal). Defaults to whatever
          * fuel-appropriate item is in inventory.
@@ -44,7 +44,7 @@ export class SmeltItems extends Skill {
   public async invoke(
     item: string,
     fuelItem?: string,
-    quantity: number = 1
+    quantity: number = 1,
   ): Promise<void> {
     this.isSmelting = true;
     this.itemToSmelt = item;
@@ -70,12 +70,12 @@ export class SmeltItems extends Skill {
           return this.onResolution(
             new SmeltItemsResults.SpecifiedFuelItemNotInInventory(
               fuelItem,
-              quantity
-            )
+              quantity,
+            ),
           );
         } else {
           return this.onResolution(
-            new SmeltItemsResults.FuelItemNotInInventory(item)
+            new SmeltItemsResults.FuelItemNotInInventory(item),
           );
         }
       }
@@ -121,21 +121,21 @@ export class SmeltItems extends Skill {
       const smeltItem = this.getItemFromInventory(this.itemToSmelt);
       if (!smeltItem) {
         return this.onResolution(
-          new SmeltItemsResults.InvalidItem(this.itemToSmelt)
+          new SmeltItemsResults.InvalidItem(this.itemToSmelt),
         );
       }
 
       const fuelItem = this.getItemFromInventory(this.fuelItem);
       if (!fuelItem) {
         return this.onResolution(
-          new SmeltItemsResults.FuelItemNotInInventory(this.itemToSmelt)
+          new SmeltItemsResults.FuelItemNotInInventory(this.itemToSmelt),
         );
       }
 
       this.furnaceBlock = this.findNearbyFurnace();
       if (!this.furnaceBlock) {
         return this.onResolution(
-          new SmeltItemsResults.NoFurnaceEtc(this.itemToSmelt)
+          new SmeltItemsResults.NoFurnaceEtc(this.itemToSmelt),
         );
       }
 
@@ -160,7 +160,7 @@ export class SmeltItems extends Skill {
       } catch (error: any) {
         console.error("Error putting fuel in furnace:", error);
         throw new Error(
-          `Failed to put fuel (${fuelItem.name}) in furnace: ${error.message}`
+          `Failed to put fuel (${fuelItem.name}) in furnace: ${error.message}`,
         );
       }
 
@@ -170,7 +170,7 @@ export class SmeltItems extends Skill {
       } catch (error: any) {
         console.error("Error putting input in furnace:", error);
         throw new Error(
-          `Failed to put input (${itemToSmelt.name}) in furnace: ${error.message}`
+          `Failed to put input (${itemToSmelt.name}) in furnace: ${error.message}`,
         );
       }
 
@@ -188,7 +188,7 @@ export class SmeltItems extends Skill {
           } catch (error: any) {
             console.error("Error taking output from furnace:", error);
             throw new Error(
-              `Failed to take output from furnace: ${error.message}`
+              `Failed to take output from furnace: ${error.message}`,
             );
           }
         }
@@ -215,8 +215,8 @@ export class SmeltItems extends Skill {
             this.itemToSmelt,
             this.smeltedQuantity,
             this.resultItem,
-            this.resultQuantity
-          )
+            this.resultQuantity,
+          ),
         );
       } else if (this.smeltedQuantity > 0) {
         this.onResolution(
@@ -225,8 +225,8 @@ export class SmeltItems extends Skill {
             this.smeltedQuantity,
             this.targetQuantity,
             this.resultItem,
-            this.resultQuantity
-          )
+            this.resultQuantity,
+          ),
         );
       } else {
         this.onResolution(new SmeltItemsResults.NoFurnaceEtc(this.itemToSmelt));
@@ -266,8 +266,8 @@ export class SmeltItems extends Skill {
           this.smeltedQuantity,
           this.targetQuantity,
           this.resultItem || "unknown",
-          this.resultQuantity
-        )
+          this.resultQuantity,
+        ),
       );
     } else {
       this.onResolution(new SmeltItemsResults.NoFurnaceEtc(this.itemToSmelt));
@@ -296,7 +296,7 @@ export class SmeltItems extends Skill {
         (item) =>
           ["coal", "charcoal", "coal_block"].includes(item.name) ||
           item.name.includes("wood") ||
-          item.name.includes("log")
+          item.name.includes("log"),
       );
   }
 

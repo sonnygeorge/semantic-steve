@@ -6,8 +6,9 @@ import { Vec3 } from "vec3";
  * @returns The crafting table item if found, null otherwise
  */
 export function hasCraftingTableInInventory(bot: Bot) {
-  const craftingTableItem = bot.inventory.slots
-    .find((item) => item && item.name === "crafting_table");
+  const craftingTableItem = bot.inventory.slots.find(
+    (item) => item && item.name === "crafting_table",
+  );
   return craftingTableItem || null;
 }
 
@@ -86,7 +87,7 @@ export async function placeCraftingTable(bot: Bot): Promise<boolean> {
     // Place the crafting table
     await bot.placeBlock(
       placementPosition.referenceBlock,
-      placementPosition.faceVector
+      placementPosition.faceVector,
     );
     return true;
   } catch (error) {

@@ -38,7 +38,7 @@ export namespace PathfindToCoordinatesResults {
     constructor(reachedCoords: Vec3, targetCoords: Vec3) {
       const reachedCoordsString = `[${reachedCoords.x}, ${reachedCoords.y}, ${reachedCoords.z}]`;
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
-      this.message = `You were only able to pathfind to ${reachedCoordsString} and not ${targetCoordsString}.`;
+      this.message = `You were only able to reach ${reachedCoordsString} and ${targetCoordsString} is not in your immediate surroundings.`;
       // TODO: Is it possible to add layman-understandable reasons to this?
       // E.g., "because these blocks were impeding the way: '{impedingBlockNames}'"...
       // ...allowing the LLM to reason that, if it really wanted to proceeed towards these
@@ -50,7 +50,7 @@ export namespace PathfindToCoordinatesResults {
     message: string;
     constructor(targetCoords: Vec3) {
       const targetCoordsString = `[${targetCoords.x}, ${targetCoords.y}, ${targetCoords.z}]`;
-      this.message = `You were able to successfully pathfind to or near ${targetCoordsString} (such that these coordinates are now in your immediate surroundings).`;
+      this.message = `You were able to successfully pathfind to or near ${targetCoordsString} such that these coordinates are now in your immediate surroundings.`;
     }
   }
 }

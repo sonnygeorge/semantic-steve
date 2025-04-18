@@ -8,10 +8,10 @@ export namespace ApproachResults {
     }
   }
 
-  export class ThingNotInDistantSurroundings implements SkillResult {
+  export class InvalidDirection implements SkillResult {
     message: string;
-    constructor(thing: string) {
-      this.message = `SkillInvocationError: '${thing}' not found in your distant surroundings. A thing must be visible in your distant surroundings in order to be approached.`;
+    constructor(direction: string) {
+      this.message = `SkillInvocationError: '${direction}' is not a valid specification of a direction in the distant surroundings.`;
     }
   }
 
@@ -24,13 +24,6 @@ export namespace ApproachResults {
 
   export class Success implements SkillResult {
     message: string;
-    constructor(approachedThing: string) {
-      this.message = `You successfully approached '${approachedThing}'. It should now be present in your immediate surroundings.`;
-    }
-  }
-
-  export class SuccessDirection implements SkillResult {
-    message: string;
     constructor(thing: string, direction: string) {
       this.message = `You successfully approached '${thing}' from the '${direction}' direction. '${thing}' should now be present in your immediate surroundings.`;
     }
@@ -39,7 +32,7 @@ export namespace ApproachResults {
   export class Failure implements SkillResult {
     message: string;
     constructor(thing: string, pathfindingPartialSuccessResult: string) {
-      this.message = `You were unable to approach thing '${thing}'. ${pathfindingPartialSuccessResult}`;
+      this.message = `You were unable to approach thing '${thing}'.`;
     }
   }
 }

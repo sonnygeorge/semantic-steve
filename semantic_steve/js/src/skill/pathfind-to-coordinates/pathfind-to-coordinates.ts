@@ -113,7 +113,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as invalid thing");
     const result = new PathfindToCoordinatesResults.InvalidThing(
       thingName,
-      SUPPORTED_THING_TYPES
+      SUPPORTED_THING_TYPES.toString()
     );
     this.onResolution(result);
   }

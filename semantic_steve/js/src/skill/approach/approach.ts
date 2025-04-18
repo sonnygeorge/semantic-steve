@@ -35,13 +35,13 @@ export class Approach extends Skill {
     super(bot, onResolution);
     this.pathfindToCoordinates = new PathfindToCoordinates(
       bot,
-      this.resolveNaturally.bind(this),
+      this.resolveNaturally.bind(this)
     );
   }
 
   private resolveNaturally(
     result: SkillResult,
-    envStateIsHydrated?: boolean,
+    envStateIsHydrated?: boolean
   ): void {
     assert(this.thing);
     assert(this.targetThingCoords);
@@ -49,19 +49,19 @@ export class Approach extends Skill {
 
     const vicinityOfTargetThing =
       this.bot.envState.surroundings.getVicinityForPosition(
-        this.targetThingCoords,
+        this.targetThingCoords
       );
 
     if (vicinityOfTargetThing == Vicinity.IMMEDIATE_SURROUNDINGS) {
       const successResult = new ApproachResults.Success(
         this.thing.name,
-        this.direction,
+        this.direction
       );
       this.onResolution(successResult, envStateIsHydrated);
     } else {
       const failureResult = new ApproachResults.Failure(
         this.thing.name,
-        result.message,
+        result.message
       );
       this.onResolution(failureResult, envStateIsHydrated);
     }
@@ -78,7 +78,7 @@ export class Approach extends Skill {
       if (err instanceof InvalidThingError) {
         const result = new ApproachResults.InvalidThing(
           thing,
-          SUPPORTED_THING_TYPES,
+          SUPPORTED_THING_TYPES.toString()
         );
         this.onResolution(result);
         return;
@@ -101,7 +101,7 @@ export class Approach extends Skill {
     if (!this.targetThingCoords) {
       const result = new ApproachResults.ThingNotInDistantSurroundingsDirection(
         thing,
-        direction,
+        direction
       );
       return;
     }

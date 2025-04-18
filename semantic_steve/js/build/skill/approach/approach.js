@@ -17,42 +17,57 @@ const assert_1 = __importDefault(require("assert"));
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
 const types_1 = require("../../env-state/surroundings/types");
 const results_1 = require("./results");
-const thing_1 = require("../../thing");
 const skill_1 = require("../skill");
-const thing_2 = require("../../thing");
+const types_2 = require("../../types");
+const thing_1 = require("../../thing");
 const results_2 = require("../pathfind-to-coordinates/results");
+const constants_1 = require("../../constants");
+const utils_1 = require("../../utils");
 class Approach extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        this.pathfindToCoordinates = new pathfind_to_coordinates_1.PathfindToCoordinates(bot, this.resolveNaturally.bind(this));
+        this.pathfindToCoordinates = new pathfind_to_coordinates_1.PathfindToCoordinates(bot, this.resolveAfterPathfinding.bind(this));
     }
-    resolveNaturally(result, envStateIsHydrated) {
-        (0, assert_1.default)(this.thing);
-        (0, assert_1.default)(this.targetThingCoords);
-        (0, assert_1.default)(this.direction);
-        // Handle if stopIfFound thing was found
-        if (result instanceof
-            results_2.PathfindToCoordinatesResults.FoundThingInDistantSurroundings) {
-            result = new results_1.ApproachResults.FoundThingInDistantSurroundings(this.thing.name, result.foundThingName);
-            this.onResolution(result, envStateIsHydrated);
-            return;
-        }
-        else if (result instanceof
-            results_2.PathfindToCoordinatesResults.FoundThingInImmediateSurroundings) {
-            result = new results_1.ApproachResults.FoundThingInImmediateSurroundings(this.thing.name, result.foundThingName);
-            this.onResolution(result, envStateIsHydrated);
-            return;
-        }
-        // Otherwise, check to see if the approach was successful & handle
-        const vicinityOfTargetThing = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
-        if (vicinityOfTargetThing == types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
-            const successResult = new results_1.ApproachResults.Success(this.thing.name, this.direction);
-            this.onResolution(successResult, envStateIsHydrated);
-        }
-        else {
-            const failureResult = new results_1.ApproachResults.Failure(this.thing.name, result.message);
-            this.onResolution(failureResult, envStateIsHydrated);
-        }
+    resolveAfterPathfinding(result, envStateIsHydrated) {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, assert_1.default)(this.thing);
+            (0, assert_1.default)(this.targetThingCoords);
+            (0, assert_1.default)(this.direction);
+            // Handle if stopIfFound thing was found
+            if (result instanceof
+                results_2.PathfindToCoordinatesResults.FoundThingInDistantSurroundings) {
+                result = new results_1.ApproachResults.FoundThingInDistantSurroundings(this.thing.name, result.foundThingName);
+                this.onResolution(result, envStateIsHydrated);
+                return;
+            }
+            else if (result instanceof
+                results_2.PathfindToCoordinatesResults.FoundThingInImmediateSurroundings) {
+                result = new results_1.ApproachResults.FoundThingInImmediateSurroundings(this.thing.name, result.foundThingName);
+                this.onResolution(result, envStateIsHydrated);
+                return;
+            }
+            // Otherwise, check to see if the approach was successful & handle
+            const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
+            if (vicinityOfOriginalTargetCoords == types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
+                if (this.thing instanceof thing_1.ItemEntity) {
+                    (0, assert_1.default)(this.itemTotalAtPathingStart);
+                    // Wait for a bit to make sure the item is picked up
+                    yield (0, utils_1.asyncSleep)(constants_1.ITEM_PICKUP_WAIT_MS);
+                    const curItemTotal = this.thing.getTotalCountInInventory();
+                    const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
+                    result = new results_1.ApproachResults.SuccessItemEntity(this.thing.name, this.direction, netItemGain);
+                    this.onResolution(result, envStateIsHydrated);
+                }
+                else {
+                    const successResult = new results_1.ApproachResults.Success(this.thing.name, this.direction);
+                    this.onResolution(successResult, envStateIsHydrated);
+                }
+            }
+            else {
+                const failureResult = new results_1.ApproachResults.Failure(this.thing.name);
+                this.onResolution(failureResult, envStateIsHydrated);
+            }
+        });
     }
     // ==================================
     // Implementation of Skill interface
@@ -60,16 +75,22 @@ class Approach extends skill_1.Skill {
     invoke(thing, direction, stopIfFound) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            try {
-                this.thing = this.bot.thingFactory.createThing(thing);
-            }
-            catch (err) {
-                if (err instanceof thing_1.InvalidThingError) {
-                    const result = new results_1.ApproachResults.InvalidThing(thing, thing_2.SUPPORTED_THING_TYPES.toString());
-                    this.onResolution(result);
-                    return;
+            if (typeof thing === "string") {
+                try {
+                    this.thing = this.bot.thingFactory.createThing(thing);
+                }
+                catch (err) {
+                    if (err instanceof types_2.InvalidThingError) {
+                        const result = new results_1.ApproachResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString());
+                        this.onResolution(result);
+                        return;
+                    }
                 }
             }
+            else {
+                this.thing = thing;
+            }
+            (0, assert_1.default)(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
             if (!Object.values(types_1.Direction).includes(direction)) {
                 const result = new results_1.ApproachResults.InvalidDirection(direction);
                 this.onResolution(result);
@@ -81,12 +102,14 @@ class Approach extends skill_1.Skill {
             // Check if the thing is visible in distant surroundings in given direction and get its coordinates
             this.targetThingCoords =
                 yield ((_a = this.thing) === null || _a === void 0 ? void 0 : _a.locateNearestInDistantSurroundings(this.direction));
-            console.log(this.targetThingCoords);
-            console.log();
             if (!this.targetThingCoords) {
-                const result = new results_1.ApproachResults.ThingNotInDistantSurroundingsDirection(thing, direction);
+                const result = new results_1.ApproachResults.ThingNotInDistantSurroundingsDirection(this.thing.name, direction);
                 this.onResolution(result);
                 return;
+            }
+            // If the thing is an ItemEntity, record how many the bot has at the start of pathfinding
+            if (this.thing instanceof thing_1.ItemEntity) {
+                this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
             }
             yield this.pathfindToCoordinates.invoke([
                 this.targetThingCoords.x,

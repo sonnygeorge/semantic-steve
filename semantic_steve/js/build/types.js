@@ -1,6 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SemanticSteveConfig = void 0;
+exports.SemanticSteveConfig = exports.InvalidThingError = void 0;
+class InvalidThingError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "InvalidThingTypeError";
+    }
+}
+exports.InvalidThingError = InvalidThingError;
 class SemanticSteveConfig {
     constructor(options = {}) {
         var _a, _b, _c, _d, _e, _f, _g, _h;

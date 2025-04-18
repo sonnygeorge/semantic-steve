@@ -50,7 +50,7 @@ export function getGoodPathfindingTarget(bot: Bot, targetCoords: Vec3): Vec3 {
 
     // Generate a string key for the position to check against the set
     const posKey = `${Math.floor(pos.x)},${Math.floor(pos.y)},${Math.floor(
-      pos.z
+      pos.z,
     )}`;
 
     // Skip if we've already checked this position
@@ -152,7 +152,7 @@ function getOffsetsForOctant(octant: Octant): Vec3[] {
 function isInOctant(
   position: Vec3,
   targetCoords: Vec3,
-  octant: Octant
+  octant: Octant,
 ): boolean {
   // X check
   const xCheck =

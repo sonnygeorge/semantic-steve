@@ -1,5 +1,12 @@
 export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;
 
+export class InvalidThingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidThingTypeError";
+  }
+}
+
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;
   immediateSurroundingsRadius?: number;

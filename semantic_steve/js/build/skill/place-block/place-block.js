@@ -190,8 +190,8 @@ PlaceBlock.METADATA = {
     name: "placeBlock",
     signature: "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `
-        /** 
-         * Places a block. 
+        /**
+         * Places a block.
          * If provided coordinates, it will attempt to place the block at those coordinates.
          * If not provided coordinates, it will attempt to place the block in front of the player.
          * Both options are acceptable.

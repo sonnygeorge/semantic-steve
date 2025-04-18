@@ -29,9 +29,16 @@ export namespace ApproachResults {
     }
   }
 
+  export class SuccessItemEntity implements SkillResult {
+    message: string;
+    constructor(itemName: string, direction: string, netItemGain: number) {
+      this.message = `You successfully approached '${itemName}' from the '${direction}' direction and, while doing so, gained a net of ${netItemGain} of '${itemName}' items.`;
+    }
+  }
+
   export class Failure implements SkillResult {
     message: string;
-    constructor(thing: string, pathfindingPartialSuccessResult: string) {
+    constructor(thing: string) {
       this.message = `You were unable to approach thing '${thing}'.`;
     }
   }
@@ -49,4 +56,17 @@ export namespace ApproachResults {
       this.message = `Your approach to '${thing}' was terminated early since '${foundThingName}' was found visible in the distant surroundings.`;
     }
   }
+}
+
+export function isApproachResult(result: SkillResult): boolean {
+  return (
+    result instanceof ApproachResults.InvalidThing ||
+    result instanceof ApproachResults.InvalidDirection ||
+    result instanceof ApproachResults.ThingNotInDistantSurroundingsDirection ||
+    result instanceof ApproachResults.Success ||
+    result instanceof ApproachResults.SuccessItemEntity ||
+    result instanceof ApproachResults.Failure ||
+    result instanceof ApproachResults.FoundThingInImmediateSurroundings ||
+    result instanceof ApproachResults.FoundThingInDistantSurroundings
+  );
 }

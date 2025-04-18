@@ -7,6 +7,10 @@ exports.Biome = void 0;
 const assert_1 = __importDefault(require("assert"));
 class Biome {
     constructor(bot, name) {
+        const biomeNames = Object.values(bot.registry.biomes).map((b) => b.name);
+        if (!biomeNames.includes(name)) {
+            throw new Error(`Invalid biome type: ${name}.`);
+        }
         this.bot = bot;
         this.name = name;
         this.id = -1;
@@ -15,7 +19,7 @@ class Biome {
                 this.id = parseInt(id);
             }
         }
-        (0, assert_1.default)(this.id !== -1, `This should be impossible if this object is being created by the factory`);
+        (0, assert_1.default)(this.id !== -1, `This should be impossible. We should have thrown an error above.`);
     }
     isVisibleInImmediateSurroundings() {
         return this.bot.envState.surroundings.immediate.biomes.has(this.id);

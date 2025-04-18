@@ -18,6 +18,7 @@ const vec3_1 = require("vec3");
 const mineflayer_pathfinder_1 = require("mineflayer-pathfinder");
 const results_1 = require("./results");
 const thing_1 = require("../../thing");
+const types_1 = require("../../types");
 const skill_1 = require("../skill");
 const utils_1 = require("./utils");
 const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
@@ -173,7 +174,7 @@ class PathfindToCoordinates extends skill_1.Skill {
                         this.stopIfFound.push(thing);
                     }
                     catch (error) {
-                        if (error instanceof thing_1.InvalidThingError) {
+                        if (error instanceof types_1.InvalidThingError) {
                             this.resolveInvalidThing(thingName);
                             return;
                         }

@@ -53,6 +53,7 @@ const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const { Viewer, WorldView, getBufferFromStream, } = require("prismarine-viewer/viewer");
 const thing_1 = require("../../thing");
+const types_1 = require("../../types");
 const results_1 = require("./results");
 class TakeScreenshotOf extends skill_1.Skill {
     constructor(bot, onResolution) {
@@ -70,7 +71,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                 }
                 catch (error) {
                     console.log(error);
-                    if (error instanceof thing_1.InvalidThingError) {
+                    if (error instanceof types_1.InvalidThingError) {
                         // Invalid thing name
                         this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
                         return;

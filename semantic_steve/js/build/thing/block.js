@@ -1,8 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Block = void 0;
+const types_1 = require("../types");
 class Block {
     constructor(bot, name) {
+        const blockNames = Object.values(bot.registry.blocksByName).map((b) => b.name);
+        if (!blockNames.includes(name)) {
+            throw new types_1.InvalidThingError(`Invalid block type: ${name}.`);
+        }
         this.bot = bot;
         this.name = name;
     }

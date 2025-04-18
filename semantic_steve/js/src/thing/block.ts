@@ -2,26 +2,33 @@ import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction } from "../env-state/surroundings";
-import { MaybePromise } from "../types";
+import { MaybePromise, InvalidThingError } from "../types";
 
 export class Block implements Thing {
   bot: Bot;
   name: string;
 
   constructor(bot: Bot, name: string) {
+    const blockNames = Object.values(bot.registry.blocksByName).map(
+      (b) => b.name,
+    );
+    if (!blockNames.includes(name)) {
+      throw new InvalidThingError(`Invalid block type: ${name}.`);
+    }
+
     this.bot = bot;
     this.name = name;
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name
+      this.name,
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name)
+      dir.blocksToCounts.has(this.name),
     );
   }
 
@@ -45,12 +52,12 @@ export class Block implements Thing {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: Direction
+    direction?: Direction,
   ): MaybePromise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
 
     console.log(
-      `Attempting to locate nearest of ${this.name} in direction: ${direction}`
+      `Attempting to locate nearest of ${this.name} in direction: ${direction}`,
     );
 
     if (direction) {
@@ -67,7 +74,7 @@ export class Block implements Thing {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys()
+      this.bot.envState.surroundings.distant.keys(),
     );
 
     // Find the closest coordinates across all directions

@@ -1,20 +1,24 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BOT_EYE_HEIGHT = void 0;
-exports.getDurability = getDurability;
+exports.BOT_EYE_HEIGHT = exports.asyncSleep = void 0;
+exports.getDurabilityPercentRemaining = getDurabilityPercentRemaining;
+exports.getDurabilityPercentRemainingString = getDurabilityPercentRemainingString;
 exports.isBlockVisible = isBlockVisible;
 const vec3_1 = require("vec3");
 const mineflayer_util_plugin_1 = require("@nxg-org/mineflayer-util-plugin");
-function getDurability(bot, item) {
-    // For newer Mineflayer versions that use the `durabilityUsed` property
+const asyncSleep = (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+};
+exports.asyncSleep = asyncSleep;
+function getDurabilityPercentRemaining(item) {
     if (item.durabilityUsed) {
-        return item.durabilityUsed;
+        return Math.floor((1 - item.durabilityUsed / item.maxDurability) * 100);
     }
-    // For older Mineflayer versions that use metadata directly
-    if (bot.registry.supportFeature("nbtOnMetadata")) {
-        if (item.metadata !== undefined) {
-            return item.metadata;
-        }
+}
+function getDurabilityPercentRemainingString(item) {
+    const durability = getDurabilityPercentRemaining(item);
+    if (durability !== undefined) {
+        return `${durability}%`;
     }
 }
 exports.BOT_EYE_HEIGHT = 1.62;
@@ -60,47 +64,3 @@ function isBlockVisible(bot, block, blockCoords) {
     }
     return false;
 }
-function getGoodPathfindingTarget(bot, targetCoords) {
-    // Create a set to keep track of checked positions to avoid duplicates
-    const checkedPositions = new Set();
-    // Queue for breadth-first search
-    const queue = [
-        { pos: targetCoords.clone(), distance: 0 },
-    ];
-    while (queue.length > 0) {
-        const { pos, distance } = queue.shift();
-        // Generate a string key for the position to check against the set
-        const posKey = `${Math.floor(pos.x)},${Math.floor(pos.y)},${Math.floor(pos.z)}`;
-        // Skip if we've already checked this position
-        if (checkedPositions.has(posKey)) {
-            continue;
-        }
-        // Mark as checked
-        checkedPositions.add(posKey);
-        // Check if the block at this position is empty
-        const block = bot.blockAt(pos);
-        if (!block) {
-            return pos; // Found an empty block
-        }
-        // Stop if we've reached the maximum search radius
-        if (distance >= 5) {
-            continue;
-        }
-        // Add adjacent positions to the queue (all 6 directions)
-        const offsets = [
-            new vec3_1.Vec3(1, 0, 0),
-            new vec3_1.Vec3(-1, 0, 0),
-            new vec3_1.Vec3(0, 1, 0),
-            new vec3_1.Vec3(0, -1, 0),
-            new vec3_1.Vec3(0, 0, 1),
-            new vec3_1.Vec3(0, 0, -1),
-        ];
-        for (const offset of offsets) {
-            const nextPos = pos.clone().add(offset);
-            queue.push({ pos: nextPos, distance: distance + 1 });
-        }
-    }
-    // If no empty block was found within the radius, return null
-    return null;
-}
-exports.default = getGoodPathfindingTarget;

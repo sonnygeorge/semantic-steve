@@ -4,11 +4,12 @@ import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { Vicinity, Direction } from "../../env-state/surroundings/types";
 import { ApproachResults } from "./results";
-import { InvalidThingError } from "../../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { SkillResult } from "../../types";
-import { Thing, SUPPORTED_THING_TYPES } from "../../thing";
+import { InvalidThingError, SkillResult } from "../../types";
+import { Thing, SUPPORTED_THING_TYPES, ItemEntity } from "../../thing";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
+import { ITEM_PICKUP_WAIT_MS } from "../../constants";
+import { asyncSleep } from "../../utils";
 
 export class Approach extends Skill {
   public static readonly TIMEOUT_MS: number = 23000; // 23 seconds
@@ -32,6 +33,7 @@ export class Approach extends Skill {
 
   private pathfindToCoordinates: PathfindToCoordinates;
   private thing?: Thing;
+  private itemTotalAtPathingStart?: number;
   private targetThingCoords?: Vec3;
   private direction?: Direction;
 
@@ -39,14 +41,14 @@ export class Approach extends Skill {
     super(bot, onResolution);
     this.pathfindToCoordinates = new PathfindToCoordinates(
       bot,
-      this.resolveNaturally.bind(this)
+      this.resolveAfterPathfinding.bind(this),
     );
   }
 
-  private resolveNaturally(
+  private async resolveAfterPathfinding(
     result: SkillResult,
-    envStateIsHydrated?: boolean
-  ): void {
+    envStateIsHydrated?: boolean,
+  ): Promise<void> {
     assert(this.thing);
     assert(this.targetThingCoords);
     assert(this.direction);
@@ -58,7 +60,7 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInDistantSurroundings(
         this.thing.name,
-        result.foundThingName
+        result.foundThingName,
       );
       this.onResolution(result, envStateIsHydrated);
       return;
@@ -68,29 +70,40 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInImmediateSurroundings(
         this.thing.name,
-        result.foundThingName
+        result.foundThingName,
       );
       this.onResolution(result, envStateIsHydrated);
       return;
     }
 
     // Otherwise, check to see if the approach was successful & handle
-    const vicinityOfTargetThing =
+    const vicinityOfOriginalTargetCoords =
       this.bot.envState.surroundings.getVicinityForPosition(
-        this.targetThingCoords
+        this.targetThingCoords,
       );
 
-    if (vicinityOfTargetThing == Vicinity.IMMEDIATE_SURROUNDINGS) {
-      const successResult = new ApproachResults.Success(
-        this.thing.name,
-        this.direction
-      );
-      this.onResolution(successResult, envStateIsHydrated);
+    if (vicinityOfOriginalTargetCoords == Vicinity.IMMEDIATE_SURROUNDINGS) {
+      if (this.thing instanceof ItemEntity) {
+        assert(this.itemTotalAtPathingStart);
+        // Wait for a bit to make sure the item is picked up
+        await asyncSleep(ITEM_PICKUP_WAIT_MS);
+        const curItemTotal = this.thing.getTotalCountInInventory();
+        const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
+        result = new ApproachResults.SuccessItemEntity(
+          this.thing.name,
+          this.direction,
+          netItemGain,
+        );
+        this.onResolution(result, envStateIsHydrated);
+      } else {
+        const successResult = new ApproachResults.Success(
+          this.thing.name,
+          this.direction,
+        );
+        this.onResolution(successResult, envStateIsHydrated);
+      }
     } else {
-      const failureResult = new ApproachResults.Failure(
-        this.thing.name,
-        result.message
-      );
+      const failureResult = new ApproachResults.Failure(this.thing.name);
       this.onResolution(failureResult, envStateIsHydrated);
     }
   }
@@ -100,22 +113,27 @@ export class Approach extends Skill {
   // ==================================
 
   public async invoke(
-    thing: string,
+    thing: string | Thing,
     direction: string,
-    stopIfFound?: string[]
+    stopIfFound?: string[],
   ): Promise<void> {
-    try {
-      this.thing = this.bot.thingFactory.createThing(thing);
-    } catch (err) {
-      if (err instanceof InvalidThingError) {
-        const result = new ApproachResults.InvalidThing(
-          thing,
-          SUPPORTED_THING_TYPES.toString()
-        );
-        this.onResolution(result);
-        return;
+    if (typeof thing === "string") {
+      try {
+        this.thing = this.bot.thingFactory.createThing(thing);
+      } catch (err) {
+        if (err instanceof InvalidThingError) {
+          const result = new ApproachResults.InvalidThing(
+            thing,
+            SUPPORTED_THING_TYPES.toString(),
+          );
+          this.onResolution(result);
+          return;
+        }
       }
+    } else {
+      this.thing = thing;
     }
+    assert(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
 
     if (!Object.values(Direction).includes(direction as Direction)) {
       const result = new ApproachResults.InvalidDirection(direction);
@@ -131,15 +149,18 @@ export class Approach extends Skill {
     this.targetThingCoords =
       await this.thing?.locateNearestInDistantSurroundings(this.direction);
 
-    console.log(this.targetThingCoords);
-    console.log();
     if (!this.targetThingCoords) {
       const result = new ApproachResults.ThingNotInDistantSurroundingsDirection(
-        thing,
-        direction
+        this.thing.name,
+        direction,
       );
       this.onResolution(result);
       return;
+    }
+
+    // If the thing is an ItemEntity, record how many the bot has at the start of pathfinding
+    if (this.thing instanceof ItemEntity) {
+      this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
     }
 
     await this.pathfindToCoordinates.invoke(
@@ -148,7 +169,7 @@ export class Approach extends Skill {
         this.targetThingCoords.y,
         this.targetThingCoords.z,
       ],
-      stopIfFound
+      stopIfFound,
     );
   }
 

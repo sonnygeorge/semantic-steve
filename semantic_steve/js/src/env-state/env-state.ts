@@ -6,6 +6,7 @@ import {
   SurroundingsRadii,
   SurroundingsDTO,
 } from "./surroundings";
+import { getDurabilityPercentRemainingString } from "../utils";
 
 // TODO: Daytime/nightime?
 
@@ -27,6 +28,16 @@ const MINEFLAYER_EQUIPMENT_DESTINATION_ORDER = [
   "head",
 ];
 
+//========================
+// IventoryItem DTO
+//========================
+
+export type InventoryItemDTO = {
+  name: string;
+  count: number;
+  durabilityRemaining?: string; // e.g. "50%"
+};
+
 /**
  * "Data Transfer Object" (DTO) version of `EnvState` containing the information that we
  * want to send to the Python client in the format we want the user (LLM) to see it.
@@ -37,7 +48,7 @@ export type EnvStateDTO = {
   playerCoordinates: [number, number, number];
   health: string;
   hunger: string;
-  inventory: Record<string, number>;
+  inventory: InventoryItemDTO[];
   equipped: Map<EquipmentDestination, string | undefined>;
   surroundings: SurroundingsDTO;
 };
@@ -69,6 +80,15 @@ export class EnvState {
     ) as unknown as PItem[];
   }
 
+  public get itemTotals(): Map<string, number> {
+    const itemTotals = new Map<string, number>();
+    this.bot.envState.inventory.forEach((item) => {
+      const currentCount = itemTotals.get(item.name) || 0;
+      itemTotals.set(item.name, currentCount + item.count);
+    });
+    return itemTotals;
+  }
+
   public get equipped(): Map<EquipmentDestination, PItem | undefined> {
     const equipped = {} as any;
     for (let i = 0; i < MINEFLAYER_EQUIPMENT_DESTINATION_ORDER.length; i++) {
@@ -94,9 +114,11 @@ export class EnvState {
       ],
       health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
-      inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count]),
-      ) as Record<string, number>,
+      inventory: this.inventory.map((item) => ({
+        name: item.name,
+        count: item.count,
+        durabilityPercentRemaining: getDurabilityPercentRemainingString(item),
+      })) as InventoryItemDTO[],
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,

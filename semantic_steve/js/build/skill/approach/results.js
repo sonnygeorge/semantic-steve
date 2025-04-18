@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApproachResults = void 0;
+exports.isApproachResult = isApproachResult;
 var ApproachResults;
 (function (ApproachResults) {
     class InvalidThing {
@@ -27,8 +28,14 @@ var ApproachResults;
         }
     }
     ApproachResults.Success = Success;
+    class SuccessItemEntity {
+        constructor(itemName, direction, netItemGain) {
+            this.message = `You successfully approached '${itemName}' from the '${direction}' direction and, while doing so, gained a net of ${netItemGain} of '${itemName}' items.`;
+        }
+    }
+    ApproachResults.SuccessItemEntity = SuccessItemEntity;
     class Failure {
-        constructor(thing, pathfindingPartialSuccessResult) {
+        constructor(thing) {
             this.message = `You were unable to approach thing '${thing}'.`;
         }
     }
@@ -46,3 +53,13 @@ var ApproachResults;
     }
     ApproachResults.FoundThingInDistantSurroundings = FoundThingInDistantSurroundings;
 })(ApproachResults || (exports.ApproachResults = ApproachResults = {}));
+function isApproachResult(result) {
+    return (result instanceof ApproachResults.InvalidThing ||
+        result instanceof ApproachResults.InvalidDirection ||
+        result instanceof ApproachResults.ThingNotInDistantSurroundingsDirection ||
+        result instanceof ApproachResults.Success ||
+        result instanceof ApproachResults.SuccessItemEntity ||
+        result instanceof ApproachResults.Failure ||
+        result instanceof ApproachResults.FoundThingInImmediateSurroundings ||
+        result instanceof ApproachResults.FoundThingInDistantSurroundings);
+}

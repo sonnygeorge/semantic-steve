@@ -2,7 +2,7 @@ import { Bot } from "mineflayer";
 import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction } from "../env-state/surroundings";
-import { MaybePromise } from "../types";
+import { MaybePromise, InvalidThingError } from "../types";
 
 /**
  * An item type that is "dropped", is hovering on the ground, and can be picked up.
@@ -12,19 +12,26 @@ export class ItemEntity implements Thing {
   name: string; // "dirt", "diamond_pickaxe", etc.
 
   constructor(bot: Bot, name: string) {
+    const itemEntityNames = Object.values(bot.registry.itemsByName).map(
+      (i) => i.name,
+    );
+    if (!itemEntityNames.includes(name)) {
+      throw new InvalidThingError(`Invalid item entity type: ${name}.`);
+    }
+
     this.bot = bot;
     this.name = name;
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(
-      this.name
+      this.name,
     );
   }
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.itemEntitiesToCounts.has(this.name)
+      dir.itemEntitiesToCounts.has(this.name),
     );
   }
 
@@ -42,7 +49,7 @@ export class ItemEntity implements Thing {
   locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined> {
     const immediate =
       this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
-        this.name
+        this.name,
       );
     if (immediate && immediate.length > 0) {
       return immediate[0];
@@ -50,10 +57,10 @@ export class ItemEntity implements Thing {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: Direction
+    direction?: Direction,
   ): MaybePromise<Vec3 | undefined> {
     console.log(
-      `Attempting to locate nearest of ${this.name} in direction: ${direction}`
+      `Attempting to locate nearest of ${this.name} in direction: ${direction}`,
     );
 
     // If a specific direction is provided, check only that direction
@@ -62,11 +69,11 @@ export class ItemEntity implements Thing {
         this.bot.envState.surroundings.distant.get(direction);
       if (surroundingsInDirection) {
         const count = surroundingsInDirection.itemEntitiesToCounts.get(
-          this.name
+          this.name,
         );
         if (count && count > 0) {
           return surroundingsInDirection.itemEntitiesToClosestCoords.get(
-            this.name
+            this.name,
           );
         }
       }
@@ -75,7 +82,7 @@ export class ItemEntity implements Thing {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys()
+      this.bot.envState.surroundings.distant.keys(),
     );
 
     // Find the closest coordinates across all directions
@@ -87,7 +94,7 @@ export class ItemEntity implements Thing {
         const count = surroundingsInDir.itemEntitiesToCounts.get(this.name);
         if (count && count > 0) {
           const coords = surroundingsInDir.itemEntitiesToClosestCoords.get(
-            this.name
+            this.name,
           );
           if (coords) {
             const distance = coords.distanceTo(this.bot.entity.position);
@@ -101,5 +108,11 @@ export class ItemEntity implements Thing {
     }
 
     return closestCoords;
+  }
+
+  getTotalCountInInventory(): number {
+    // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
+    // its name should(?) correspond the item as it would be if picked up and in inventory.
+    return this.bot.envState.itemTotals.get(this.name) || 0;
   }
 }

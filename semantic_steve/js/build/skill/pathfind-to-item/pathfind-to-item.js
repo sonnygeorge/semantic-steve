@@ -19,6 +19,7 @@ const results_1 = require("../pathfind-to-coordinates/results");
 const results_2 = require("./results");
 const thing_1 = require("../../thing");
 const skill_1 = require("../skill");
+const types_1 = require("../../types");
 class PathfindToItem extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
@@ -99,7 +100,7 @@ class PathfindToItem extends skill_1.Skill {
                 });
             }
             catch (error) {
-                if (error instanceof thing_1.InvalidThingError) {
+                if (error instanceof types_1.InvalidThingError) {
                     this.resolveInvalidItem(itemName);
                 }
                 else {

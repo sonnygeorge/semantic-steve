@@ -8,28 +8,19 @@ const assert_1 = __importDefault(require("assert"));
 function getInventoryChangesDTO(bot, inventoryDifferential) {
     let itemsAcquired = {};
     let itemsLostOrConsumed = {};
-    let durabilityChanges = [];
-    for (const id in inventoryDifferential) {
-        const itemDiff = inventoryDifferential[id];
-        const itemName = bot.registry.items[id].name;
-        if (itemDiff.countDifferential !== undefined) {
-            (0, assert_1.default)(itemDiff.countDifferential !== 0, "We should never save a differential of 0, should be undefined instead");
-            if (itemDiff.countDifferential > 0) {
-                itemsAcquired[itemName] = itemDiff.countDifferential;
-            }
-            else {
-                console.log(itemDiff.countDifferential);
-                itemsLostOrConsumed[itemName] = -itemDiff.countDifferential;
-            }
+    // Iterate through Map entries instead of using for...in
+    for (const [itemName, countDifferential] of inventoryDifferential.entries()) {
+        (0, assert_1.default)(countDifferential !== 0, "We should never save a differential of 0, should be undefined instead");
+        if (countDifferential > 0) {
+            itemsAcquired[itemName] = countDifferential;
         }
-        if (itemDiff.durabilityUsed !== undefined) {
-            (0, assert_1.default)(itemDiff.curDurability !== undefined, "This shouldn't be undefined if we have durabilityUsed");
-            durabilityChanges.push(`${itemName} lost ${itemDiff.durabilityUsed} durability and is now at ${itemDiff.curDurability} durability.`);
+        else {
+            console.log(countDifferential);
+            itemsLostOrConsumed[itemName] = -countDifferential;
         }
     }
     return {
         itemsAcquired: itemsAcquired,
         itemsLostOrConsumed: itemsLostOrConsumed,
-        changedDurabilities: durabilityChanges,
     };
 }

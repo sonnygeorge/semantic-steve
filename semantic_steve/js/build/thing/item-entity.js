@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ItemEntity = void 0;
+const types_1 = require("../types");
 /**
  * An item type that is "dropped", is hovering on the ground, and can be picked up.
  */
 class ItemEntity {
     constructor(bot, name) {
+        const itemEntityNames = Object.values(bot.registry.itemsByName).map((i) => i.name);
+        if (!itemEntityNames.includes(name)) {
+            throw new types_1.InvalidThingError(`Invalid item entity type: ${name}.`);
+        }
         this.bot = bot;
         this.name = name;
     }
@@ -65,6 +70,11 @@ class ItemEntity {
             }
         }
         return closestCoords;
+    }
+    getTotalCountInInventory() {
+        // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
+        // its name should(?) correspond the item as it would be if picked up and in inventory.
+        return this.bot.envState.itemTotals.get(this.name) || 0;
     }
 }
 exports.ItemEntity = ItemEntity;

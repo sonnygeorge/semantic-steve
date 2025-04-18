@@ -53,40 +53,22 @@ const skill_1 = require("./skill");
 const types_1 = require("./types");
 const inventory_changes_1 = require("./inventory-changes");
 const generic_results_1 = require("./skill/generic-results");
-const utils_1 = require("./utils");
 class SemanticSteve {
     constructor(bot, config = new types_1.SemanticSteveConfig()) {
         this.hasDiedWhileAwaitingInvocation = false;
         this.bot = bot;
-        this.PWindow = require("prismarine-windows")(bot.version);
-        this.PItem = require("prismarine-item")(bot.registry);
         this.socket = new zmq.Pair({ receiveTimeout: 0 });
         this.zmqPort = config.zmqPort;
         this.selfPreserver = new self_preserver_1.SelfPreserver(this.bot, config.selfPreservationCheckThrottleMS);
         // Skills setup
         this.skills = (0, skill_1.buildSkillsRegistry)(this.bot, this.handleSkillResolution.bind(this));
     }
-    buildInventoryCopy() {
-        const window = this.PWindow.createWindow(0, "minecraft:inventory", "Inventory");
-        const slots = this.bot.inventory.slots;
-        slots.forEach((slot, idx) => {
-            var _a;
-            if (slot) {
-                const newItem = this.PItem.fromNotch(this.PItem.toNotch(slot, true), (_a = slot.stackId) !== null && _a !== void 0 ? _a : undefined);
-                if (newItem != null) {
-                    newItem.slot = idx;
-                }
-                window.updateSlot(idx, newItem);
-            }
-        });
-        return window;
-    }
     // =======================================
     // Sending and receiving data from Python
     // =======================================
     sendDataToPython(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.invAtTimeOfLastMsgToPython = this.buildInventoryCopy();
+            this.itemTotalsAtTimeOfLastMsgToPython = this.bot.envState.itemTotals;
             yield this.socket.send(JSON.stringify(data));
         });
     }
@@ -127,7 +109,7 @@ class SemanticSteve {
         this.currentSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
         this.timeOfLastSkillInvocation = Date.now();
     }
-    handleSkillResolution(result, 
+    handleSkillResolution(result,
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
     envStateIsHydrated) {
@@ -154,62 +136,27 @@ class SemanticSteve {
     // ==============
     getInventoryChanges() {
         console.log("Getting inventory changes...");
-        if (!this.invAtTimeOfLastMsgToPython) {
+        if (!this.itemTotalsAtTimeOfLastMsgToPython) {
             throw new Error("This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set");
         }
-        const differential = {};
-        // iterate over slots, report the item differential.
-        for (let i = this.invAtTimeOfLastMsgToPython.inventoryStart; i < this.invAtTimeOfLastMsgToPython.inventoryEnd; i++) {
-            const itemFromOldInv = this.invAtTimeOfLastMsgToPython.slots[i];
-            if (!itemFromOldInv) {
-                // check if we have an item in this slot now.
-                const newItemFromSlot = this.bot.inventory.slots[i];
-                if (newItemFromSlot) {
-                    // item was acquired
-                    differential[newItemFromSlot.type] = {
-                        metadata: newItemFromSlot.metadata,
-                        countDifferential: newItemFromSlot.count,
-                    };
-                }
-                continue;
-            }
-            const oldDurability = (0, utils_1.getDurability)(this.bot, itemFromOldInv);
-            // find item in the current inventory
-            const itemFromCurrentInv = this.bot.inventory.findItemRange(this.bot.inventory.inventoryStart, this.bot.inventory.inventoryEnd, itemFromOldInv.type, itemFromOldInv.metadata, false, itemFromOldInv.nbt);
-            if (!itemFromCurrentInv) {
-                // item was lost or consumed
-                differential[itemFromOldInv.type] = {
-                    metadata: itemFromOldInv.metadata,
-                    countDifferential: -itemFromOldInv.count,
-                };
-            }
-            else if (itemFromCurrentInv &&
-                itemFromCurrentInv.count !== itemFromOldInv.count) {
-                // item exists, but count is different
-                differential[itemFromOldInv.type] = {
-                    countDifferential: itemFromCurrentInv.count - itemFromOldInv.count,
-                };
-            }
-            else if (oldDurability !== undefined) {
-                // item is a non-stackable item with a durability value, check for changes
-                const curDurability = (0, utils_1.getDurability)(this.bot, itemFromCurrentInv);
-                (0, assert_1.default)(curDurability !== undefined, "Should be defined if oldDurability is defined");
-                if (oldDurability !== curDurability) {
-                    differential[itemFromOldInv.type] = {
-                        durabilityUsed: oldDurability - curDurability,
-                        curDurability: curDurability,
-                    };
-                }
-                // } else {
-                //   // check if the nbt is different
-                //   differential[itemFromOldInv.type] = {
-                //     metadata: itemFromOldInv.metadata,
-                //     countDifferential: itemFromCurrentInv.count - itemFromOldInv.count,
-                //   };
-                // }
+        const differentials = new Map();
+        const curItemTotals = this.bot.envState.itemTotals;
+        const oldItemTotals = this.itemTotalsAtTimeOfLastMsgToPython;
+        // Process all keys in current inventory
+        for (const [itemName, currentCount] of curItemTotals.entries()) {
+            const oldCount = oldItemTotals.get(itemName) || 0;
+            const diff = currentCount - oldCount;
+            if (diff !== 0) {
+                differentials.set(itemName, diff);
             }
         }
-        return differential;
+        // Process keys that only exist in old inventory
+        for (const [itemName, oldCount] of oldItemTotals.entries()) {
+            if (!curItemTotals.has(itemName)) {
+                differentials.set(itemName, -oldCount); // Item was removed completely
+            }
+        }
+        return differentials;
     }
     checkForAndHandleSkillTimeout() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -218,7 +165,7 @@ class SemanticSteve {
             }
             else {
                 (0, assert_1.default)(this.timeOfLastSkillInvocation, "A skill is running, but time of last invocation is not set");
-                (0, assert_1.default)(this.invAtTimeOfLastMsgToPython, "A skill is running, but inventory at time of last outgoing python msg is not set");
+                (0, assert_1.default)(this.itemTotalsAtTimeOfLastMsgToPython, "A skill is running, but item totals at time of last outgoing python msg is not set");
                 const curSkillClass = this.currentSkill.constructor;
                 if (Date.now() - this.timeOfLastSkillInvocation >
                     curSkillClass.TIMEOUT_MS) {

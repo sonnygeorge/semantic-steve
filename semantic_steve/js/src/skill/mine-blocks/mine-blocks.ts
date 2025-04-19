@@ -19,6 +19,10 @@ export class MineBlocks extends Skill {
          * Auto-equipping the best tool for the job, attempts to mine the specified
          * quantity of the specified block, assuming the block(s) is/are in the immediate
          * surroundings.
+         * 
+         * NOTE: This skill does not pick up the drops from the mined blocks. Please use
+         * 'pickUpItems' to make sure you pick up any drops you may want.
+         * 
          * @param block - The block to mine.
          * @param quantity - Optional quantity to mine. Defaults to 1.
          */

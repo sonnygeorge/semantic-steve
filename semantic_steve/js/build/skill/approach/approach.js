@@ -50,7 +50,7 @@ class Approach extends skill_1.Skill {
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
             if (vicinityOfOriginalTargetCoords == types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
                 if (this.thing instanceof thing_1.ItemEntity) {
-                    (0, assert_1.default)(this.itemTotalAtPathingStart);
+                    (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
                     // Wait for a bit to make sure the item is picked up
                     yield (0, utils_1.asyncSleep)(constants_1.ITEM_PICKUP_WAIT_MS);
                     const curItemTotal = this.thing.getTotalCountInInventory();

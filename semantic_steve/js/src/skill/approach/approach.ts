@@ -84,7 +84,7 @@ export class Approach extends Skill {
 
     if (vicinityOfOriginalTargetCoords == Vicinity.IMMEDIATE_SURROUNDINGS) {
       if (this.thing instanceof ItemEntity) {
-        assert(this.itemTotalAtPathingStart);
+        assert(this.itemTotalAtPathingStart !== undefined);
         // Wait for a bit to make sure the item is picked up
         await asyncSleep(ITEM_PICKUP_WAIT_MS);
         const curItemTotal = this.thing.getTotalCountInInventory();

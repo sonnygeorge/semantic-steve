@@ -6,7 +6,7 @@ import {
   SurroundingsRadii,
   SurroundingsDTO,
 } from "./surroundings";
-import { getDurabilityPercentRemainingString } from "../utils";
+import { getDurabilityPercentRemainingString as getDurabilityRemainingString } from "../utils";
 
 // TODO: Daytime/nightime?
 
@@ -117,7 +117,7 @@ export class EnvState {
       inventory: this.inventory.map((item) => ({
         name: item.name,
         count: item.count,
-        durabilityPercentRemaining: getDurabilityPercentRemainingString(item),
+        durabilityRemaining: getDurabilityRemainingString(item),
       })) as InventoryItemDTO[],
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [

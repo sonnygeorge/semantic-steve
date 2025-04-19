@@ -68,7 +68,7 @@ class PickupItem extends skill_1.Skill {
     invoke(item, direction) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                this.itemEntity = this.bot.thingFactory.createThing(item, thing_1.ItemEntity);
+                this.itemEntity = new thing_1.ItemEntity(this.bot, item);
             }
             catch (err) {
                 if (err instanceof types_2.InvalidThingError) {

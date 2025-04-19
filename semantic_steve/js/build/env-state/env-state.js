@@ -72,7 +72,7 @@ class EnvState {
             inventory: this.inventory.map((item) => ({
                 name: item.name,
                 count: item.count,
-                durabilityPercentRemaining: (0, utils_1.getDurabilityPercentRemainingString)(item),
+                durabilityRemaining: (0, utils_1.getDurabilityPercentRemainingString)(item),
             })),
             equipped: Object.fromEntries(Object.entries(this.equipped).map(([key, item]) => {
                 var _a;

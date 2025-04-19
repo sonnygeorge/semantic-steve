@@ -10,12 +10,7 @@ class ThingFactory {
     constructor(bot) {
         this.bot = bot;
     }
-    createThing(thingName, asType) {
-        // If asType is provided, instantiate with the given constructor
-        if (asType) {
-            return new asType(this.bot, thingName);
-        }
-        // Helper function to attempt creation
+    createThing(thingName) {
         const attemptCreate = (Type) => {
             try {
                 return new Type(this.bot, thingName);

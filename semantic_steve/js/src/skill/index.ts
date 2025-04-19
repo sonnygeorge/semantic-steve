@@ -8,6 +8,7 @@ import { SmeltItems } from "./smelt-items/smelt-items";
 import { TakeScreenshotOf } from "./take-screenshot-of/take-screenshot-of";
 import { Approach } from "./approach/approach";
 import { PickupItem } from "./pickup-item/pickup-item";
+import { GetPlaceableCoordinates } from "./get-placeable-coordinates/get-placeable-coordinates";
 
 export { Skill, SkillMetadata, SkillResolutionHandler };
 
@@ -27,5 +28,9 @@ export function buildSkillsRegistry(
     [SmeltItems.METADATA.name]: new SmeltItems(bot, onResolution),
     [Approach.METADATA.name]: new Approach(bot, onResolution),
     [PickupItem.METADATA.name]: new PickupItem(bot, onResolution),
+    [GetPlaceableCoordinates.METADATA.name]: new GetPlaceableCoordinates(
+      bot,
+      onResolution,
+    ),
   };
 }

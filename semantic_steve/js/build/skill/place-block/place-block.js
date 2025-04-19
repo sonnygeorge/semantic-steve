@@ -8,195 +8,119 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlaceBlock = void 0;
+const assert_1 = __importDefault(require("assert"));
 const skill_1 = require("../skill");
 const vec3_1 = require("vec3");
 const results_1 = require("./results");
+const thing_1 = require("../../thing");
+const types_1 = require("../../types");
 const utils_1 = require("../../utils");
-/**
- * Check if coordinates are within a reasonable distance
- * @param bot The bot instance
- * @param coordinates Target coordinates
- * @param maxDistance Maximum allowed distance
- * @returns True if the coordinates are within range, false otherwise
- */
-function areCoordinatesInRange(bot, coordinates, maxDistance = 4) {
-    const distance = bot.entity.position.distanceTo(coordinates);
-    return distance <= maxDistance;
-}
+const constants_1 = require("../../constants");
 class PlaceBlock extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        this.isPlacing = false;
-        this.blockId = -1;
-        this.blockName = "";
-        this.targetPosition = null;
-        this.inventoryItem = null;
+        this.shouldBePlacing = false;
+    }
+    resolve(result) {
+        this.shouldBePlacing = false;
+        this.blockToPlace = undefined;
+        this.targetPosition = undefined;
+        this.itemToPlace = undefined;
+        this.onResolution(result);
+    }
+    doPlacing() {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, assert_1.default)(this.blockToPlace);
+            (0, assert_1.default)(this.targetPosition);
+            (0, assert_1.default)(this.itemToPlace);
+            const referenceBlockAndFaceVector = (0, utils_1.getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable)(this.bot, this.targetPosition);
+            if (!referenceBlockAndFaceVector) {
+                const result = new results_1.PlaceBlockResults.UnplaceableCoords(`${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`);
+                this.resolve(result);
+                return;
+            }
+            if (this.shouldBePlacing) {
+                yield this.bot.equip(this.itemToPlace, "hand");
+            }
+            if (this.shouldBePlacing) {
+                yield this.bot.placeBlock(referenceBlockAndFaceVector[0], referenceBlockAndFaceVector[1]);
+            }
+            // Wait for things to settle (e.g., gravel to fall)
+            yield (0, utils_1.asyncSleep)(constants_1.BLOCK_PLACEMENT_WAIT_MS);
+            // If we got here, we know that, at invocation time, no block was at the target
+            // coordinates. Therefore, we consider the correct block existing at the target
+            // coordinates as a placement success.
+            if (this.shouldBePlacing) {
+                const blockAtTargetCoords = this.bot.blockAt(this.targetPosition);
+                if (!blockAtTargetCoords ||
+                    blockAtTargetCoords.name !== this.blockToPlace.name) {
+                    this.resolve(new results_1.PlaceBlockResults.PlacingFailure(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
+                }
+                else {
+                    this.resolve(new results_1.PlaceBlockResults.Success(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
+                }
+            }
+        });
     }
     invoke(block, atCoordinates) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.isPlacing = true;
-            this.blockName = block;
-            this.targetPosition = null;
             try {
-                // Check if the block is valid and get its ID
-                const blockInfo = this.bot.registry.blocksByName[block];
-                if (!blockInfo) {
-                    this.isPlacing = false;
-                    return this.onResolution(new results_1.PlaceBlockResults.InvalidBlock(block));
-                }
-                this.blockId = blockInfo.id;
-                // Check if we have the block in inventory
-                this.inventoryItem = this.bot.inventory.items().find((item) => item.name === block ||
-                    item.name === block + "_block" || // Handle special cases like 'diamond' vs 'diamond_block'
-                    block === item.name + "_block");
-                if (!this.inventoryItem) {
-                    this.isPlacing = false;
-                    return this.onResolution(new results_1.PlaceBlockResults.BlockNotInInventory(block));
-                }
-                // Determine target position
-                if (atCoordinates) {
-                    this.targetPosition = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
-                    // Check if coordinates are within range
-                    if (!areCoordinatesInRange(this.bot, this.targetPosition)) {
-                        this.isPlacing = false;
-                        return this.onResolution(new results_1.PlaceBlockResults.CoordinatesTooFar());
-                    }
-                }
-                else {
-                    // If no coordinates provided, place block right in front of the bot
-                    const botPos = this.bot.entity.position.clone();
-                    const yaw = this.bot.entity.yaw;
-                    // Calculate position 1 block in front of the bot based on yaw
-                    const dx = -Math.sin(yaw);
-                    const dz = -Math.cos(yaw);
-                    this.targetPosition = new vec3_1.Vec3(Math.floor(botPos.x + Math.round(dx)), Math.floor(botPos.y), Math.floor(botPos.z + Math.round(dz)));
-                }
-                // Start placing
-                return this.doPlacing();
+                this.blockToPlace = new thing_1.Block(this.bot, block);
             }
-            catch (error) {
-                console.error(`Error in placeBlock:`, error);
-                this.isPlacing = false;
-                if (this.targetPosition) {
-                    return this.onResolution(new results_1.PlaceBlockResults.FailureNoAdjacentBlocks(block, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
+            catch (err) {
+                if (err instanceof types_1.InvalidThingError) {
+                    this.resolve(new results_1.PlaceBlockResults.InvalidBlock(block));
+                    return;
                 }
-                else {
-                    return this.onResolution(new results_1.PlaceBlockResults.BlockNotInInventory(block));
-                }
+                throw err;
             }
+            this.itemToPlace = this.bot.inventory.items().find((item) => {
+                // This assert is obviously true (above), but TS compiler doesn't know this
+                (0, assert_1.default)(this.blockToPlace !== undefined);
+                return item.name === this.blockToPlace.name;
+            });
+            if (!this.itemToPlace) {
+                this.resolve(new results_1.PlaceBlockResults.BlockNotInInventory(block));
+                return;
+            }
+            this.targetPosition = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
+            this.shouldBePlacing = true;
+            yield this.doPlacing();
         });
     }
     pause() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.isPlacing) {
-                this.isPlacing = false;
-                console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
-            }
-            return Promise.resolve();
+            console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
+            this.shouldBePlacing = false;
         });
     }
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.isPlacing && this.blockId !== -1 && this.targetPosition) {
-                console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
-                // Check if the target position is still in range
-                if (!areCoordinatesInRange(this.bot, this.targetPosition)) {
-                    return this.onResolution(new results_1.PlaceBlockResults.CoordinatesTooFar());
-                }
-                // Check if we still have the block in inventory
-                this.inventoryItem = this.bot.inventory
-                    .items()
-                    .find((item) => item.name === this.blockName ||
-                    item.name === this.blockName + "_block" ||
-                    this.blockName === item.name + "_block");
-                if (!this.inventoryItem) {
-                    return this.onResolution(new results_1.PlaceBlockResults.BlockNotInInventory(this.blockName));
-                }
-                this.isPlacing = true;
-                return this.doPlacing();
-            }
-            return Promise.resolve();
-        });
-    }
-    /**
-     * Helper method that performs the actual block placement
-     * Called by both invoke and resume
-     */
-    doPlacing() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!this.isPlacing || !this.targetPosition || !this.inventoryItem) {
-                    return Promise.resolve();
-                }
-                // Equip the block
-                yield this.bot.equip(this.inventoryItem, "hand");
-                // Get the current block at target position
-                const targetBlock = this.bot.blockAt(this.targetPosition);
-                if (!targetBlock) {
-                    this.isPlacing = false;
-                    return this.onResolution(new results_1.PlaceBlockResults.FailureNoAdjacentBlocks(this.blockName, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
-                }
-                // Find an adjacent block to use as reference for placement
-                const adjacentOffsets = [
-                    new vec3_1.Vec3(0, -1, 0), // Below
-                    new vec3_1.Vec3(0, 1, 0), // Above
-                    new vec3_1.Vec3(-1, 0, 0), // West
-                    new vec3_1.Vec3(1, 0, 0), // East
-                    new vec3_1.Vec3(0, 0, -1), // North
-                    new vec3_1.Vec3(0, 0, 1), // South
-                ];
-                let referenceBlock = null;
-                let faceVector = null;
-                for (const offset of adjacentOffsets) {
-                    const adjacentPos = this.targetPosition.clone().add(offset);
-                    const adjacentBlock = this.bot.blockAt(adjacentPos);
-                    // Skip if the adjacent block doesn't exist or is air
-                    if (!adjacentBlock || adjacentBlock.name === "air") {
-                        continue;
-                    }
-                    if (!(0, utils_1.isBlockVisible)(this.bot, adjacentBlock, adjacentPos)) {
-                        continue;
-                    }
-                    // Use this block as reference with the opposite face vector
-                    referenceBlock = adjacentBlock;
-                    faceVector = offset.scaled(-1);
-                    break;
-                }
-                if (!referenceBlock || !faceVector) {
-                    this.isPlacing = false;
-                    return this.onResolution(new results_1.PlaceBlockResults.FailureNoAdjacentBlocks(this.blockName, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
-                }
-                // Place the block
-                yield this.bot.placeBlock(referenceBlock, faceVector);
-                // Successful placement
-                this.isPlacing = false;
-                return this.onResolution(new results_1.PlaceBlockResults.Success(this.blockName, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
-            }
-            catch (error) {
-                console.error(`Error in doPlacing:`, error);
-                this.isPlacing = false;
-                return this.onResolution(new results_1.PlaceBlockResults.FailureNoAdjacentBlocks(this.blockName, this.targetPosition
-                    ? `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-                    : "unknown"));
-            }
+            console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
+            (0, assert_1.default)(this.blockToPlace);
+            (0, assert_1.default)(this.targetPosition);
+            (0, assert_1.default)(this.itemToPlace);
+            this.shouldBePlacing = true;
+            yield this.doPlacing();
         });
     }
 }
 exports.PlaceBlock = PlaceBlock;
-PlaceBlock.TIMEOUT_MS = 7000; // 7 seconds
+PlaceBlock.TIMEOUT_MS = 4000; // 4 seconds
 PlaceBlock.METADATA = {
     name: "placeBlock",
-    signature: "placeBlock(block: string, atCoordinates?: [number, number, number])",
+    signature: "placeBlock(block: string, atCoordinates: [number, number, number])",
     docstring: `
         /**
          * Places a block.
-         * If provided coordinates, it will attempt to place the block at those coordinates.
-         * If not provided coordinates, it will attempt to place the block in front of the player.
-         * Both options are acceptable.
+         *
          * @param block - The block to place.
-         * @param atCoordinates - Optional target coordinates for block placement.
+         * @param atCoordinates - Target coordinates for block placement.
          */
       `,
 };

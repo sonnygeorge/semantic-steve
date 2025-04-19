@@ -1,16 +1,12 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
+import { blockExistsAt } from "../../utils";
 
 type Octant = {
   xDirection: "east" | "west";
   yDirection: "up" | "down";
   zDirection: "north" | "south";
 };
-
-function hasBlock(bot: Bot, coords: Vec3): boolean {
-  const block = bot.blockAt(coords);
-  return block !== null && block.type !== 0;
-}
 
 /**
  * Finds a good pathfinding target by searching in the octant opposite to the bot's position
@@ -25,7 +21,7 @@ function hasBlock(bot: Bot, coords: Vec3): boolean {
  * @returns A Vec3 coordinate to a valid pathfinding target, or null if none found
  */
 export function getGoodPathfindingTarget(bot: Bot, targetCoords: Vec3): Vec3 {
-  if (!hasBlock(bot, targetCoords)) {
+  if (!blockExistsAt(bot, targetCoords)) {
     return targetCoords; // If the target coordinates are already empty, return them
   }
 
@@ -62,7 +58,7 @@ export function getGoodPathfindingTarget(bot: Bot, targetCoords: Vec3): Vec3 {
     checkedPositions.add(posKey);
 
     // Check if the block at this position is empty
-    if (!hasBlock(bot, pos)) {
+    if (!blockExistsAt(bot, pos)) {
       return pos; // Found an empty block
     }
 

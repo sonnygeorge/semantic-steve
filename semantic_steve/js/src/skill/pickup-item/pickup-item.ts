@@ -100,7 +100,7 @@ export class PickupItem extends Skill {
 
   public async invoke(item: string, direction?: string): Promise<void> {
     try {
-      this.itemEntity = this.bot.thingFactory.createThing(item, ItemEntity);
+      this.itemEntity = new ItemEntity(this.bot, item);
     } catch (err) {
       if (err instanceof InvalidThingError) {
         const result = new PickupItemResults.InvalidItem(item);

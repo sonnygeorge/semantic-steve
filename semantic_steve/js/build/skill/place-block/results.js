@@ -15,12 +15,18 @@ var PlaceBlockResults;
         }
     }
     PlaceBlockResults.BlockNotInInventory = BlockNotInInventory;
-    class CoordinatesTooFar {
-        constructor() {
-            this.message = `SkillInvocationError: The specified coordinates must be within your immediate surroundings. Please pathfind to or near the coordinates first.`;
+    class UnplaceableCoords {
+        constructor(coordinates) {
+            this.message = `SkillInvocationError: The coordinates '${coordinates}' are not placeable. Please call 'getPlaceableCoordinates' and try again with placeable coordinates.`;
         }
     }
-    PlaceBlockResults.CoordinatesTooFar = CoordinatesTooFar;
+    PlaceBlockResults.UnplaceableCoords = UnplaceableCoords;
+    class PlacingFailure {
+        constructor(block, coordinates) {
+            this.message = `For some reason, the attempted placement of '${block}' at coordinates '${coordinates}' did not result in the block now being at those coordinates.`;
+        }
+    }
+    PlaceBlockResults.PlacingFailure = PlacingFailure;
     class Success {
         constructor(block, coordinates) {
             this.message = `You successfully placed '${block}' at coordinates '${coordinates}'.`;

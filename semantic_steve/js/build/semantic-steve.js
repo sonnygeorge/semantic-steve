@@ -109,7 +109,7 @@ class SemanticSteve {
         this.currentSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
         this.timeOfLastSkillInvocation = Date.now();
     }
-    handleSkillResolution(result,
+    handleSkillResolution(result, 
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
     envStateIsHydrated) {

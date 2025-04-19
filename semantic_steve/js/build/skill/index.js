@@ -12,6 +12,7 @@ const smelt_items_1 = require("./smelt-items/smelt-items");
 const take_screenshot_of_1 = require("./take-screenshot-of/take-screenshot-of");
 const approach_1 = require("./approach/approach");
 const pickup_item_1 = require("./pickup-item/pickup-item");
+const get_placeable_coordinates_1 = require("./get-placeable-coordinates/get-placeable-coordinates");
 function buildSkillsRegistry(bot, onResolution) {
     return {
         [pathfind_to_coordinates_1.PathfindToCoordinates.METADATA.name]: new pathfind_to_coordinates_1.PathfindToCoordinates(bot, onResolution),
@@ -22,5 +23,6 @@ function buildSkillsRegistry(bot, onResolution) {
         [smelt_items_1.SmeltItems.METADATA.name]: new smelt_items_1.SmeltItems(bot, onResolution),
         [approach_1.Approach.METADATA.name]: new approach_1.Approach(bot, onResolution),
         [pickup_item_1.PickupItem.METADATA.name]: new pickup_item_1.PickupItem(bot, onResolution),
+        [get_placeable_coordinates_1.GetPlaceableCoordinates.METADATA.name]: new get_placeable_coordinates_1.GetPlaceableCoordinates(bot, onResolution),
     };
 }

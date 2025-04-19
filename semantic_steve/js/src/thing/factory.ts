@@ -14,26 +14,7 @@ export class ThingFactory {
     this.bot = bot;
   }
 
-  // NOTE: The multiple signatures for createThing are to allow for outer contexts to know
-  // that the return type will be the `asType` type if it is provided.
-
-  public createThing<T extends Thing>(
-    thingName: string,
-    asType: new (bot: Bot, name: string) => T,
-  ): T;
-
-  public createThing(thingName: string): Thing;
-
-  public createThing<T extends Thing>(
-    thingName: string,
-    asType?: new (bot: Bot, name: string) => T,
-  ): T | Thing {
-    // If asType is provided, instantiate with the given constructor
-    if (asType) {
-      return new asType(this.bot, thingName);
-    }
-
-    // Helper function to attempt creation
+  public createThing(thingName: string): Thing {
     const attemptCreate = (
       Type: new (bot: Bot, name: string) => Thing,
     ): Thing | null => {

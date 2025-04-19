@@ -3,10 +3,16 @@ import { Item as PItem } from "prismarine-item";
 import { Block as PBlock } from "prismarine-block";
 import { Vec3 } from "vec3";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
+import { MAX_PLACEMENT_REACH } from "./constants";
 
 export const asyncSleep = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
+
+export function blockExistsAt(bot: Bot, coords: Vec3): boolean {
+  const block = bot.blockAt(coords);
+  return block !== null && block.type !== 0;
+}
 
 export function getDurabilityPercentRemaining(item: PItem): number | undefined {
   if (item.durabilityUsed) {
@@ -78,4 +84,59 @@ export function isBlockVisible(
   }
 
   return false;
+}
+
+export function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
+  bot: Bot,
+  coords: Vec3,
+): [PBlock, Vec3] | undefined {
+  // Coords are not placeable if already occupied by a block
+  const block = bot.blockAt(coords);
+  if (blockExistsAt(bot, coords)) {
+    return;
+  }
+
+  const adjacentOffsets = [
+    new Vec3(0, -1, 0), // Below
+    new Vec3(0, 1, 0), // Above
+    new Vec3(-1, 0, 0), // West
+    new Vec3(1, 0, 0), // East
+    new Vec3(0, 0, -1), // North
+    new Vec3(0, 0, 1), // South
+  ];
+  const eyePosition = bot.entity.position.offset(0, bot.entity.height, 0);
+
+  for (const offset of adjacentOffsets) {
+    const adjacentPos = coords.clone().add(offset);
+    const adjacentBlock = bot.blockAt(adjacentPos);
+
+    // Skip if the adjacent block doesn't exist or is air
+    if (adjacentBlock == null || adjacentBlock.type == 0) {
+      continue;
+    }
+
+    // Skip if not visible
+    if (!isBlockVisible(bot, adjacentBlock, adjacentPos)) {
+      continue;
+    }
+
+    // Skip if out of reach
+    const distanceToReferenceBlock = eyePosition.distanceTo(
+      adjacentBlock.position.clone().offset(0.5, 0.5, 0.5),
+    );
+    if (distanceToReferenceBlock > MAX_PLACEMENT_REACH) {
+      continue;
+    }
+
+    // Use this block as reference with the opposite face vector
+    return [adjacentBlock, offset.scaled(-1)];
+  }
+}
+
+export function isBotOccupyingCoords(bot: Bot, coords: Vec3): boolean {
+  const botPosition = bot.entity.position.floored();
+  const botPositionHead = botPosition.offset(0, 1, 0);
+
+  // Check if the coordinates match the bot's position or the block above (head position)
+  return coords.equals(botPosition) || coords.equals(botPositionHead);
 }

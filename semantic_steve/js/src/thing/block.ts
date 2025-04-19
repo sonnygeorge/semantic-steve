@@ -3,16 +3,18 @@ import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction } from "../env-state/surroundings";
 import { MaybePromise, InvalidThingError } from "../types";
+import { IndexedBlock } from "minecraft-data";
 
 export class Block implements Thing {
   bot: Bot;
   name: string;
+  data: IndexedBlock;
 
   constructor(bot: Bot, name: string) {
-    const blockNames = Object.values(bot.registry.blocksByName).map(
-      (b) => b.name,
-    );
-    if (!blockNames.includes(name)) {
+    if (name in bot.registry.blocksByName) {
+      this.name = name;
+      this.data = bot.registry.blocksByName[name];
+    } else {
       throw new InvalidThingError(`Invalid block type: ${name}.`);
     }
 

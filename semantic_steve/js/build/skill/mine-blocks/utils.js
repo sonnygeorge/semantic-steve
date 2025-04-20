@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.findBlocksOfType = findBlocksOfType;
 exports.getBestToolForBlock = getBestToolForBlock;
 exports.blockRequiresTool = blockRequiresTool;
-const utils_1 = require("../../utils");
+const visibility_1 = require("../../utils/visibility");
 /**
  * Find blocks of the specified type near the bot
  * @param bot The bot instance
@@ -14,7 +14,7 @@ const utils_1 = require("../../utils");
  */
 function findBlocksOfType(bot, blockType, maxDistance = 16, count = 64) {
     const blockPositions = bot.findBlocks({
-        matching: (block) => block.name === blockType && (0, utils_1.isBlockVisible)(bot, block, block.position),
+        matching: (block) => block.name === blockType && (0, visibility_1.isBlockVisible)(bot, block, block.position),
         useExtraInfo: true,
         maxDistance: maxDistance,
         count: count,

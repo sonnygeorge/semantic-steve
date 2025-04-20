@@ -12,37 +12,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GetPlaceableCoordinates = void 0;
 const skill_1 = require("../skill");
 const results_1 = require("./results");
-const utils_1 = require("../../utils");
-const constants_1 = require("../../constants");
-const utils_2 = require("../../utils");
+const placing_1 = require("../../utils/placing");
 class GetPlaceableCoordinates extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
     }
     invoke() {
         return __awaiter(this, void 0, void 0, function* () {
-            const placeableCoords = [];
-            const botPosition = this.bot.entity.position.floored();
-            const radius = constants_1.MAX_PLACEMENT_REACH + 1;
-            // Iterate through all blocks within the radius
-            for (let x = -radius; x <= radius; x++) {
-                for (let y = -radius; y <= radius; y++) {
-                    for (let z = -radius; z <= radius; z++) {
-                        const coords = botPosition.offset(x, y, z);
-                        // Skip coordinates the bot is currently occupying
-                        if ((0, utils_2.isBotOccupyingCoords)(this.bot, coords)) {
-                            continue;
-                        }
-                        // Check if the coordinates are placeable
-                        const refernceBlockAndFaceVector = (0, utils_1.getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable)(this.bot, coords);
-                        if (refernceBlockAndFaceVector !== undefined) {
-                            placeableCoords.push(coords);
-                        }
-                    }
-                }
+            const placeableCoords = (0, placing_1.getAllPlaceableCoords)(this.bot);
+            if (placeableCoords.length === 0) {
+                const result = new results_1.GetPlaceableCoordinatesResults.NoPlaceableCoords();
+                this.onResolution(result);
             }
-            const result = new results_1.GetPlaceableCoordinatesResults.Success(placeableCoords);
-            this.onResolution(result);
+            else {
+                const result = new results_1.GetPlaceableCoordinatesResults.Success(placeableCoords);
+                this.onResolution(result);
+            }
         });
     }
     // These don't need to do anything since invoke never gives up the event loop

@@ -17,9 +17,11 @@ const assert_1 = __importDefault(require("assert"));
 const skill_1 = require("../skill");
 const vec3_1 = require("vec3");
 const results_1 = require("./results");
+const results_2 = require("../get-placeable-coordinates/results");
 const thing_1 = require("../../thing");
 const types_1 = require("../../types");
-const utils_1 = require("../../utils");
+const generic_1 = require("../../utils/generic");
+const placing_1 = require("../../utils/placing");
 const constants_1 = require("../../constants");
 class PlaceBlock extends skill_1.Skill {
     constructor(bot, onResolution) {
@@ -38,7 +40,7 @@ class PlaceBlock extends skill_1.Skill {
             (0, assert_1.default)(this.blockToPlace);
             (0, assert_1.default)(this.targetPosition);
             (0, assert_1.default)(this.itemToPlace);
-            const referenceBlockAndFaceVector = (0, utils_1.getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable)(this.bot, this.targetPosition);
+            const referenceBlockAndFaceVector = (0, placing_1.getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable)(this.bot, this.targetPosition);
             if (!referenceBlockAndFaceVector) {
                 const result = new results_1.PlaceBlockResults.UnplaceableCoords(`${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`);
                 this.resolve(result);
@@ -51,7 +53,7 @@ class PlaceBlock extends skill_1.Skill {
                 yield this.bot.placeBlock(referenceBlockAndFaceVector[0], referenceBlockAndFaceVector[1]);
             }
             // Wait for things to settle (e.g., gravel to fall)
-            yield (0, utils_1.asyncSleep)(constants_1.BLOCK_PLACEMENT_WAIT_MS);
+            yield (0, generic_1.asyncSleep)(constants_1.BLOCK_PLACEMENT_WAIT_MS);
             // If we got here, we know that, at invocation time, no block was at the target
             // coordinates. Therefore, we consider the correct block existing at the target
             // coordinates as a placement success.
@@ -88,7 +90,16 @@ class PlaceBlock extends skill_1.Skill {
                 this.resolve(new results_1.PlaceBlockResults.BlockNotInInventory(block));
                 return;
             }
-            this.targetPosition = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
+            if (!atCoordinates) {
+                this.targetPosition = (0, placing_1.getPlaceableCoords)(this.bot);
+                if (!this.targetPosition) {
+                    this.resolve(new results_2.GetPlaceableCoordinatesResults.NoPlaceableCoords());
+                    return;
+                }
+            }
+            else {
+                this.targetPosition = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
+            }
             this.shouldBePlacing = true;
             yield this.doPlacing();
         });
@@ -114,13 +125,13 @@ exports.PlaceBlock = PlaceBlock;
 PlaceBlock.TIMEOUT_MS = 4000; // 4 seconds
 PlaceBlock.METADATA = {
     name: "placeBlock",
-    signature: "placeBlock(block: string, atCoordinates: [number, number, number])",
+    signature: "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `
         /**
          * Places a block.
          *
          * @param block - The block to place.
-         * @param atCoordinates - Target coordinates for block placement.
+         * @param atCoordinates - Optional target coordinates for block placement.
          */
       `,
 };

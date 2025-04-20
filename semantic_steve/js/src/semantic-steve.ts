@@ -12,9 +12,9 @@ import { SkillResult, SemanticSteveConfig } from "./types";
 import {
   InventoryChangesDTO,
   getInventoryChangesDTO,
-} from "./inventory-changes";
+} from "./utils/inventory-changes";
 import { GenericSkillResults } from "./skill/generic-results";
-import { getDurabilityPercentRemaining as getDurabilityPercentRemaining } from "./utils";
+import { getDurabilityPercentRemaining } from "./utils/durability";
 import { exit } from "process";
 
 export class SemanticSteve {

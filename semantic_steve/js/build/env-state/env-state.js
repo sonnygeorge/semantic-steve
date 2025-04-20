@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnvState = void 0;
 const surroundings_1 = require("./surroundings");
-const utils_1 = require("../utils");
+const durability_1 = require("../utils/durability");
 // TODO: Daytime/nightime?
 var EquipmentDestination;
 (function (EquipmentDestination) {
@@ -72,7 +72,7 @@ class EnvState {
             inventory: this.inventory.map((item) => ({
                 name: item.name,
                 count: item.count,
-                durabilityRemaining: (0, utils_1.getDurabilityPercentRemainingString)(item),
+                durabilityRemaining: (0, durability_1.getDurabilityRemainingString)(item),
             })),
             equipped: Object.fromEntries(Object.entries(this.equipped).map(([key, item]) => {
                 var _a;

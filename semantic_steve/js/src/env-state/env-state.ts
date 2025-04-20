@@ -6,7 +6,7 @@ import {
   SurroundingsRadii,
   SurroundingsDTO,
 } from "./surroundings";
-import { getDurabilityPercentRemainingString as getDurabilityRemainingString } from "../utils";
+import { getDurabilityRemainingString } from "../utils/durability";
 
 // TODO: Daytime/nightime?
 

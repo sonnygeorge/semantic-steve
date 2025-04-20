@@ -1,12 +1,3 @@
-export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;
-
-export class InvalidThingError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidThingTypeError";
-  }
-}
-
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;
   immediateSurroundingsRadius?: number;
@@ -44,3 +35,22 @@ export class SemanticSteveConfig {
 export interface SkillResult {
   message: string;
 }
+
+// Six sides of a cubed meter in minecraft
+export enum ConnectingSide {
+  WEST = "west",
+  EAST = "east",
+  BOTTOM = "bottom",
+  TOP = "top",
+  NORTH = "north",
+  SOUTH = "south",
+}
+
+export class InvalidThingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidThingTypeError";
+  }
+}
+
+export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;

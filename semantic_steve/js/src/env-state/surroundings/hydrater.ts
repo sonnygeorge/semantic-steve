@@ -12,9 +12,9 @@ import {
 } from "./types";
 
 import type { Item as PItem } from "prismarine-item";
-import { isBlockVisible } from "../../utils";
+import { isBlockVisible } from "../../utils/visibility";
 
-export const BLOCKS_TO_IGNORE = ["air"];
+export const BLOCKS_TO_IGNORE = ["cheeto"];
 
 export class SurroundingsHydrater {
   private bot: Bot;

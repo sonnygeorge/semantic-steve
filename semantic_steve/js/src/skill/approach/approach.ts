@@ -9,7 +9,7 @@ import { InvalidThingError, SkillResult } from "../../types";
 import { Thing, SUPPORTED_THING_TYPES, ItemEntity } from "../../thing";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
-import { asyncSleep } from "../../utils";
+import { asyncSleep } from "../../utils/generic";
 
 export class Approach extends Skill {
   public static readonly TIMEOUT_MS: number = 23000; // 23 seconds

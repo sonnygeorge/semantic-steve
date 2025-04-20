@@ -23,7 +23,7 @@ const thing_1 = require("../../thing");
 const skill_1 = require("../skill");
 const types_2 = require("../../types");
 const constants_1 = require("../../constants");
-const utils_1 = require("../../utils");
+const generic_1 = require("../../utils/generic");
 const results_3 = require("../pathfind-to-coordinates/results");
 class PickupItem extends skill_1.Skill {
     constructor(bot, onResolution) {
@@ -49,7 +49,7 @@ class PickupItem extends skill_1.Skill {
                 return;
             }
             // Wait for a bit to make sure the item is picked up
-            yield (0, utils_1.asyncSleep)(constants_1.ITEM_PICKUP_WAIT_MS);
+            yield (0, generic_1.asyncSleep)(constants_1.ITEM_PICKUP_WAIT_MS);
             if (result instanceof results_3.PathfindToCoordinatesResults.Success) {
                 const curItemTotal = this.itemEntity.getTotalCountInInventory();
                 const netItemGain = curItemTotal - this.itemTotalAtPathingStart;

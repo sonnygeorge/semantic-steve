@@ -1,6 +1,6 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { blockExistsAt } from "../../utils";
+import { blockExistsAt } from "../../utils/block";
 
 type Octant = {
   xDirection: "east" | "west";

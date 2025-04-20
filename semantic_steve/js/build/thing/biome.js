@@ -43,7 +43,6 @@ class Biome {
     }
     locateNearestInDistantSurroundings(direction) {
         var _a;
-        console.log(`Attempting to locate nearest of ${this.name} in direction: ${direction}`);
         // If a specific direction is provided, check only that direction
         if (direction) {
             const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);

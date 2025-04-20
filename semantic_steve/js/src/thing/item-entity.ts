@@ -59,10 +59,6 @@ export class ItemEntity implements Thing {
   locateNearestInDistantSurroundings(
     direction?: Direction,
   ): MaybePromise<Vec3 | undefined> {
-    console.log(
-      `Attempting to locate nearest of ${this.name} in direction: ${direction}`,
-    );
-
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =

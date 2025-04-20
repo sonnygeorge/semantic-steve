@@ -1,5 +1,5 @@
 import { EnvStateDTO } from "./env-state/env-state";
-import { InventoryChangesDTO } from "./inventory-changes";
+import { InventoryChangesDTO } from "./utils/inventory-changes";
 
 // We receive these from python
 export type SkillInvocation = {

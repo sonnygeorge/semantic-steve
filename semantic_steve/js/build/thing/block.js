@@ -37,7 +37,6 @@ class Block {
     }
     locateNearestInDistantSurroundings(direction) {
         // If a specific direction is provided, check only that direction
-        console.log(`Attempting to locate nearest of ${this.name} in direction: ${direction}`);
         if (direction) {
             const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);
             if (surroundingsInDirection) {

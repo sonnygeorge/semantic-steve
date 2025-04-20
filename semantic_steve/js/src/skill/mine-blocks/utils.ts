@@ -1,5 +1,5 @@
 import { Bot } from "mineflayer";
-import { isBlockVisible } from "../../utils";
+import { isBlockVisible } from "../../utils/visibility";
 
 /**
  * Find blocks of the specified type near the bot

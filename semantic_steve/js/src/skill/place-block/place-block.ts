@@ -3,13 +3,15 @@ import { Bot } from "mineflayer";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { Vec3 } from "vec3";
 import { PlaceBlockResults } from "./results";
+import { GetPlaceableCoordinatesResults } from "../get-placeable-coordinates/results";
 import { Block } from "../../thing";
 import { InvalidThingError, SkillResult } from "../../types";
 import { Item as PItem } from "prismarine-item";
+import { asyncSleep } from "../../utils/generic";
 import {
+  getPlaceableCoords,
   getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable,
-  asyncSleep,
-} from "../../utils";
+} from "../../utils/placing";
 import { BLOCK_PLACEMENT_WAIT_MS } from "../../constants";
 
 export class PlaceBlock extends Skill {
@@ -17,13 +19,13 @@ export class PlaceBlock extends Skill {
   public static readonly METADATA: SkillMetadata = {
     name: "placeBlock",
     signature:
-      "placeBlock(block: string, atCoordinates: [number, number, number])",
+      "placeBlock(block: string, atCoordinates?: [number, number, number])",
     docstring: `
         /**
          * Places a block.
          *
          * @param block - The block to place.
-         * @param atCoordinates - Target coordinates for block placement.
+         * @param atCoordinates - Optional target coordinates for block placement.
          */
       `,
   };
@@ -106,7 +108,7 @@ export class PlaceBlock extends Skill {
 
   public async invoke(
     block: string,
-    atCoordinates: [number, number, number],
+    atCoordinates?: [number, number, number],
   ): Promise<void> {
     try {
       this.blockToPlace = new Block(this.bot, block);
@@ -129,11 +131,19 @@ export class PlaceBlock extends Skill {
       return;
     }
 
-    this.targetPosition = new Vec3(
-      atCoordinates[0],
-      atCoordinates[1],
-      atCoordinates[2],
-    );
+    if (!atCoordinates) {
+      this.targetPosition = getPlaceableCoords(this.bot);
+      if (!this.targetPosition) {
+        this.resolve(new GetPlaceableCoordinatesResults.NoPlaceableCoords());
+        return;
+      }
+    } else {
+      this.targetPosition = new Vec3(
+        atCoordinates[0],
+        atCoordinates[1],
+        atCoordinates[2],
+      );
+    }
 
     this.shouldBePlacing = true;
     await this.doPlacing();

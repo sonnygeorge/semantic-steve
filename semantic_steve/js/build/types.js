@@ -1,13 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SemanticSteveConfig = exports.InvalidThingError = void 0;
-class InvalidThingError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = "InvalidThingTypeError";
-    }
-}
-exports.InvalidThingError = InvalidThingError;
+exports.InvalidThingError = exports.ConnectingSide = exports.SemanticSteveConfig = void 0;
 class SemanticSteveConfig {
     constructor(options = {}) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -23,3 +16,20 @@ class SemanticSteveConfig {
     }
 }
 exports.SemanticSteveConfig = SemanticSteveConfig;
+// Six sides of a cubed meter in minecraft
+var ConnectingSide;
+(function (ConnectingSide) {
+    ConnectingSide["WEST"] = "west";
+    ConnectingSide["EAST"] = "east";
+    ConnectingSide["BOTTOM"] = "bottom";
+    ConnectingSide["TOP"] = "top";
+    ConnectingSide["NORTH"] = "north";
+    ConnectingSide["SOUTH"] = "south";
+})(ConnectingSide || (exports.ConnectingSide = ConnectingSide = {}));
+class InvalidThingError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "InvalidThingTypeError";
+    }
+}
+exports.InvalidThingError = InvalidThingError;

@@ -1,10 +1,8 @@
 import { Bot } from "mineflayer";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { Vec3 } from "vec3";
+
 import { GetPlaceableCoordinatesResults } from "./results";
-import { getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable } from "../../utils";
-import { MAX_PLACEMENT_REACH } from "../../constants";
-import { isBotOccupyingCoords } from "../../utils";
+import { getAllPlaceableCoords } from "../../utils/placing";
 
 export class GetPlaceableCoordinates extends Skill {
   public static readonly TIMEOUT_MS: number = 2000; // 2 seconds
@@ -23,32 +21,16 @@ export class GetPlaceableCoordinates extends Skill {
   }
 
   public async invoke(): Promise<void> {
-    const placeableCoords: Vec3[] = [];
-    const botPosition = this.bot.entity.position.floored();
-    const radius = MAX_PLACEMENT_REACH + 1;
-    // Iterate through all blocks within the radius
-    for (let x = -radius; x <= radius; x++) {
-      for (let y = -radius; y <= radius; y++) {
-        for (let z = -radius; z <= radius; z++) {
-          const coords = botPosition.offset(x, y, z);
-          // Skip coordinates the bot is currently occupying
-          if (isBotOccupyingCoords(this.bot, coords)) {
-            continue;
-          }
-          // Check if the coordinates are placeable
-          const refernceBlockAndFaceVector =
-            getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
-              this.bot,
-              coords
-            );
-          if (refernceBlockAndFaceVector !== undefined) {
-            placeableCoords.push(coords);
-          }
-        }
-      }
+    const placeableCoords = getAllPlaceableCoords(this.bot);
+    if (placeableCoords.length === 0) {
+      const result = new GetPlaceableCoordinatesResults.NoPlaceableCoords();
+      this.onResolution(result);
+    } else {
+      const result = new GetPlaceableCoordinatesResults.Success(
+        placeableCoords,
+      );
+      this.onResolution(result);
     }
-    const result = new GetPlaceableCoordinatesResults.Success(placeableCoords);
-    this.onResolution(result);
   }
 
   // These don't need to do anything since invoke never gives up the event loop

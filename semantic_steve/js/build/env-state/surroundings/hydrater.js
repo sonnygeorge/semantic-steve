@@ -12,8 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SurroundingsHydrater = exports.BLOCKS_TO_IGNORE = void 0;
 const vec3_1 = require("vec3");
 const types_1 = require("./types");
-const utils_1 = require("../../utils");
-exports.BLOCKS_TO_IGNORE = ["air"];
+const visibility_1 = require("../../utils/visibility");
+exports.BLOCKS_TO_IGNORE = ["cheeto"];
 class SurroundingsHydrater {
     constructor(bot, radii) {
         // Cache maps for fast lookups
@@ -155,7 +155,7 @@ class SurroundingsHydrater {
             this.removeBlock(pos);
             return;
         }
-        if (!(0, utils_1.isBlockVisible)(this.bot, block, pos)) {
+        if (!(0, visibility_1.isBlockVisible)(this.bot, block, pos)) {
             this.removeBlock(pos);
             return;
         }

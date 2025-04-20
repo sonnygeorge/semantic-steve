@@ -51,7 +51,7 @@ const assert_1 = __importDefault(require("assert"));
 const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 const types_1 = require("./types");
-const inventory_changes_1 = require("./inventory-changes");
+const inventory_changes_1 = require("./utils/inventory-changes");
 const generic_results_1 = require("./skill/generic-results");
 class SemanticSteve {
     constructor(bot, config = new types_1.SemanticSteveConfig()) {

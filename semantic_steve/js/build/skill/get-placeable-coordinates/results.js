@@ -12,4 +12,11 @@ var GetPlaceableCoordinatesResults;
         }
     }
     GetPlaceableCoordinatesResults.Success = Success;
+    class NoPlaceableCoords {
+        constructor() {
+            this.message =
+                "Currently, there are no coordinates at which a block can be placed. Perhaps the bot is in a 1x1 hole or some other tight space.";
+        }
+    }
+    GetPlaceableCoordinatesResults.NoPlaceableCoords = NoPlaceableCoords;
 })(GetPlaceableCoordinatesResults || (exports.GetPlaceableCoordinatesResults = GetPlaceableCoordinatesResults = {}));

@@ -10,7 +10,7 @@ import { ItemEntity } from "../../thing";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { InvalidThingError, SkillResult } from "../../types";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
-import { asyncSleep } from "../../utils";
+import { asyncSleep } from "../../utils/generic";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 
 export class PickupItem extends Skill {

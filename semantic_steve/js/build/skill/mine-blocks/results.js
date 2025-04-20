@@ -23,7 +23,7 @@ var MineBlocksResults;
     MineBlocksResults.BlockNotInSurroundings = BlockNotInSurroundings;
     class PartialSuccess {
         constructor(block, quantityMined, targetQuantity) {
-            this.message = `You only mined ${quantityMined} of the intended ${targetQuantity} of '${block}'.`;
+            this.message = `You only mined ${quantityMined} of the intended ${targetQuantity} of '${block}'. REMINDER: This does not necessarily mean you collected the drops from the mined blocks; please use 'pickUpItems' if you would like to collect any lingering drops.`;
         }
     }
     MineBlocksResults.PartialSuccess = PartialSuccess;

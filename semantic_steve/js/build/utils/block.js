@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isBlock = isBlock;
 exports.blockExistsAt = blockExistsAt;
 exports.getDigTimeMS = getDigTimeMS;
+exports.isWithinInteractionReach = isWithinInteractionReach;
+const constants_1 = require("../constants");
 function isBlock(block, allowedBoundingBoxes) {
     if (block === null || block.type === 0) {
         return false;
@@ -89,4 +91,8 @@ effects, underwater = false, notOnGround = false, aquaAffinity = false) {
     // Convert to milliseconds and round up to nearest tick (1/20th of a second)
     digTime = Math.ceil((digTime * 1000) / 50) * 50;
     return digTime;
+}
+function isWithinInteractionReach(bot, coords, maxDistance = constants_1.MAX_PLACEMENT_REACH) {
+    const distance = bot.entity.position.distanceTo(coords);
+    return distance <= maxDistance;
 }

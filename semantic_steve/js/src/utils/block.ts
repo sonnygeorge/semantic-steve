@@ -2,6 +2,7 @@ import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
 import { Block as PBlock } from "prismarine-block";
 import { Effect } from "prismarine-entity";
+import { MAX_PLACEMENT_REACH } from "../constants";
 
 export function isBlock(
   block: PBlock | null,
@@ -132,4 +133,13 @@ export function getDigTimeMS(
   digTime = Math.ceil((digTime * 1000) / 50) * 50;
 
   return digTime;
+}
+
+export function isWithinInteractionReach(
+  bot: Bot,
+  coords: Vec3,
+  maxDistance: number = MAX_PLACEMENT_REACH,
+): boolean {
+  const distance = bot.entity.position.distanceTo(coords);
+  return distance <= maxDistance;
 }

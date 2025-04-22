@@ -29,7 +29,8 @@ const results_2 = require("../place-block/results");
 class CraftItems extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        this.shouldBeCrafting = false;
+        this.shouldBeDoingStuff = false;
+        this.shouldTerminateSubskillWaiting = false;
     }
     get itemDifferentialSinceInvoke() {
         (0, assert_1.default)(this.itemToCraft);
@@ -44,25 +45,25 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.selectedRecipe);
             (0, assert_1.default)(this.quantityToCraft);
             (0, assert_1.default)(this.useCraftingTable !== undefined);
-            if (!this.shouldBeCrafting) {
+            if (!this.shouldBeDoingStuff) {
                 // Exit on pause or stop
                 return;
             }
             const quantityOfRecipe = this.quantityToCraft / this.selectedRecipe.result.count;
             yield this.bot.craft(this.selectedRecipe, quantityOfRecipe, table);
-            if (!this.shouldBeCrafting) {
+            if (!this.shouldBeDoingStuff) {
                 // Exit on pause or stop
                 return;
             }
             while (this.itemDifferentialSinceInvoke < this.quantityToCraft) {
                 // Wait for the items to register as being in the bot's inventory
                 yield (0, generic_1.asyncSleep)(constants_1.CRAFTING_WAIT_MS);
-                if (!this.shouldBeCrafting) {
+                if (!this.shouldBeDoingStuff) {
                     // Exit on pause or stop
                     return;
                 }
             }
-            this.shouldBeCrafting = false;
+            this.shouldBeDoingStuff = false;
             const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
             this.resolve(result);
             return;
@@ -80,7 +81,7 @@ class CraftItems extends skill_1.Skill {
                 // ...almost certainly from a pause that occured while awaiting bot.craft,
                 // or asyncSleep(CRAFTING_WAIT_MS), causing this.shouldBeCrafting to be set to false,
                 // false, and preventing resolution, which is why, after resume, we end up here.
-                this.shouldBeCrafting = false;
+                this.shouldBeDoingStuff = false;
                 const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
                 this.resolve(result);
                 return;
@@ -98,7 +99,7 @@ class CraftItems extends skill_1.Skill {
                 !craftingTableIsInInventory) {
                 // The only reason this could happen is if, during a pause, the bot moved away
                 // from the crafting table that this skill placed (removing it from the inventory)
-                this.shouldBeCrafting = false;
+                this.shouldBeDoingStuff = false;
                 this.resolve(new results_1.CraftItemsResults.TableNoLongerInImmediateSurroundings());
                 return;
             }
@@ -112,18 +113,19 @@ class CraftItems extends skill_1.Skill {
                 };
                 this.activeSubskill = new place_block_1.PlaceBlock(this.bot, handlePlaceCraftingTableResolution.bind(this));
                 yield this.activeSubskill.invoke(craftingTableBlockType);
-                while (placeCraftingTableResult === undefined) {
+                while (placeCraftingTableResult === undefined ||
+                    this.shouldTerminateSubskillWaiting) {
                     yield (0, generic_1.asyncSleep)(50);
                 }
                 const wasSuccess = placeCraftingTableResult instanceof
                     results_2.PlaceBlockResults.Success;
                 if (!wasSuccess) {
-                    this.shouldBeCrafting = false;
+                    this.shouldBeDoingStuff = false;
                     const result = new results_1.CraftItemsResults.CraftingTablePlacementFailed(placeCraftingTableResult);
                     this.resolve(result);
                     return;
                 }
-                if (!this.shouldBeCrafting) {
+                if (!this.shouldBeDoingStuff) {
                     // Exit on pause or stop
                     return;
                 }
@@ -148,16 +150,17 @@ class CraftItems extends skill_1.Skill {
                 };
                 this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, handlePathfindingResolution.bind(this));
                 yield this.activeSubskill.invoke(nearestImmediateSurroundingsTableCoords);
-                while (tableIsInRangeAfterPathfinding === undefined) {
+                while (tableIsInRangeAfterPathfinding === undefined ||
+                    this.shouldTerminateSubskillWaiting) {
                     yield (0, generic_1.asyncSleep)(50);
                 }
                 if (!tableIsInRangeAfterPathfinding) {
-                    this.shouldBeCrafting = false;
+                    this.shouldBeDoingStuff = false;
                     const result = new results_1.CraftItemsResults.FailedToGetCloseEnoughToTable(nearestImmediateSurroundingsTableCoords);
                     this.resolve(result);
                     return;
                 }
-                if (!this.shouldBeCrafting) {
+                if (!this.shouldBeDoingStuff) {
                     // Exit on pause or stop
                     return;
                 }
@@ -257,7 +260,7 @@ class CraftItems extends skill_1.Skill {
             this.quantityToCraft =
                 Math.ceil(quantity / this.selectedRecipe.result.count) *
                     this.selectedRecipe.result.count;
-            this.shouldBeCrafting = true;
+            this.shouldBeDoingStuff = true;
             this.quantityInInventoryBeforeCrafting =
                 this.itemToCraft.getTotalCountInInventory();
             this.startOrResumeCrafting();
@@ -270,7 +273,10 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.selectedRecipe);
             (0, assert_1.default)(this.quantityInInventoryBeforeCrafting !== undefined);
             (0, assert_1.default)(this.useCraftingTable !== undefined);
-            this.shouldBeCrafting = false;
+            this.shouldBeDoingStuff = false;
+            if (this.activeSubskill) {
+                yield this.activeSubskill.pause();
+            }
         });
     }
     doResume() {
@@ -280,8 +286,15 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.selectedRecipe);
             (0, assert_1.default)(this.quantityInInventoryBeforeCrafting !== undefined);
             (0, assert_1.default)(this.useCraftingTable !== undefined);
-            this.shouldBeCrafting = true;
-            this.startOrResumeCrafting();
+            this.shouldBeDoingStuff = true;
+            if (this.activeSubskill) {
+                // TODO: Comment
+                yield this.activeSubskill.resume();
+            }
+            else {
+                // TODO: Comment
+                this.startOrResumeCrafting();
+            }
         });
     }
     doStop() {
@@ -291,7 +304,11 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.selectedRecipe);
             (0, assert_1.default)(this.quantityInInventoryBeforeCrafting !== undefined);
             (0, assert_1.default)(this.useCraftingTable !== undefined);
-            this.shouldBeCrafting = false;
+            this.shouldBeDoingStuff = false;
+            this.shouldTerminateSubskillWaiting = true;
+            if (this.activeSubskill) {
+                yield this.activeSubskill.stop();
+            }
         });
     }
 }

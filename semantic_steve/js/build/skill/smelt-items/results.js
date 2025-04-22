@@ -5,37 +5,67 @@ var SmeltItemsResults;
 (function (SmeltItemsResults) {
     class InvalidItem {
         constructor(item) {
-            this.message = `SkillInvocationError: '${item}' is not a recognized smeltable minecraft item.`;
+            this.message = `SkillInvocationError: '${item}' is not a recognized minecraft item.`;
         }
     }
     SmeltItemsResults.InvalidItem = InvalidItem;
-    class SpecifiedFuelItemNotInInventory {
-        constructor(item, quantity) {
-            this.message = `SkillInvocationError: The specified fuel item '${item}' is not in your inventory.`;
+    class InvalidFuelItem {
+        constructor(fuelItem) {
+            this.message = `SkillInvocationError: '${fuelItem}' is not a recognized minecraft item.`;
         }
     }
-    SmeltItemsResults.SpecifiedFuelItemNotInInventory = SpecifiedFuelItemNotInInventory;
-    class FuelItemNotInInventory {
+    SmeltItemsResults.InvalidFuelItem = InvalidFuelItem;
+    class NonSmeltableItem {
         constructor(item) {
-            this.message = `SkillInvocationError: Smelting requires a fuel item (e.g., coal), but there is no such item in your inventory.`;
+            this.message = `SkillInvocationError: '${item}' is not a smeltable item.`;
         }
     }
-    SmeltItemsResults.FuelItemNotInInventory = FuelItemNotInInventory;
-    class NoFurnaceEtc {
+    SmeltItemsResults.NonSmeltableItem = NonSmeltableItem;
+    class FuelItemNotUsableAsFuel {
+        constructor(fuelItem) {
+            this.message = `SkillInvocationError: '${fuelItem}' cannot be used as fuel in a furnace.`;
+        }
+    }
+    SmeltItemsResults.FuelItemNotUsableAsFuel = FuelItemNotUsableAsFuel;
+    class NoFurnaceAvailable {
         constructor(item) {
-            this.message = `SkillInvocationError: Smelting requires something to smelt in (e.g., a furnace), but there is no such thing in your inventory or immediate surroundings.`;
+            this.message = `SkillInvocationError: Smelting ${item} requires a furnace, but there is no furnace in your inventory or immediate surroundings.`;
         }
     }
-    SmeltItemsResults.NoFurnaceEtc = NoFurnaceEtc;
-    class PartialSuccess {
-        constructor(smeltedItem, smeltedItemQuantity, targetItemQuantity, resultingItem, resultingItemQuantity) {
-            this.message = `You were only able to smelt ${smeltedItemQuantity} of the intended ${targetItemQuantity} of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
+    SmeltItemsResults.NoFurnaceAvailable = NoFurnaceAvailable;
+    class FurnaceNoLongerInImmediateSurroundings {
+        constructor() {
+            this.message = `Failure: Some self-preservation behavior resulted in movement that left the furnace outside of the immediate surroundings.`;
         }
     }
-    SmeltItemsResults.PartialSuccess = PartialSuccess;
+    SmeltItemsResults.FurnaceNoLongerInImmediateSurroundings = FurnaceNoLongerInImmediateSurroundings;
+    class FailedToGetCloseEnoughToFurnace {
+        constructor(furnaceCoords) {
+            this.message = `Unable to pathfind close enough to the furnace at [${furnaceCoords.x}, ${furnaceCoords.y}, ${furnaceCoords.z}] to smelt.`;
+        }
+    }
+    SmeltItemsResults.FailedToGetCloseEnoughToFurnace = FailedToGetCloseEnoughToFurnace;
+    class FurnacePlacementFailed {
+        constructor(placeBlockResult) {
+            this.message = `Smelting failed since furnace placement didn't resolve with success. ${placeBlockResult.message}`;
+        }
+    }
+    SmeltItemsResults.FurnacePlacementFailed = FurnacePlacementFailed;
+    class InsufficientSmeltItems {
+        constructor(quantity, item) {
+            this.message = `SkillInvocationError: You do not have enough '${item}' to smelt ${quantity} of them.`;
+        }
+    }
+    SmeltItemsResults.InsufficientSmeltItems = InsufficientSmeltItems;
+    class InsufficientFuel {
+        constructor(fuelItem, itemToSmelt) {
+            this.message = `SkillInvocationError: You do not have enough '${fuelItem.name}' to use as fuel for smelting '${itemToSmelt}'.`;
+        }
+    }
+    SmeltItemsResults.InsufficientFuel = InsufficientFuel;
     class Success {
-        constructor(smeltedItem, smeltedItemQuantity, resultingItem, resultingItemQuantity) {
-            this.message = `You successfully smelted '${smeltedItemQuantity}' of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
+        constructor(item, quantity) {
+            this.message = `You acquired ${quantity} of smelted '${item}'.`;
         }
     }
     SmeltItemsResults.Success = Success;

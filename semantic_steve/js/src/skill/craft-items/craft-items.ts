@@ -36,7 +36,8 @@ export class CraftItems extends Skill {
   };
 
   private activeSubskill?: PathfindToCoordinates | PlaceBlock;
-  private shouldBeCrafting: boolean = false;
+  private shouldBeDoingStuff: boolean = false;
+  private shouldTerminateSubskillWaiting: boolean = false;
   private itemToCraft?: ItemEntity;
   private quantityToCraft?: number;
   private selectedRecipe?: Recipe;
@@ -61,7 +62,7 @@ export class CraftItems extends Skill {
     assert(this.quantityToCraft);
     assert(this.useCraftingTable !== undefined);
 
-    if (!this.shouldBeCrafting) {
+    if (!this.shouldBeDoingStuff) {
       // Exit on pause or stop
       return;
     }
@@ -69,22 +70,22 @@ export class CraftItems extends Skill {
       this.quantityToCraft / this.selectedRecipe.result.count;
 
     await this.bot.craft(this.selectedRecipe, quantityOfRecipe, table);
-    if (!this.shouldBeCrafting) {
+    if (!this.shouldBeDoingStuff) {
       // Exit on pause or stop
       return;
     }
     while (this.itemDifferentialSinceInvoke < this.quantityToCraft) {
       // Wait for the items to register as being in the bot's inventory
       await asyncSleep(CRAFTING_WAIT_MS);
-      if (!this.shouldBeCrafting) {
+      if (!this.shouldBeDoingStuff) {
         // Exit on pause or stop
         return;
       }
     }
-    this.shouldBeCrafting = false;
+    this.shouldBeDoingStuff = false;
     const result = new CraftItemsResults.Success(
       this.itemToCraft.name,
-      this.quantityToCraft
+      this.quantityToCraft,
     );
     this.resolve(result);
     return;
@@ -102,10 +103,10 @@ export class CraftItems extends Skill {
       // ...almost certainly from a pause that occured while awaiting bot.craft,
       // or asyncSleep(CRAFTING_WAIT_MS), causing this.shouldBeCrafting to be set to false,
       // false, and preventing resolution, which is why, after resume, we end up here.
-      this.shouldBeCrafting = false;
+      this.shouldBeDoingStuff = false;
       const result = new CraftItemsResults.Success(
         this.itemToCraft.name,
-        this.quantityToCraft
+        this.quantityToCraft,
       );
       this.resolve(result);
       return;
@@ -130,9 +131,9 @@ export class CraftItems extends Skill {
     ) {
       // The only reason this could happen is if, during a pause, the bot moved away
       // from the crafting table that this skill placed (removing it from the inventory)
-      this.shouldBeCrafting = false;
+      this.shouldBeDoingStuff = false;
       this.resolve(
-        new CraftItemsResults.TableNoLongerInImmediateSurroundings()
+        new CraftItemsResults.TableNoLongerInImmediateSurroundings(),
       );
       return;
     }
@@ -150,10 +151,13 @@ export class CraftItems extends Skill {
 
       this.activeSubskill = new PlaceBlock(
         this.bot,
-        handlePlaceCraftingTableResolution.bind(this)
+        handlePlaceCraftingTableResolution.bind(this),
       );
       await this.activeSubskill.invoke(craftingTableBlockType);
-      while (placeCraftingTableResult === undefined) {
+      while (
+        placeCraftingTableResult === undefined ||
+        this.shouldTerminateSubskillWaiting
+      ) {
         await asyncSleep(50);
       }
       const wasSuccess =
@@ -161,15 +165,15 @@ export class CraftItems extends Skill {
         PlaceBlockResults.Success;
 
       if (!wasSuccess) {
-        this.shouldBeCrafting = false;
+        this.shouldBeDoingStuff = false;
         const result = new CraftItemsResults.CraftingTablePlacementFailed(
-          placeCraftingTableResult
+          placeCraftingTableResult,
         );
         this.resolve(result);
         return;
       }
 
-      if (!this.shouldBeCrafting) {
+      if (!this.shouldBeDoingStuff) {
         // Exit on pause or stop
         return;
       }
@@ -185,7 +189,7 @@ export class CraftItems extends Skill {
         craftingTableBlockType.locateNearestInImmediateSurroundings();
       assert(nearestImmediateSurroundingsTableCoords);
       const distanceToCraftingTable = eyePosition.distanceTo(
-        nearestImmediateSurroundingsTableCoords
+        nearestImmediateSurroundingsTableCoords,
       );
       return distanceToCraftingTable <= MAX_PLACEMENT_REACH;
     };
@@ -201,22 +205,25 @@ export class CraftItems extends Skill {
 
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
-        handlePathfindingResolution.bind(this)
+        handlePathfindingResolution.bind(this),
       );
       await this.activeSubskill.invoke(nearestImmediateSurroundingsTableCoords);
-      while (tableIsInRangeAfterPathfinding === undefined) {
+      while (
+        tableIsInRangeAfterPathfinding === undefined ||
+        this.shouldTerminateSubskillWaiting
+      ) {
         await asyncSleep(50);
       }
       if (!tableIsInRangeAfterPathfinding) {
-        this.shouldBeCrafting = false;
+        this.shouldBeDoingStuff = false;
         const result = new CraftItemsResults.FailedToGetCloseEnoughToTable(
-          nearestImmediateSurroundingsTableCoords
+          nearestImmediateSurroundingsTableCoords,
         );
         this.resolve(result);
         return;
       }
 
-      if (!this.shouldBeCrafting) {
+      if (!this.shouldBeDoingStuff) {
         // Exit on pause or stop
         return;
       }
@@ -236,7 +243,7 @@ export class CraftItems extends Skill {
 
   public async doInvoke(
     item: string | ItemEntity,
-    quantity: number = 1
+    quantity: number = 1,
   ): Promise<void> {
     if (typeof item === "string") {
       // Validate the item string
@@ -260,14 +267,14 @@ export class CraftItems extends Skill {
     const nonTableRecipes = this.bot.recipesAll(
       this.itemToCraft.id,
       null,
-      false
+      false,
     );
     const allRecipes = tableRecipes.concat(nonTableRecipes);
 
     // Check if the item is craftable generally (any recipes exist)
     if (allRecipes.length === 0) {
       this.resolve(
-        new CraftItemsResults.NonCraftableItem(this.itemToCraft.name)
+        new CraftItemsResults.NonCraftableItem(this.itemToCraft.name),
       );
       return;
     }
@@ -285,7 +292,7 @@ export class CraftItems extends Skill {
     const requiresCraftingTable = nonTableRecipes.length === 0;
     if (requiresCraftingTable && !craftingTableIsAvailable()) {
       this.resolve(
-        new CraftItemsResults.NoCraftingTable(this.itemToCraft.name)
+        new CraftItemsResults.NoCraftingTable(this.itemToCraft.name),
       );
       return;
     }
@@ -295,7 +302,7 @@ export class CraftItems extends Skill {
       this.itemToCraft.id,
       null,
       quantity, // Minimum resulting quantity
-      true // Set of non-table recipes is a subset of the set of table recipes
+      true, // Set of non-table recipes is a subset of the set of table recipes
     );
 
     let lastFeasibleNonTableRecipe: undefined | Recipe = undefined;
@@ -331,8 +338,8 @@ export class CraftItems extends Skill {
       this.resolve(
         new CraftItemsResults.InsufficientRecipeIngredients(
           this.itemToCraft.name,
-          quantity
-        )
+          quantity,
+        ),
       );
       return;
     }
@@ -343,7 +350,7 @@ export class CraftItems extends Skill {
     this.quantityToCraft =
       Math.ceil(quantity / this.selectedRecipe.result.count) *
       this.selectedRecipe.result.count;
-    this.shouldBeCrafting = true;
+    this.shouldBeDoingStuff = true;
     this.quantityInInventoryBeforeCrafting =
       this.itemToCraft.getTotalCountInInventory();
     this.startOrResumeCrafting();
@@ -355,7 +362,10 @@ export class CraftItems extends Skill {
     assert(this.selectedRecipe);
     assert(this.quantityInInventoryBeforeCrafting !== undefined);
     assert(this.useCraftingTable !== undefined);
-    this.shouldBeCrafting = false;
+    this.shouldBeDoingStuff = false;
+    if (this.activeSubskill) {
+      await this.activeSubskill.pause();
+    }
   }
 
   public async doResume(): Promise<void> {
@@ -364,8 +374,14 @@ export class CraftItems extends Skill {
     assert(this.selectedRecipe);
     assert(this.quantityInInventoryBeforeCrafting !== undefined);
     assert(this.useCraftingTable !== undefined);
-    this.shouldBeCrafting = true;
-    this.startOrResumeCrafting();
+    this.shouldBeDoingStuff = true;
+    if (this.activeSubskill) {
+      // TODO: Comment
+      await this.activeSubskill.resume();
+    } else {
+      // TODO: Comment
+      this.startOrResumeCrafting();
+    }
   }
 
   public async doStop(): Promise<void> {
@@ -374,6 +390,10 @@ export class CraftItems extends Skill {
     assert(this.selectedRecipe);
     assert(this.quantityInInventoryBeforeCrafting !== undefined);
     assert(this.useCraftingTable !== undefined);
-    this.shouldBeCrafting = false;
+    this.shouldBeDoingStuff = false;
+    this.shouldTerminateSubskillWaiting = true;
+    if (this.activeSubskill) {
+      await this.activeSubskill.stop();
+    }
   }
 }

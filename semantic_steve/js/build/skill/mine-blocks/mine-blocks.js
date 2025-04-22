@@ -164,7 +164,7 @@ class MineBlocks extends skill_1.Skill {
     getDigCoordsAfterPathfindingToNearestBlockToMine() {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.blockTypeToMine);
-            let nearestPosOfBlockType = 
+            let nearestPosOfBlockType =
             // TODO: Somehow prefer same y-level and especially avoid digging straight down?
             yield this.blockTypeToMine.locateNearestInImmediateSurroundings();
             if (!nearestPosOfBlockType) {

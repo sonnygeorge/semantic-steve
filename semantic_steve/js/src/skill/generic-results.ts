@@ -8,7 +8,7 @@ export namespace GenericSkillResults {
     }
   }
 
-  export class UnhandledRuntimeError implements SkillResult {
+  export class UnhandledInvocationError implements SkillResult {
     message: string;
     constructor(skillName: string, error: Error) {
       const errorString = error.toString();
@@ -33,7 +33,7 @@ export namespace GenericSkillResults {
   export class SkillTimeout implements SkillResult {
     message: string;
     constructor(skillName: string, timeoutSeconds: number) {
-      this.message = `SkillTimeoutError: The execution of skill '${skillName}' passed the hard-coded time limit of '${timeoutSeconds}' seconds. If your arguments make the skill take a long time; try changing them. Otherwise, the player likely found its way into a bad state that caused it to get stuck; try doing something else and coming back to this skill later. If the issue persists, perhaps the skill is broken for your use case.`;
+      this.message = `SkillTimeoutError: The execution of skill '${skillName}' passed the hard-coded time limit of '${timeoutSeconds}' seconds. If something about your arguments made the skill take a very long time; try changing them (e.g., reducing a quantity). Otherwise, the player likely found its way into a bad state that caused it to get stuck; try doing something else and coming back to this skill later. If the issue persists, perhaps the skill is broken for your use case. Maybe try some other approach to your goals?`;
     }
   }
 }

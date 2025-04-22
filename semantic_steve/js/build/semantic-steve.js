@@ -52,7 +52,6 @@ const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 const types_1 = require("./types");
 const inventory_changes_1 = require("./utils/inventory-changes");
-const generic_results_1 = require("./skill/generic-results");
 class SemanticSteve {
     constructor(bot, config = new types_1.SemanticSteveConfig()) {
         this.hasDiedWhileAwaitingInvocation = false;
@@ -60,7 +59,6 @@ class SemanticSteve {
         this.socket = new zmq.Pair({ receiveTimeout: 0 });
         this.zmqPort = config.zmqPort;
         this.selfPreserver = new self_preserver_1.SelfPreserver(this.bot, config.selfPreservationCheckThrottleMS);
-        // Skills setup
         this.skills = (0, skill_1.buildSkillsRegistry)(this.bot, this.handleSkillResolution.bind(this));
     }
     // =======================================
@@ -68,7 +66,8 @@ class SemanticSteve {
     // =======================================
     sendDataToPython(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.itemTotalsAtTimeOfLastMsgToPython = this.bot.envState.itemTotals;
+            this.itemTotalsAtTimeOfLastMsgToPython =
+                this.bot.envState.inventory.itemsToTotalCounts;
             yield this.socket.send(JSON.stringify(data));
         });
     }
@@ -88,42 +87,47 @@ class SemanticSteve {
     // Skill invocation and resolution
     // ================================
     invokeSkill(skillInvocation) {
-        var _a;
+        (0, assert_1.default)(!this.activeSkill);
         // Add skill invocation to the macrotask queue (wrapped w/ handling of errors)
         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            if (!this.skills[skillInvocation.skillName]) {
+                const result = new skill_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
+                // NOTE: Faux skill-resolution w/out ever ever having an active skill
+                this.handleSkillResolution(result);
+                return;
+            }
+            const skillToInvoke = this.skills[skillInvocation.skillName];
+            // Set fields that are to be set while skills are running
+            this.activeSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
+            this.timeOfLastSkillInvocation = Date.now();
             try {
-                if (!this.skills[skillInvocation.skillName]) {
-                    const result = new generic_results_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
-                    this.handleSkillResolution(result);
-                    return;
-                }
-                const skillToInvoke = this.skills[skillInvocation.skillName];
                 yield skillToInvoke.invoke(...skillInvocation.args);
             }
             catch (error) {
-                const result = new generic_results_1.GenericSkillResults.UnhandledRuntimeError(skillInvocation.skillName, error);
-                this.handleSkillResolution(result);
+                (0, assert_1.default)(this.activeSkill);
+                const result = new skill_1.GenericSkillResults.UnhandledInvocationError(skillInvocation.skillName, error);
+                this.activeSkill.stop();
+                this.activeSkill.resolve(result);
             }
         }), 0);
-        // Set fields that are to be set while skills are running
-        this.currentSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
-        this.timeOfLastSkillInvocation = Date.now();
     }
     handleSkillResolution(result, 
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
     envStateIsHydrated) {
+        var _a;
+        // Unset fields that are only to be set while skills are running
+        console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
+        this.activeSkill = undefined;
+        this.timeOfLastSkillInvocation = undefined;
         // Hydrate the envState if it wasn't just hydrated by a skill
         if (!envStateIsHydrated) {
             this.bot.envState.hydrate();
         }
         // Get Inventory changes since the skill was invoked
         const invChanges = this.getInventoryChanges();
-        // Unset fields that are only to be set while skills are running
-        this.currentSkill = undefined;
-        this.timeOfLastSkillInvocation = undefined;
         // Prepare the data to send to Python
-        // TODO: Add invChanges to what we send to Python once getting this (maybe someday) gets implemented
         const toSendToPython = {
             envState: this.bot.envState.getDTO(),
             skillInvocationResults: result.message,
@@ -140,7 +144,7 @@ class SemanticSteve {
             throw new Error("This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set");
         }
         const differentials = new Map();
-        const curItemTotals = this.bot.envState.itemTotals;
+        const curItemTotals = this.bot.envState.inventory.itemsToTotalCounts;
         const oldItemTotals = this.itemTotalsAtTimeOfLastMsgToPython;
         // Process all keys in current inventory
         for (const [itemName, currentCount] of curItemTotals.entries()) {
@@ -160,21 +164,35 @@ class SemanticSteve {
     }
     checkForAndHandleSkillTimeout() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.currentSkill) {
+            if (!this.activeSkill) {
                 (0, assert_1.default)(!this.timeOfLastSkillInvocation, "No skill running, but time of last invocation is set");
             }
             else {
                 (0, assert_1.default)(this.timeOfLastSkillInvocation, "A skill is running, but time of last invocation is not set");
                 (0, assert_1.default)(this.itemTotalsAtTimeOfLastMsgToPython, "A skill is running, but item totals at time of last outgoing python msg is not set");
-                const curSkillClass = this.currentSkill.constructor;
+                const curSkillClass = this.activeSkill.constructor;
                 if (Date.now() - this.timeOfLastSkillInvocation >
                     curSkillClass.TIMEOUT_MS) {
-                    const skillClass = this.currentSkill.constructor;
-                    const result = new generic_results_1.GenericSkillResults.SkillTimeout(skillClass.METADATA.name, curSkillClass.TIMEOUT_MS / 1000);
-                    this.handleSkillResolution(result);
+                    const skillClass = this.activeSkill.constructor;
+                    const result = new skill_1.GenericSkillResults.SkillTimeout(skillClass.METADATA.name, curSkillClass.TIMEOUT_MS / 1000);
+                    this.activeSkill.stop();
+                    this.activeSkill.resolve(result);
                 }
             }
         });
+    }
+    handleDeath() {
+        if (!this.activeSkill) {
+            // We don't have a current skill, therefore, we are awaiting an invocation from Python
+            // Set this flag so that, once we receive an invocation, we can immediately respond w/
+            // DeathBeforeInvocation
+            this.hasDiedWhileAwaitingInvocation = true;
+        }
+        else {
+            const result = new skill_1.GenericSkillResults.DeathDuringExecution();
+            this.activeSkill.stop();
+            this.activeSkill.resolve(result);
+        }
     }
     initializeSocket() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -193,23 +211,6 @@ class SemanticSteve {
             yield this.sendDataToPython(toSendToPython);
         });
     }
-    handleDeath() {
-        if (!this.currentSkill) {
-            // We don't have a current skill, therefore, we are awaiting an invocation from Python
-            // Set this flag so that, once we receive an invocation, we can immediately respond w/
-            // DeathBeforeInvocation
-            this.hasDiedWhileAwaitingInvocation = true;
-        }
-        else {
-            // We have a current skill, therefore, we are in the middle of executing a skill
-            // Terminate the skill by stopping its execution and unsetting this.currentSkill
-            this.currentSkill.pause();
-            this.currentSkill = undefined;
-            // Now we resolve the skill with a DeathDuringExecution result
-            const result = new generic_results_1.GenericSkillResults.DeathDuringExecution();
-            this.handleSkillResolution(result);
-        }
-    }
     // ===========================
     // Main entrypoint/run method
     // ===========================
@@ -223,11 +224,12 @@ class SemanticSteve {
             while (true) {
                 const msgFromPython = yield this.checkForMsgFromPython();
                 if (msgFromPython) {
-                    (0, assert_1.default)(!this.currentSkill, "Got invocation before resolution");
+                    (0, assert_1.default)(!this.activeSkill, "Got invocation before resolution");
                     const skillInvocation = JSON.parse(msgFromPython);
                     if (this.hasDiedWhileAwaitingInvocation) {
                         this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
-                        const result = new generic_results_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
+                        const result = new skill_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
+                        // NOTE: Faux skill-resolution w/out ever ever having an active skill
                         this.handleSkillResolution(result);
                     }
                     else {
@@ -240,8 +242,9 @@ class SemanticSteve {
                 yield this.checkForAndHandleSkillTimeout();
                 // Self-preservation
                 if (this.selfPreserver.shouldSelfPreserve()) {
-                    if (this.currentSkill) {
-                        yield this.currentSkill.pause();
+                    if (this.activeSkill) {
+                        yield this.activeSkill.pause();
+                        (0, assert_1.default)(this.activeSkill.status === skill_1.SkillStatus.ACTIVE_PAUSED);
                     }
                     const start = Date.now();
                     yield this.selfPreserver.invoke(); // Await resolution before continuing
@@ -253,8 +256,8 @@ class SemanticSteve {
                         // like this means the variable won't necessarily reflect what its name implies
                         // (nitpick, not urgent)
                     }
-                    if (this.currentSkill) {
-                        yield this.currentSkill.resume();
+                    if (this.activeSkill) {
+                        yield this.activeSkill.resume();
                     }
                 }
             }

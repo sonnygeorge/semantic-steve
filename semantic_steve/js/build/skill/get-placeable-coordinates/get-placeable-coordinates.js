@@ -17,24 +17,31 @@ class GetPlaceableCoordinates extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
     }
-    invoke() {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke() {
         return __awaiter(this, void 0, void 0, function* () {
             const placeableCoords = (0, placing_1.getAllPlaceableCoords)(this.bot);
             if (placeableCoords.length === 0) {
                 const result = new results_1.GetPlaceableCoordinatesResults.NoPlaceableCoords();
-                this.onResolution(result);
+                this.resolve(result);
             }
             else {
                 const result = new results_1.GetPlaceableCoordinatesResults.Success(placeableCoords);
-                this.onResolution(result);
+                this.resolve(result);
             }
         });
     }
-    // These don't need to do anything since invoke never gives up the event loop
-    pause() {
+    // These will never get called since this skill never gives up the event loop.
+    // Nevertheless, we need to implement them to satisfy the Skill ABC.
+    doPause() {
         return __awaiter(this, void 0, void 0, function* () { });
     }
-    resume() {
+    doResume() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    doStop() {
         return __awaiter(this, void 0, void 0, function* () { });
     }
 }

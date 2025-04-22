@@ -53,4 +53,16 @@ export class InvalidThingError extends Error {
   }
 }
 
+/**
+ * "Data Transfer Object" (DTO) version of `InventoryChanges` containing the
+ * information that we want to send to the Python client in the format we want the user
+ * (LLM) to see it.
+ *
+ * Crucially, only JSON-serializable types are used in this DTO (e.g., no `Vec3` objects).
+ */
+export interface InventoryChangesDTO {
+  itemsAcquired: { [key: string]: number };
+  itemsLostOrConsumed: { [key: string]: number };
+}
+
 export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;

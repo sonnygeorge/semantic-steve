@@ -20,20 +20,26 @@ export class GetPlaceableCoordinates extends Skill {
     super(bot, onResolution);
   }
 
-  public async invoke(): Promise<void> {
+  // ============================
+  // Implementation of Skill API
+  // ============================
+
+  public async doInvoke(): Promise<void> {
     const placeableCoords = getAllPlaceableCoords(this.bot);
     if (placeableCoords.length === 0) {
       const result = new GetPlaceableCoordinatesResults.NoPlaceableCoords();
-      this.onResolution(result);
+      this.resolve(result);
     } else {
       const result = new GetPlaceableCoordinatesResults.Success(
         placeableCoords,
       );
-      this.onResolution(result);
+      this.resolve(result);
     }
   }
 
-  // These don't need to do anything since invoke never gives up the event loop
-  public async pause(): Promise<void> {}
-  public async resume(): Promise<void> {}
+  // These will never get called since this skill never gives up the event loop.
+  // Nevertheless, we need to implement them to satisfy the Skill ABC.
+  public async doPause(): Promise<void> {}
+  public async doResume(): Promise<void> {}
+  public async doStop(): Promise<void> {}
 }

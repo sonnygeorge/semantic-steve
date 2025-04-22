@@ -39,12 +39,12 @@ export class PlaceBlock extends Skill {
     super(bot, onResolution);
   }
 
-  private resolve(result: SkillResult): void {
+  private resolvePlacing(result: SkillResult): void {
     this.shouldBePlacing = false;
     this.blockToPlace = undefined;
     this.targetPosition = undefined;
     this.itemToPlace = undefined;
-    this.onResolution(result);
+    this.resolve(result);
   }
 
   private async doPlacing(): Promise<void> {
@@ -62,7 +62,7 @@ export class PlaceBlock extends Skill {
       const result = new PlaceBlockResults.UnplaceableCoords(
         `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
       );
-      this.resolve(result);
+      this.resolvePlacing(result);
       return;
     }
 
@@ -89,14 +89,14 @@ export class PlaceBlock extends Skill {
         !blockAtTargetCoords ||
         blockAtTargetCoords.name !== this.blockToPlace.name
       ) {
-        this.resolve(
+        this.resolvePlacing(
           new PlaceBlockResults.PlacingFailure(
             this.blockToPlace.name,
             `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
           ),
         );
       } else {
-        this.resolve(
+        this.resolvePlacing(
           new PlaceBlockResults.Success(
             this.blockToPlace.name,
             `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
@@ -106,7 +106,11 @@ export class PlaceBlock extends Skill {
     }
   }
 
-  public async invoke(
+  // ============================
+  // Implementation of Skill API
+  // ============================
+
+  public async doInvoke(
     block: string,
     atCoordinates?: [number, number, number],
   ): Promise<void> {
@@ -114,7 +118,7 @@ export class PlaceBlock extends Skill {
       this.blockToPlace = new Block(this.bot, block);
     } catch (err) {
       if (err instanceof InvalidThingError) {
-        this.resolve(new PlaceBlockResults.InvalidBlock(block));
+        this.resolvePlacing(new PlaceBlockResults.InvalidBlock(block));
         return;
       }
       throw err;
@@ -127,14 +131,16 @@ export class PlaceBlock extends Skill {
     });
 
     if (!this.itemToPlace) {
-      this.resolve(new PlaceBlockResults.BlockNotInInventory(block));
+      this.resolvePlacing(new PlaceBlockResults.BlockNotInInventory(block));
       return;
     }
 
     if (!atCoordinates) {
       this.targetPosition = getPlaceableCoords(this.bot);
       if (!this.targetPosition) {
-        this.resolve(new GetPlaceableCoordinatesResults.NoPlaceableCoords());
+        this.resolvePlacing(
+          new GetPlaceableCoordinatesResults.NoPlaceableCoords(),
+        );
         return;
       }
     } else {
@@ -149,17 +155,22 @@ export class PlaceBlock extends Skill {
     await this.doPlacing();
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
+  public async doPause(): Promise<void> {
     this.shouldBePlacing = false;
   }
 
-  public async resume(): Promise<void> {
-    console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
+  public async doResume(): Promise<void> {
     assert(this.blockToPlace);
     assert(this.targetPosition);
     assert(this.itemToPlace);
     this.shouldBePlacing = true;
     await this.doPlacing();
+  }
+
+  public async doStop(): Promise<void> {
+    this.shouldBePlacing = false;
+    this.blockToPlace = undefined;
+    this.targetPosition = undefined;
+    this.itemToPlace = undefined;
   }
 }

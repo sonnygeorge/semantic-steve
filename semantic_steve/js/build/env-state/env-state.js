@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnvState = void 0;
 const surroundings_1 = require("./surroundings");
-const durability_1 = require("../utils/durability");
+const inventory_1 = require("./inventory");
 // TODO: Daytime/nightime?
 var EquipmentDestination;
 (function (EquipmentDestination) {
@@ -25,6 +25,7 @@ class EnvState {
     constructor(bot, surroundingsRadii) {
         this.bot = bot;
         this.surroundings = new surroundings_1.Surroundings(bot, surroundingsRadii);
+        this.inventory = new inventory_1.Inventory(bot);
     }
     get botCoords() {
         return this.bot.entity.position;
@@ -34,17 +35,6 @@ class EnvState {
     }
     get hunger() {
         return this.bot.food;
-    }
-    get inventory() {
-        return this.bot.inventory.slots.filter((item) => item !== null);
-    }
-    get itemTotals() {
-        const itemTotals = new Map();
-        this.bot.envState.inventory.forEach((item) => {
-            const currentCount = itemTotals.get(item.name) || 0;
-            itemTotals.set(item.name, currentCount + item.count);
-        });
-        return itemTotals;
     }
     get equipped() {
         const equipped = {};
@@ -69,11 +59,7 @@ class EnvState {
             ],
             health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
             hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
-            inventory: this.inventory.map((item) => ({
-                name: item.name,
-                count: item.count,
-                durabilityRemaining: (0, durability_1.getDurabilityRemainingString)(item),
-            })),
+            inventory: this.inventory.getDTO(),
             equipped: Object.fromEntries(Object.entries(this.equipped).map(([key, item]) => {
                 var _a;
                 return [

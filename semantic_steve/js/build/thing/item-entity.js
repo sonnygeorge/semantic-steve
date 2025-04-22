@@ -6,13 +6,27 @@ const types_1 = require("../types");
  * An item type that is "dropped", is hovering on the ground, and can be picked up.
  */
 class ItemEntity {
-    constructor(bot, name) {
-        const itemEntityNames = Object.values(bot.registry.itemsByName).map((i) => i.name);
-        if (!itemEntityNames.includes(name)) {
-            throw new types_1.InvalidThingError(`Invalid item entity type: ${name}.`);
+    constructor(bot, name, id) {
+        if (name) {
+            const itemEntityNames = Object.values(bot.registry.itemsByName).map((i) => i.name);
+            if (!itemEntityNames.includes(name)) {
+                throw new types_1.InvalidThingError(`Invalid item entity type: ${name}.`);
+            }
+            this.name = name;
+            this.id = bot.registry.itemsByName[name].id;
+        }
+        else if (id) {
+            const itemEntityIds = Object.values(bot.registry.items).map((i) => i.id);
+            if (!itemEntityIds.includes(id)) {
+                throw new types_1.InvalidThingError(`Invalid item entity id: ${id}.`);
+            }
+            this.id = id;
+            this.name = bot.registry.items[id].name;
+        }
+        else {
+            throw new Error("Either name or id must be provided to create an ItemEntity.");
         }
         this.bot = bot;
-        this.name = name;
     }
     isVisibleInImmediateSurroundings() {
         return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(this.name);
@@ -32,6 +46,13 @@ class ItemEntity {
     locateNearestInImmediateSurroundings() {
         const immediate = this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(this.name);
         if (immediate && immediate.length > 0) {
+            // Sort the coordinates by distance to the bot's position
+            immediate.sort((a, b) => {
+                const distanceA = a.distanceTo(this.bot.entity.position);
+                const distanceB = b.distanceTo(this.bot.entity.position);
+                return distanceA - distanceB;
+            });
+            // Return the closest coordinate
             return immediate[0];
         }
     }
@@ -73,7 +94,7 @@ class ItemEntity {
     getTotalCountInInventory() {
         // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
         // its name should(?) correspond the item as it would be if picked up and in inventory.
-        return this.bot.envState.itemTotals.get(this.name) || 0;
+        return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
     }
 }
 exports.ItemEntity = ItemEntity;

@@ -28,15 +28,15 @@ const results_3 = require("../pathfind-to-coordinates/results");
 class PickupItem extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        this.approach = new approach_1.Approach(bot, this.resolveAfterPathfinding.bind(this));
-        this.pathfindToCoordinates = new pathfind_to_coordinates_1.PathfindToCoordinates(bot, this.resolveAfterPathfinding.bind(this));
     }
-    resolveAfterPathfinding(result, envStateIsHydrated) {
+    resolveFromSubskillResolution(result, envStateIsHydrated) {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.itemEntity);
+            (0, assert_1.default)(this.activeSubskill);
+            this.activeSubskill = undefined;
             // Propogate result if we are resolving from Approach
             if ((0, results_1.isApproachResult)(result)) {
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
                 return;
             }
             // Otherwise, we are resolving from PathfindToCoordinates
@@ -45,7 +45,7 @@ class PickupItem extends skill_1.Skill {
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetItemCoords);
             if (vicinityOfOriginalTargetCoords !== types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
                 const result = new results_2.PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(this.itemEntity.name);
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
                 return;
             }
             // Wait for a bit to make sure the item is picked up
@@ -54,64 +54,80 @@ class PickupItem extends skill_1.Skill {
                 const curItemTotal = this.itemEntity.getTotalCountInInventory();
                 const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
                 const result = new results_2.PickupItemResults.SuccessImmediateSurroundings(this.itemEntity.name, netItemGain);
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
             }
             else {
                 const result = new results_2.PickupItemResults.CouldNotProgramaticallyVerify(this.itemEntity.name);
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
             }
         });
     }
-    // ==================================
-    // Implementation of Skill interface
-    // ==================================
-    invoke(item, direction) {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke(item, direction) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                this.itemEntity = new thing_1.ItemEntity(this.bot, item);
-            }
-            catch (err) {
-                if (err instanceof types_2.InvalidThingError) {
-                    const result = new results_2.PickupItemResults.InvalidItem(item);
-                    this.onResolution(result);
-                    return;
+            // Validate the item string
+            if (typeof item === "string") {
+                try {
+                    this.itemEntity = new thing_1.ItemEntity(this.bot, item);
+                }
+                catch (err) {
+                    if (err instanceof types_2.InvalidThingError) {
+                        const result = new results_2.PickupItemResults.InvalidItem(item);
+                        this.resolve(result);
+                        return;
+                    }
+                    else {
+                        throw err;
+                    }
                 }
             }
-            (0, assert_1.default)(this.itemEntity); // Obviously true (above), but TS compiler doesn't know this
-            // If a direction is provided, we can just use approach
+            else {
+                // If the item is an ItemEntity, we can use it directly
+                this.itemEntity = item;
+            }
             if (direction) {
-                this.approach.invoke(this.itemEntity, direction);
+                // If a direction is provided, we can just use/invoke approach
+                this.activeSubskill = new approach_1.Approach(this.bot, this.resolveFromSubskillResolution.bind(this));
+                this.activeSubskill.invoke(this.itemEntity, direction);
             }
             else {
-                // We need to pathfind to the item in the immediate surroundings
+                // Else, we need to pathfind to the item in the immediate surroundings
                 this.targetItemCoords =
                     yield this.itemEntity.locateNearestInImmediateSurroundings();
                 if (!this.targetItemCoords) {
                     const result = new results_2.PickupItemResults.NotInImmediateSurroundings(this.itemEntity.name);
-                    this.onResolution(result);
+                    this.resolve(result);
                     return;
                 }
                 this.itemTotalAtPathingStart = this.itemEntity.getTotalCountInInventory();
-                yield this.pathfindToCoordinates.invoke([
-                    this.targetItemCoords.x,
-                    this.targetItemCoords.y,
-                    this.targetItemCoords.z,
-                ]);
+                // Invoke pathfindToCoordinates
+                this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, this.resolveFromSubskillResolution.bind(this));
+                yield this.activeSubskill.invoke(this.targetItemCoords);
             }
         });
     }
-    pause() {
+    doPause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${PickupItem.METADATA.name}'`);
-            yield this.pathfindToCoordinates.pause();
-            yield this.approach.pause();
+            if (this.activeSubskill) {
+                yield this.activeSubskill.pause();
+            }
         });
     }
-    resume() {
+    doResume() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Resuming '${PickupItem.METADATA.name}'`);
-            yield this.pathfindToCoordinates.resume();
-            yield this.approach.resume();
+            if (this.activeSubskill) {
+                yield this.activeSubskill.resume();
+            }
+        });
+    }
+    doStop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.activeSubskill) {
+                yield this.activeSubskill.stop();
+                this.activeSubskill = undefined;
+            }
         });
     }
 }

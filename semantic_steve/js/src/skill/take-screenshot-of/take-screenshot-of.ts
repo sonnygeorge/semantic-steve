@@ -39,76 +39,6 @@ export class TakeScreenshotOf extends Skill {
     // global.Worker = require('worker_threads').Worker
   }
 
-  public async invoke(
-    thing: string,
-    atCoordinates?: [number, number, number],
-  ): Promise<void> {
-    try {
-      // Find the Thing object using the bot's thing factory
-      let targetThing: Thing;
-      try {
-        targetThing = this.bot.thingFactory.createThing(thing);
-      } catch (error) {
-        console.log(error);
-        if (error instanceof InvalidThingError) {
-          // Invalid thing name
-          this.onResolution(
-            new TakeScreenshotOfResults.InvalidThing(
-              thing,
-              SUPPORTED_THING_TYPES.toString(),
-            ),
-          );
-          return;
-        }
-        // Other errors
-        throw error;
-      }
-
-      // Check if the Thing is visible in immediate surroundings
-      if (!targetThing.isVisibleInImmediateSurroundings()) {
-        // The thing exists but isn't visible in immediate surroundings
-        this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(
-            thing,
-            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`,
-          ),
-        );
-        return;
-      }
-
-      // Take the screenshot
-      const screenshotBuffer = await this.captureScreenshot(targetThing);
-
-      if (!screenshotBuffer) {
-        // Screenshot capture failed
-        this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(
-            thing,
-            SUPPORTED_THING_TYPES.toString(),
-          ),
-        );
-        return;
-      }
-
-      // Save the screenshot
-      const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
-
-      // Return success with the appropriate result type
-      this.onResolution(
-        new TakeScreenshotOfResults.Success(thing, screenshotPath),
-      );
-    } catch (error) {
-      console.log("error", error);
-      // Use InvalidThing result for any errors
-      this.onResolution(
-        new TakeScreenshotOfResults.InvalidThing(
-          thing,
-          SUPPORTED_THING_TYPES.toString(),
-        ),
-      );
-    }
-  }
-
   private viewDistanceToNumber(): number {
     switch (this.bot.settings.viewDistance) {
       case "tiny":
@@ -307,11 +237,83 @@ export class TakeScreenshotOf extends Skill {
     return filePath;
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${TakeScreenshotOf.METADATA.name}'`);
+  // ============================
+  // Implementation of Skill API
+  // ============================
+
+  public async doInvoke(
+    thing: string,
+    atCoordinates?: [number, number, number],
+  ): Promise<void> {
+    try {
+      // Find the Thing object using the bot's thing factory
+      let targetThing: Thing;
+      try {
+        targetThing = this.bot.thingFactory.createThing(thing);
+      } catch (error) {
+        console.log(error);
+        if (error instanceof InvalidThingError) {
+          // Invalid thing name
+          this.resolve(
+            new TakeScreenshotOfResults.InvalidThing(
+              thing,
+              SUPPORTED_THING_TYPES.toString(),
+            ),
+          );
+          return;
+        }
+        // Other errors
+        throw error;
+      }
+
+      // Check if the Thing is visible in immediate surroundings
+      if (!targetThing.isVisibleInImmediateSurroundings()) {
+        // The thing exists but isn't visible in immediate surroundings
+        this.resolve(
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`,
+          ),
+        );
+        return;
+      }
+
+      // Take the screenshot
+      const screenshotBuffer = await this.captureScreenshot(targetThing);
+
+      if (!screenshotBuffer) {
+        // Screenshot capture failed
+        this.resolve(
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            SUPPORTED_THING_TYPES.toString(),
+          ),
+        );
+        return;
+      }
+
+      // Save the screenshot
+      const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
+
+      // Return success with the appropriate result type
+      this.resolve(new TakeScreenshotOfResults.Success(thing, screenshotPath));
+    } catch (error) {
+      console.log("error", error);
+      // Use InvalidThing result for any errors
+      this.resolve(
+        new TakeScreenshotOfResults.InvalidThing(
+          thing,
+          SUPPORTED_THING_TYPES.toString(),
+        ),
+      );
+    }
   }
 
-  public async resume(): Promise<void> {
-    console.log(`Resuming '${TakeScreenshotOf.METADATA.name}'`);
-  }
+  // TODO:
+
+  public async doPause(): Promise<void> {}
+
+  public async doResume(): Promise<void> {}
+
+  public async doStop(): Promise<void> {}
 }

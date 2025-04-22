@@ -29,7 +29,7 @@ export class CubedMeterFace {
     return new Vec3(
       (c1.x + c2.x + c3.x + c4.x) / 4,
       (c1.y + c2.y + c3.y + c4.y) / 4,
-      (c1.z + c2.z + c3.z + c4.z) / 4
+      (c1.z + c2.z + c3.z + c4.z) / 4,
     );
   }
 
@@ -83,7 +83,7 @@ export class CubedMeter {
           corners[0],
           corners[3],
           corners[7],
-          corners[4]
+          corners[4],
         ),
       ],
       [
@@ -93,7 +93,7 @@ export class CubedMeter {
           corners[1],
           corners[5],
           corners[6],
-          corners[2]
+          corners[2],
         ),
       ],
       [
@@ -103,7 +103,7 @@ export class CubedMeter {
           corners[0],
           corners[1],
           corners[2],
-          corners[3]
+          corners[3],
         ),
       ],
       [
@@ -113,7 +113,7 @@ export class CubedMeter {
           corners[4],
           corners[7],
           corners[6],
-          corners[5]
+          corners[5],
         ),
       ],
       [
@@ -123,7 +123,7 @@ export class CubedMeter {
           corners[0],
           corners[4],
           corners[5],
-          corners[1]
+          corners[1],
         ),
       ],
       [
@@ -133,7 +133,7 @@ export class CubedMeter {
           corners[3],
           corners[2],
           corners[6],
-          corners[7]
+          corners[7],
         ),
       ],
     ];

@@ -22,7 +22,7 @@ export function bilinearInterpolate(
   c1: Vec3,
   c2: Vec3,
   c3: Vec3,
-  c4: Vec3
+  c4: Vec3,
 ): Vec3 {
   function interpolateComponent(component: "x" | "y" | "z"): number {
     // Term 1: (1-u)(1-v)P₁ - Bottom-left corner contribution
@@ -40,6 +40,6 @@ export function bilinearInterpolate(
   return new Vec3(
     interpolateComponent("x"),
     interpolateComponent("y"),
-    interpolateComponent("z")
+    interpolateComponent("z"),
   );
 }

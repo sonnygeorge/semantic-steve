@@ -6,7 +6,7 @@ import {
   SurroundingsRadii,
   SurroundingsDTO,
 } from "./surroundings";
-import { getDurabilityRemainingString } from "../utils/durability";
+import { Inventory, InventoryItemDTO } from "./inventory";
 
 // TODO: Daytime/nightime?
 
@@ -28,16 +28,6 @@ const MINEFLAYER_EQUIPMENT_DESTINATION_ORDER = [
   "head",
 ];
 
-//========================
-// IventoryItem DTO
-//========================
-
-export type InventoryItemDTO = {
-  name: string;
-  count: number;
-  durabilityRemaining?: string; // e.g. "50%"
-};
-
 /**
  * "Data Transfer Object" (DTO) version of `EnvState` containing the information that we
  * want to send to the Python client in the format we want the user (LLM) to see it.
@@ -56,10 +46,12 @@ export type EnvStateDTO = {
 export class EnvState {
   private bot: Bot;
   public surroundings: Surroundings;
+  public inventory: Inventory;
 
   constructor(bot: Bot, surroundingsRadii: SurroundingsRadii) {
     this.bot = bot;
     this.surroundings = new Surroundings(bot, surroundingsRadii);
+    this.inventory = new Inventory(bot);
   }
 
   public get botCoords(): Vec3 {
@@ -72,21 +64,6 @@ export class EnvState {
 
   public get hunger(): number {
     return this.bot.food;
-  }
-
-  public get inventory(): PItem[] {
-    return this.bot.inventory.slots.filter(
-      (item) => item !== null,
-    ) as unknown as PItem[];
-  }
-
-  public get itemTotals(): Map<string, number> {
-    const itemTotals = new Map<string, number>();
-    this.bot.envState.inventory.forEach((item) => {
-      const currentCount = itemTotals.get(item.name) || 0;
-      itemTotals.set(item.name, currentCount + item.count);
-    });
-    return itemTotals;
   }
 
   public get equipped(): Map<EquipmentDestination, PItem | undefined> {
@@ -114,11 +91,7 @@ export class EnvState {
       ],
       health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
-      inventory: this.inventory.map((item) => ({
-        name: item.name,
-        count: item.count,
-        durabilityRemaining: getDurabilityRemainingString(item),
-      })) as InventoryItemDTO[],
+      inventory: this.inventory.getDTO(),
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,

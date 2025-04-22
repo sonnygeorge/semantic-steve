@@ -11,7 +11,7 @@ import { getGoodPathfindingTarget } from "./utils";
 const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
 
 export class PathfindToCoordinates extends Skill {
-  public static readonly TIMEOUT_MS: number = 25000; // 25 seconds
+  public static readonly TIMEOUT_MS: number = 2000; // 25 seconds
   public static readonly METADATA: SkillMetadata = {
     name: "pathfindToCoordinates",
     signature:
@@ -61,7 +61,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Goal set. Beginning pathfinding...");
   }
 
-  private stopPathfindingPrematurely(): void {
+  private manuallyStopPathfinder(): void {
     assert(this.targetCoords);
     this.bot.pathfinder.stop();
     this.cleanupListeners();
@@ -107,7 +107,7 @@ export class PathfindToCoordinates extends Skill {
 
   private resolveInvalidCoords(coords: [number, number, number]): void {
     console.log("Resolving pathfinding as invalid coordinates");
-    this.onResolution(new PathfindToCoordinatesResults.InvalidCoords(coords));
+    this.resolve(new PathfindToCoordinatesResults.InvalidCoords(coords));
   }
 
   private resolveInvalidThing(thingName: string): void {
@@ -116,7 +116,7 @@ export class PathfindToCoordinates extends Skill {
       thingName,
       SUPPORTED_THING_TYPES.toString(),
     );
-    this.onResolution(result);
+    this.resolve(result);
   }
 
   private resolveThingFound(
@@ -127,9 +127,9 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
     this.cleanupListeners();
-    this.stopPathfindingPrematurely();
+    this.manuallyStopPathfinder();
     this.unsetPathfindingParams();
-    this.onResolution(result);
+    this.resolve(result);
   }
 
   private resolvePathfindingPartialSuccess(): void {
@@ -141,7 +141,7 @@ export class PathfindToCoordinates extends Skill {
       this.targetCoords,
     );
     this.unsetPathfindingParams();
-    this.onResolution(result);
+    this.resolve(result);
   }
 
   private resolvePathfindingSuccess(): void {
@@ -159,7 +159,7 @@ export class PathfindToCoordinates extends Skill {
       this.getResultIfAnyStopIfFoundThingInSurroundings() ??
       new PathfindToCoordinatesResults.Success(this.targetCoords);
     this.unsetPathfindingParams();
-    this.onResolution(result, true); // NOTE: true = envStateIsHydrated
+    this.resolve(result, true); // NOTE: true = envStateIsHydrated
   }
 
   private checkForStopIfFoundThingsAndHandle(lastMove: Vec3): void {
@@ -231,23 +231,31 @@ export class PathfindToCoordinates extends Skill {
     this.activeListeners = []; // Clear the array
   }
 
-  // ==================================
-  // Implementation of Skill interface
-  // ==================================
+  // ============================
+  // Implementation of Skill API
+  // ============================
 
-  public async invoke(
-    coords: [number, number, number],
+  public async doInvoke(
+    coords: [number, number, number] | Vec3,
     stopIfFound?: string[],
   ): Promise<void> {
     // Pre-process coordinates
-    if (!Array.isArray(coords) || coords.length !== 3) {
-      this.resolveInvalidCoords(coords);
+    if (Array.isArray(coords)) {
+      coords = new Vec3(coords[0], coords[1], coords[2]);
+    }
+    if (
+      coords.x < -30000000 ||
+      coords.x > 30000000 ||
+      // TODO: Change these dynamically if bot in nether or end
+      coords.y < -64 ||
+      coords.y > 320 ||
+      coords.z < -30000000 ||
+      coords.z > 30000000
+    ) {
+      this.resolveInvalidCoords([coords.x, coords.y, coords.z]);
       return;
     }
-    this.targetCoords = getGoodPathfindingTarget(
-      this.bot,
-      new Vec3(coords[0], coords[1], coords[2]),
-    );
+    this.targetCoords = getGoodPathfindingTarget(this.bot, coords);
 
     // Pre-process stopIfFound
     this.stopIfFound = [];
@@ -269,16 +277,20 @@ export class PathfindToCoordinates extends Skill {
     this.beginPathfinding();
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${PathfindToCoordinates.METADATA.name}'`);
+  public async doPause(): Promise<void> {
     this.cleanupListeners();
-    this.stopPathfindingPrematurely();
+    this.manuallyStopPathfinder();
     // NOTE: We don't call unsetPathfindingParams (we need to be able to resume)
   }
 
-  public async resume(): Promise<void> {
+  public async doResume(): Promise<void> {
     assert(this.targetCoords);
-    console.log(`Resuming '${PathfindToCoordinates.METADATA.name}'`);
     this.beginPathfinding();
+  }
+
+  public async doStop(): Promise<void> {
+    this.cleanupListeners();
+    this.manuallyStopPathfinder();
+    this.unsetPathfindingParams();
   }
 }

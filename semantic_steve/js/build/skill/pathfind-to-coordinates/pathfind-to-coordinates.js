@@ -38,7 +38,7 @@ class PathfindToCoordinates extends skill_1.Skill {
         this.bot.pathfinder.setGoal(goal);
         console.log("Goal set. Beginning pathfinding...");
     }
-    stopPathfindingPrematurely() {
+    manuallyStopPathfinder() {
         (0, assert_1.default)(this.targetCoords);
         this.bot.pathfinder.stop();
         this.cleanupListeners();
@@ -71,20 +71,20 @@ class PathfindToCoordinates extends skill_1.Skill {
     // ====================
     resolveInvalidCoords(coords) {
         console.log("Resolving pathfinding as invalid coordinates");
-        this.onResolution(new results_1.PathfindToCoordinatesResults.InvalidCoords(coords));
+        this.resolve(new results_1.PathfindToCoordinatesResults.InvalidCoords(coords));
     }
     resolveInvalidThing(thingName) {
         console.log("Resolving pathfinding as invalid thing");
         const result = new results_1.PathfindToCoordinatesResults.InvalidThing(thingName, thing_1.SUPPORTED_THING_TYPES.toString());
-        this.onResolution(result);
+        this.resolve(result);
     }
     resolveThingFound(result) {
         console.log("Resolving pathfinding as thing found");
         (0, assert_1.default)(this.targetCoords);
         this.cleanupListeners();
-        this.stopPathfindingPrematurely();
+        this.manuallyStopPathfinder();
         this.unsetPathfindingParams();
-        this.onResolution(result);
+        this.resolve(result);
     }
     resolvePathfindingPartialSuccess() {
         console.log("Resolving pathfinding as partial success");
@@ -92,7 +92,7 @@ class PathfindToCoordinates extends skill_1.Skill {
         this.cleanupListeners();
         const result = new results_1.PathfindToCoordinatesResults.PartialSuccess(this.bot.entity.position, this.targetCoords);
         this.unsetPathfindingParams();
-        this.onResolution(result);
+        this.resolve(result);
     }
     resolvePathfindingSuccess() {
         var _a;
@@ -108,7 +108,7 @@ class PathfindToCoordinates extends skill_1.Skill {
         // something from stopIfFound, even if they reached their pathfinding goal as well.
         const result = (_a = this.getResultIfAnyStopIfFoundThingInSurroundings()) !== null && _a !== void 0 ? _a : new results_1.PathfindToCoordinatesResults.Success(this.targetCoords);
         this.unsetPathfindingParams();
-        this.onResolution(result, true); // NOTE: true = envStateIsHydrated
+        this.resolve(result, true); // NOTE: true = envStateIsHydrated
     }
     checkForStopIfFoundThingsAndHandle(lastMove) {
         if (this.stopIfFound.length === 0) {
@@ -154,17 +154,26 @@ class PathfindToCoordinates extends skill_1.Skill {
         }
         this.activeListeners = []; // Clear the array
     }
-    // ==================================
-    // Implementation of Skill interface
-    // ==================================
-    invoke(coords, stopIfFound) {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke(coords, stopIfFound) {
         return __awaiter(this, void 0, void 0, function* () {
             // Pre-process coordinates
-            if (!Array.isArray(coords) || coords.length !== 3) {
-                this.resolveInvalidCoords(coords);
+            if (Array.isArray(coords)) {
+                coords = new vec3_1.Vec3(coords[0], coords[1], coords[2]);
+            }
+            if (coords.x < -30000000 ||
+                coords.x > 30000000 ||
+                // TODO: Change these dynamically if bot in nether or end
+                coords.y < -64 ||
+                coords.y > 320 ||
+                coords.z < -30000000 ||
+                coords.z > 30000000) {
+                this.resolveInvalidCoords([coords.x, coords.y, coords.z]);
                 return;
             }
-            this.targetCoords = (0, utils_1.getGoodPathfindingTarget)(this.bot, new vec3_1.Vec3(coords[0], coords[1], coords[2]));
+            this.targetCoords = (0, utils_1.getGoodPathfindingTarget)(this.bot, coords);
             // Pre-process stopIfFound
             this.stopIfFound = [];
             if (stopIfFound === null || stopIfFound === void 0 ? void 0 : stopIfFound.length) {
@@ -185,24 +194,29 @@ class PathfindToCoordinates extends skill_1.Skill {
             this.beginPathfinding();
         });
     }
-    pause() {
+    doPause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${PathfindToCoordinates.METADATA.name}'`);
             this.cleanupListeners();
-            this.stopPathfindingPrematurely();
+            this.manuallyStopPathfinder();
             // NOTE: We don't call unsetPathfindingParams (we need to be able to resume)
         });
     }
-    resume() {
+    doResume() {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.targetCoords);
-            console.log(`Resuming '${PathfindToCoordinates.METADATA.name}'`);
             this.beginPathfinding();
+        });
+    }
+    doStop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.cleanupListeners();
+            this.manuallyStopPathfinder();
+            this.unsetPathfindingParams();
         });
     }
 }
 exports.PathfindToCoordinates = PathfindToCoordinates;
-PathfindToCoordinates.TIMEOUT_MS = 25000; // 25 seconds
+PathfindToCoordinates.TIMEOUT_MS = 2000; // 25 seconds
 PathfindToCoordinates.METADATA = {
     name: "pathfindToCoordinates",
     signature: "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",

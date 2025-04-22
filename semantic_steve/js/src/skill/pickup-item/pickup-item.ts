@@ -31,30 +31,26 @@ export class PickupItem extends Skill {
     `,
   };
 
-  private approach: Approach;
-  private pathfindToCoordinates: PathfindToCoordinates;
+  private activeSubskill?: PathfindToCoordinates | Approach;
   private itemEntity?: ItemEntity;
   private itemTotalAtPathingStart?: number;
   private targetItemCoords?: Vec3;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
-    this.approach = new Approach(bot, this.resolveAfterPathfinding.bind(this));
-    this.pathfindToCoordinates = new PathfindToCoordinates(
-      bot,
-      this.resolveAfterPathfinding.bind(this),
-    );
   }
 
-  private async resolveAfterPathfinding(
+  private async resolveFromSubskillResolution(
     result: SkillResult,
     envStateIsHydrated?: boolean,
   ): Promise<void> {
     assert(this.itemEntity);
+    assert(this.activeSubskill);
+    this.activeSubskill = undefined;
 
     // Propogate result if we are resolving from Approach
     if (isApproachResult(result)) {
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
       return;
     }
 
@@ -72,12 +68,13 @@ export class PickupItem extends Skill {
         new PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(
           this.itemEntity.name,
         );
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
       return;
     }
 
     // Wait for a bit to make sure the item is picked up
     await asyncSleep(ITEM_PICKUP_WAIT_MS);
+
     if (result instanceof PathfindToCoordinatesResults.Success) {
       const curItemTotal = this.itemEntity.getTotalCountInInventory();
       const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
@@ -85,66 +82,85 @@ export class PickupItem extends Skill {
         this.itemEntity.name,
         netItemGain,
       );
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
     } else {
       const result = new PickupItemResults.CouldNotProgramaticallyVerify(
         this.itemEntity.name,
       );
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
     }
   }
 
-  // ==================================
-  // Implementation of Skill interface
-  // ==================================
+  // ============================
+  // Implementation of Skill API
+  // ============================
 
-  public async invoke(item: string, direction?: string): Promise<void> {
-    try {
-      this.itemEntity = new ItemEntity(this.bot, item);
-    } catch (err) {
-      if (err instanceof InvalidThingError) {
-        const result = new PickupItemResults.InvalidItem(item);
-        this.onResolution(result);
-        return;
+  public async doInvoke(
+    item: string | ItemEntity,
+    direction?: string,
+  ): Promise<void> {
+    // Validate the item string
+    if (typeof item === "string") {
+      try {
+        this.itemEntity = new ItemEntity(this.bot, item);
+      } catch (err) {
+        if (err instanceof InvalidThingError) {
+          const result = new PickupItemResults.InvalidItem(item);
+          this.resolve(result);
+          return;
+        } else {
+          throw err;
+        }
       }
-    }
-    assert(this.itemEntity); // Obviously true (above), but TS compiler doesn't know this
-
-    // If a direction is provided, we can just use approach
-    if (direction) {
-      this.approach.invoke(this.itemEntity, direction);
     } else {
-      // We need to pathfind to the item in the immediate surroundings
+      // If the item is an ItemEntity, we can use it directly
+      this.itemEntity = item;
+    }
+
+    if (direction) {
+      // If a direction is provided, we can just use/invoke approach
+      this.activeSubskill = new Approach(
+        this.bot,
+        this.resolveFromSubskillResolution.bind(this),
+      );
+      this.activeSubskill.invoke(this.itemEntity, direction);
+    } else {
+      // Else, we need to pathfind to the item in the immediate surroundings
       this.targetItemCoords =
         await this.itemEntity.locateNearestInImmediateSurroundings();
-
       if (!this.targetItemCoords) {
         const result = new PickupItemResults.NotInImmediateSurroundings(
           this.itemEntity.name,
         );
-        this.onResolution(result);
+        this.resolve(result);
         return;
       }
-
       this.itemTotalAtPathingStart = this.itemEntity.getTotalCountInInventory();
-
-      await this.pathfindToCoordinates.invoke([
-        this.targetItemCoords.x,
-        this.targetItemCoords.y,
-        this.targetItemCoords.z,
-      ]);
+      // Invoke pathfindToCoordinates
+      this.activeSubskill = new PathfindToCoordinates(
+        this.bot,
+        this.resolveFromSubskillResolution.bind(this),
+      );
+      await this.activeSubskill.invoke(this.targetItemCoords);
     }
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${PickupItem.METADATA.name}'`);
-    await this.pathfindToCoordinates.pause();
-    await this.approach.pause();
+  public async doPause(): Promise<void> {
+    if (this.activeSubskill) {
+      await this.activeSubskill.pause();
+    }
   }
 
-  public async resume(): Promise<void> {
-    console.log(`Resuming '${PickupItem.METADATA.name}'`);
-    await this.pathfindToCoordinates.resume();
-    await this.approach.resume();
+  public async doResume(): Promise<void> {
+    if (this.activeSubskill) {
+      await this.activeSubskill.resume();
+    }
+  }
+
+  public async doStop(): Promise<void> {
+    if (this.activeSubskill) {
+      await this.activeSubskill.stop();
+      this.activeSubskill = undefined;
+    }
   }
 }

@@ -28,12 +28,12 @@ class PlaceBlock extends skill_1.Skill {
         super(bot, onResolution);
         this.shouldBePlacing = false;
     }
-    resolve(result) {
+    resolvePlacing(result) {
         this.shouldBePlacing = false;
         this.blockToPlace = undefined;
         this.targetPosition = undefined;
         this.itemToPlace = undefined;
-        this.onResolution(result);
+        this.resolve(result);
     }
     doPlacing() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -43,7 +43,7 @@ class PlaceBlock extends skill_1.Skill {
             const referenceBlockAndFaceVector = (0, placing_1.getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable)(this.bot, this.targetPosition);
             if (!referenceBlockAndFaceVector) {
                 const result = new results_1.PlaceBlockResults.UnplaceableCoords(`${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`);
-                this.resolve(result);
+                this.resolvePlacing(result);
                 return;
             }
             if (this.shouldBePlacing) {
@@ -61,22 +61,25 @@ class PlaceBlock extends skill_1.Skill {
                 const blockAtTargetCoords = this.bot.blockAt(this.targetPosition);
                 if (!blockAtTargetCoords ||
                     blockAtTargetCoords.name !== this.blockToPlace.name) {
-                    this.resolve(new results_1.PlaceBlockResults.PlacingFailure(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
+                    this.resolvePlacing(new results_1.PlaceBlockResults.PlacingFailure(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
                 }
                 else {
-                    this.resolve(new results_1.PlaceBlockResults.Success(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
+                    this.resolvePlacing(new results_1.PlaceBlockResults.Success(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`));
                 }
             }
         });
     }
-    invoke(block, atCoordinates) {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke(block, atCoordinates) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 this.blockToPlace = new thing_1.Block(this.bot, block);
             }
             catch (err) {
                 if (err instanceof types_1.InvalidThingError) {
-                    this.resolve(new results_1.PlaceBlockResults.InvalidBlock(block));
+                    this.resolvePlacing(new results_1.PlaceBlockResults.InvalidBlock(block));
                     return;
                 }
                 throw err;
@@ -87,13 +90,13 @@ class PlaceBlock extends skill_1.Skill {
                 return item.name === this.blockToPlace.name;
             });
             if (!this.itemToPlace) {
-                this.resolve(new results_1.PlaceBlockResults.BlockNotInInventory(block));
+                this.resolvePlacing(new results_1.PlaceBlockResults.BlockNotInInventory(block));
                 return;
             }
             if (!atCoordinates) {
                 this.targetPosition = (0, placing_1.getPlaceableCoords)(this.bot);
                 if (!this.targetPosition) {
-                    this.resolve(new results_2.GetPlaceableCoordinatesResults.NoPlaceableCoords());
+                    this.resolvePlacing(new results_2.GetPlaceableCoordinatesResults.NoPlaceableCoords());
                     return;
                 }
             }
@@ -104,20 +107,26 @@ class PlaceBlock extends skill_1.Skill {
             yield this.doPlacing();
         });
     }
-    pause() {
+    doPause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${PlaceBlock.METADATA.name}'`);
             this.shouldBePlacing = false;
         });
     }
-    resume() {
+    doResume() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Resuming '${PlaceBlock.METADATA.name}'`);
             (0, assert_1.default)(this.blockToPlace);
             (0, assert_1.default)(this.targetPosition);
             (0, assert_1.default)(this.itemToPlace);
             this.shouldBePlacing = true;
             yield this.doPlacing();
+        });
+    }
+    doStop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.shouldBePlacing = false;
+            this.blockToPlace = undefined;
+            this.targetPosition = undefined;
+            this.itemToPlace = undefined;
         });
     }
 }

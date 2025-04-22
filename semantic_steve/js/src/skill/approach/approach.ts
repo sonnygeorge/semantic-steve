@@ -31,7 +31,7 @@ export class Approach extends Skill {
     `,
   };
 
-  private pathfindToCoordinates: PathfindToCoordinates;
+  private activeSubskill?: Skill;
   private thing?: Thing;
   private itemTotalAtPathingStart?: number;
   private targetThingCoords?: Vec3;
@@ -39,13 +39,9 @@ export class Approach extends Skill {
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
-    this.pathfindToCoordinates = new PathfindToCoordinates(
-      bot,
-      this.resolveAfterPathfinding.bind(this),
-    );
   }
 
-  private async resolveAfterPathfinding(
+  private async resolveFromSubskillResolution(
     result: SkillResult,
     envStateIsHydrated?: boolean,
   ): Promise<void> {
@@ -62,7 +58,7 @@ export class Approach extends Skill {
         this.thing.name,
         result.foundThingName,
       );
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
       return;
     } else if (
       result instanceof
@@ -72,7 +68,7 @@ export class Approach extends Skill {
         this.thing.name,
         result.foundThingName,
       );
-      this.onResolution(result, envStateIsHydrated);
+      this.resolve(result, envStateIsHydrated);
       return;
     }
 
@@ -94,25 +90,25 @@ export class Approach extends Skill {
           this.direction,
           netItemGain,
         );
-        this.onResolution(result, envStateIsHydrated);
+        this.resolve(result, envStateIsHydrated);
       } else {
         const successResult = new ApproachResults.Success(
           this.thing.name,
           this.direction,
         );
-        this.onResolution(successResult, envStateIsHydrated);
+        this.resolve(successResult, envStateIsHydrated);
       }
     } else {
       const failureResult = new ApproachResults.Failure(this.thing.name);
-      this.onResolution(failureResult, envStateIsHydrated);
+      this.resolve(failureResult, envStateIsHydrated);
     }
   }
 
-  // ==================================
-  // Implementation of Skill interface
-  // ==================================
+  // ============================
+  // Implementation of Skill API
+  // ============================
 
-  public async invoke(
+  public async doInvoke(
     thing: string | Thing,
     direction: string,
     stopIfFound?: string[],
@@ -126,7 +122,7 @@ export class Approach extends Skill {
             thing,
             SUPPORTED_THING_TYPES.toString(),
           );
-          this.onResolution(result);
+          this.resolve(result);
           return;
         }
       }
@@ -137,7 +133,7 @@ export class Approach extends Skill {
 
     if (!Object.values(Direction).includes(direction as Direction)) {
       const result = new ApproachResults.InvalidDirection(direction);
-      this.onResolution(result);
+      this.resolve(result);
       return;
     }
     this.direction = direction as Direction;
@@ -154,7 +150,7 @@ export class Approach extends Skill {
         this.thing.name,
         direction,
       );
-      this.onResolution(result);
+      this.resolve(result);
       return;
     }
 
@@ -163,23 +159,28 @@ export class Approach extends Skill {
       this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
     }
 
-    await this.pathfindToCoordinates.invoke(
-      [
-        this.targetThingCoords.x,
-        this.targetThingCoords.y,
-        this.targetThingCoords.z,
-      ],
-      stopIfFound,
+    // Invoke pathfinding to the coordinates of the thing
+    this.activeSubskill = new PathfindToCoordinates(
+      this.bot,
+      (result: SkillResult) => {
+        this.resolveFromSubskillResolution(result, true);
+      },
     );
+    await this.activeSubskill.invoke(this.targetThingCoords, stopIfFound);
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${Approach.METADATA.name}'`);
-    await this.pathfindToCoordinates.pause();
+  public async doPause(): Promise<void> {
+    assert(this.activeSubskill);
+    await this.activeSubskill.pause();
   }
 
-  public async resume(): Promise<void> {
-    console.log(`Resuming '${Approach.METADATA.name}'`);
-    await this.pathfindToCoordinates.resume();
+  public async doResume(): Promise<void> {
+    assert(this.activeSubskill);
+    await this.activeSubskill.resume();
+  }
+
+  public async doStop(): Promise<void> {
+    assert(this.activeSubskill);
+    await this.activeSubskill.stop();
   }
 }

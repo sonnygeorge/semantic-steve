@@ -1,6 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MineBlocksResults = void 0;
+exports.MineBlocksResults = exports.MineBlocksPartialSuccessReason = void 0;
+var MineBlocksPartialSuccessReason;
+(function (MineBlocksPartialSuccessReason) {
+    MineBlocksPartialSuccessReason["TOOL_CONSUMED"] = "The necessary tool was consumed during use.";
+    MineBlocksPartialSuccessReason["NO_MORE_IN_IMMEDIATE_SURROUNDINGS"] = "No more blocks of this type are in the immediate surroundings.";
+    MineBlocksPartialSuccessReason["COULD_NOT_PATHFIND_UNTIL_REACHABLE"] = "Could not pathfind close enough to reach the block.";
+})(MineBlocksPartialSuccessReason || (exports.MineBlocksPartialSuccessReason = MineBlocksPartialSuccessReason = {}));
 var MineBlocksResults;
 (function (MineBlocksResults) {
     class InvalidBlock {
@@ -15,21 +21,36 @@ var MineBlocksResults;
         }
     }
     MineBlocksResults.MissingNecessaryTool = MissingNecessaryTool;
-    class BlockNotInSurroundings {
+    class BlockNotInImmediateSurroundings {
         constructor(block) {
             this.message = `SkillInvocationError: At least 1 of block '${block}' must be in the immediate surroundings to invoke this skill.`;
         }
     }
-    MineBlocksResults.BlockNotInSurroundings = BlockNotInSurroundings;
+    MineBlocksResults.BlockNotInImmediateSurroundings = BlockNotInImmediateSurroundings;
     class PartialSuccess {
-        constructor(block, quantityMined, targetQuantity) {
-            this.message = `You only mined ${quantityMined} of the intended ${targetQuantity} of '${block}'. REMINDER: This does not necessarily mean you collected the drops from the mined blocks; please use 'pickUpItems' if you would like to collect any lingering drops.`;
+        constructor(block, quantityBroken, targetQuantity, dropName, numDropsAqcuired, reason) {
+            this.message = `You broke at least ${quantityBroken} of the intended ${targetQuantity} of '${block}'`;
+            if (dropName && numDropsAqcuired) {
+                this.message += ` and acquired ${numDropsAqcuired} of '${dropName}'.`;
+            }
+            else {
+                this.message += ` and did not acquire any drops.`;
+            }
+            if (reason) {
+                this.message += ` NOTE: ${reason}`;
+            }
         }
     }
     MineBlocksResults.PartialSuccess = PartialSuccess;
     class Success {
-        constructor(block, quantityMined) {
-            this.message = `You successfully mined ${quantityMined} of '${block}'.`;
+        constructor(block, quantityBroken, targetQuantity, dropName, numDropsAqcuired) {
+            this.message = `You successfully broke at least ${quantityBroken} of the intended of the ${targetQuantity} of '${block}'`;
+            if (dropName && numDropsAqcuired) {
+                this.message += ` and acquired ${numDropsAqcuired} of '${dropName}'.`;
+            }
+            else {
+                this.message += ` and did not acquire any drops.`;
+            }
         }
     }
     MineBlocksResults.Success = Success;

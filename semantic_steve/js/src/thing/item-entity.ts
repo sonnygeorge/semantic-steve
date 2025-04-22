@@ -10,17 +10,31 @@ import { MaybePromise, InvalidThingError } from "../types";
 export class ItemEntity implements Thing {
   bot: Bot;
   name: string; // "dirt", "diamond_pickaxe", etc.
+  id: number; // 1, 2, etc. (item id)
 
-  constructor(bot: Bot, name: string) {
-    const itemEntityNames = Object.values(bot.registry.itemsByName).map(
-      (i) => i.name,
-    );
-    if (!itemEntityNames.includes(name)) {
-      throw new InvalidThingError(`Invalid item entity type: ${name}.`);
+  constructor(bot: Bot, name?: string, id?: number) {
+    if (name) {
+      const itemEntityNames = Object.values(bot.registry.itemsByName).map(
+        (i) => i.name,
+      );
+      if (!itemEntityNames.includes(name)) {
+        throw new InvalidThingError(`Invalid item entity type: ${name}.`);
+      }
+      this.name = name;
+      this.id = bot.registry.itemsByName[name].id;
+    } else if (id) {
+      const itemEntityIds = Object.values(bot.registry.items).map((i) => i.id);
+      if (!itemEntityIds.includes(id)) {
+        throw new InvalidThingError(`Invalid item entity id: ${id}.`);
+      }
+      this.id = id;
+      this.name = bot.registry.items[id].name;
+    } else {
+      throw new Error(
+        "Either name or id must be provided to create an ItemEntity.",
+      );
     }
-
     this.bot = bot;
-    this.name = name;
   }
 
   public isVisibleInImmediateSurroundings(): boolean {
@@ -52,6 +66,13 @@ export class ItemEntity implements Thing {
         this.name,
       );
     if (immediate && immediate.length > 0) {
+      // Sort the coordinates by distance to the bot's position
+      immediate.sort((a, b) => {
+        const distanceA = a.distanceTo(this.bot.entity.position);
+        const distanceB = b.distanceTo(this.bot.entity.position);
+        return distanceA - distanceB;
+      });
+      // Return the closest coordinate
       return immediate[0];
     }
   }
@@ -109,6 +130,6 @@ export class ItemEntity implements Thing {
   getTotalCountInInventory(): number {
     // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
     // its name should(?) correspond the item as it would be if picked up and in inventory.
-    return this.bot.envState.itemTotals.get(this.name) || 0;
+    return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
   }
 }

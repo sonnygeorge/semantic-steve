@@ -1,21 +1,16 @@
 import * as zmq from "zeromq";
 import assert from "assert";
-import { Bot, StorageEvents } from "mineflayer";
+import { Bot } from "mineflayer";
 import { SkillInvocation, DataFromMinecraft } from "./py-messages";
 import { SelfPreserver } from "./self-preserver";
-import { Skill } from "./skill";
-import { buildSkillsRegistry } from "./skill";
-import PItemLoader, { Item as PItem } from "prismarine-item";
-import { Window as PWindow, WindowsExports } from "prismarine-windows";
-import nbt from "prismarine-nbt";
-import { SkillResult, SemanticSteveConfig } from "./types";
 import {
-  InventoryChangesDTO,
-  getInventoryChangesDTO,
-} from "./utils/inventory-changes";
-import { GenericSkillResults } from "./skill/generic-results";
-import { getDurabilityPercentRemaining } from "./utils/durability";
-import { exit } from "process";
+  Skill,
+  buildSkillsRegistry,
+  SkillStatus,
+  GenericSkillResults,
+} from "./skill";
+import { SkillResult, SemanticSteveConfig } from "./types";
+import { getInventoryChangesDTO } from "./utils/inventory-changes";
 
 export class SemanticSteve {
   private bot: Bot;
@@ -23,7 +18,7 @@ export class SemanticSteve {
   private zmqPort: number;
   private selfPreserver: SelfPreserver;
   private skills: { [key: string]: Skill };
-  private currentSkill?: Skill;
+  private activeSkill?: Skill;
   private timeOfLastSkillInvocation?: number;
   private itemTotalsAtTimeOfLastMsgToPython?: Map<string, number>;
   private hasDiedWhileAwaitingInvocation: boolean = false;
@@ -42,7 +37,6 @@ export class SemanticSteve {
       config.selfPreservationCheckThrottleMS,
     );
 
-    // Skills setup
     this.skills = buildSkillsRegistry(
       this.bot,
       this.handleSkillResolution.bind(this),
@@ -54,7 +48,8 @@ export class SemanticSteve {
   // =======================================
 
   private async sendDataToPython(data: DataFromMinecraft): Promise<void> {
-    this.itemTotalsAtTimeOfLastMsgToPython = this.bot.envState.itemTotals;
+    this.itemTotalsAtTimeOfLastMsgToPython =
+      this.bot.envState.inventory.itemsToTotalCounts;
     await this.socket.send(JSON.stringify(data));
   }
 
@@ -73,29 +68,33 @@ export class SemanticSteve {
   // ================================
 
   private invokeSkill(skillInvocation: SkillInvocation): void {
+    assert(!this.activeSkill);
     // Add skill invocation to the macrotask queue (wrapped w/ handling of errors)
     setTimeout(async () => {
+      if (!this.skills[skillInvocation.skillName]) {
+        const result = new GenericSkillResults.SkillNotFound(
+          skillInvocation.skillName,
+        );
+        // NOTE: Faux skill-resolution w/out ever ever having an active skill
+        this.handleSkillResolution(result);
+        return;
+      }
+      const skillToInvoke = this.skills[skillInvocation.skillName];
+      // Set fields that are to be set while skills are running
+      this.activeSkill = this.skills[skillInvocation.skillName] ?? undefined;
+      this.timeOfLastSkillInvocation = Date.now();
       try {
-        if (!this.skills[skillInvocation.skillName]) {
-          const result = new GenericSkillResults.SkillNotFound(
-            skillInvocation.skillName,
-          );
-          this.handleSkillResolution(result);
-          return;
-        }
-        const skillToInvoke = this.skills[skillInvocation.skillName];
         await skillToInvoke.invoke(...skillInvocation.args);
       } catch (error) {
-        const result = new GenericSkillResults.UnhandledRuntimeError(
+        assert(this.activeSkill);
+        const result = new GenericSkillResults.UnhandledInvocationError(
           skillInvocation.skillName,
           error as Error,
         );
-        this.handleSkillResolution(result);
+        this.activeSkill.stop();
+        this.activeSkill.resolve(result);
       }
     }, 0);
-    // Set fields that are to be set while skills are running
-    this.currentSkill = this.skills[skillInvocation.skillName] ?? undefined;
-    this.timeOfLastSkillInvocation = Date.now();
   }
 
   private handleSkillResolution(
@@ -104,6 +103,13 @@ export class SemanticSteve {
     // propogate this flag if they have _just barely_ hydrated the envState
     envStateIsHydrated?: boolean,
   ): void {
+    // Unset fields that are only to be set while skills are running
+    console.log(
+      `Skill ${this.activeSkill?.constructor.name} resolved with result: ${result.message}`,
+    );
+    this.activeSkill = undefined;
+    this.timeOfLastSkillInvocation = undefined;
+
     // Hydrate the envState if it wasn't just hydrated by a skill
     if (!envStateIsHydrated) {
       this.bot.envState.hydrate();
@@ -112,12 +118,7 @@ export class SemanticSteve {
     // Get Inventory changes since the skill was invoked
     const invChanges = this.getInventoryChanges();
 
-    // Unset fields that are only to be set while skills are running
-    this.currentSkill = undefined;
-    this.timeOfLastSkillInvocation = undefined;
-
     // Prepare the data to send to Python
-    // TODO: Add invChanges to what we send to Python once getting this (maybe someday) gets implemented
     const toSendToPython: DataFromMinecraft = {
       envState: this.bot.envState.getDTO(),
       skillInvocationResults: result.message,
@@ -141,7 +142,7 @@ export class SemanticSteve {
 
     const differentials: Map<string, number> = new Map<string, number>();
 
-    const curItemTotals = this.bot.envState.itemTotals;
+    const curItemTotals = this.bot.envState.inventory.itemsToTotalCounts;
     const oldItemTotals = this.itemTotalsAtTimeOfLastMsgToPython;
 
     // Process all keys in current inventory
@@ -164,7 +165,7 @@ export class SemanticSteve {
   }
 
   private async checkForAndHandleSkillTimeout(): Promise<undefined> {
-    if (!this.currentSkill) {
+    if (!this.activeSkill) {
       assert(
         !this.timeOfLastSkillInvocation,
         "No skill running, but time of last invocation is set",
@@ -178,18 +179,32 @@ export class SemanticSteve {
         this.itemTotalsAtTimeOfLastMsgToPython,
         "A skill is running, but item totals at time of last outgoing python msg is not set",
       );
-      const curSkillClass = this.currentSkill.constructor as typeof Skill;
+      const curSkillClass = this.activeSkill.constructor as typeof Skill;
       if (
         Date.now() - this.timeOfLastSkillInvocation >
         curSkillClass.TIMEOUT_MS
       ) {
-        const skillClass = this.currentSkill.constructor as typeof Skill;
+        const skillClass = this.activeSkill.constructor as typeof Skill;
         const result = new GenericSkillResults.SkillTimeout(
           skillClass.METADATA.name,
           curSkillClass.TIMEOUT_MS / 1000,
         );
-        this.handleSkillResolution(result);
+        this.activeSkill.stop();
+        this.activeSkill.resolve(result);
       }
+    }
+  }
+
+  private handleDeath(): void {
+    if (!this.activeSkill) {
+      // We don't have a current skill, therefore, we are awaiting an invocation from Python
+      // Set this flag so that, once we receive an invocation, we can immediately respond w/
+      // DeathBeforeInvocation
+      this.hasDiedWhileAwaitingInvocation = true;
+    } else {
+      const result = new GenericSkillResults.DeathDuringExecution();
+      this.activeSkill.stop();
+      this.activeSkill.resolve(result);
     }
   }
 
@@ -208,23 +223,6 @@ export class SemanticSteve {
     await this.sendDataToPython(toSendToPython);
   }
 
-  private handleDeath(): void {
-    if (!this.currentSkill) {
-      // We don't have a current skill, therefore, we are awaiting an invocation from Python
-      // Set this flag so that, once we receive an invocation, we can immediately respond w/
-      // DeathBeforeInvocation
-      this.hasDiedWhileAwaitingInvocation = true;
-    } else {
-      // We have a current skill, therefore, we are in the middle of executing a skill
-      // Terminate the skill by stopping its execution and unsetting this.currentSkill
-      this.currentSkill.pause();
-      this.currentSkill = undefined;
-      // Now we resolve the skill with a DeathDuringExecution result
-      const result = new GenericSkillResults.DeathDuringExecution();
-      this.handleSkillResolution(result);
-    }
-  }
-
   // ===========================
   // Main entrypoint/run method
   // ===========================
@@ -241,13 +239,14 @@ export class SemanticSteve {
       const msgFromPython = await this.checkForMsgFromPython();
 
       if (msgFromPython) {
-        assert(!this.currentSkill, "Got invocation before resolution");
+        assert(!this.activeSkill, "Got invocation before resolution");
         const skillInvocation: SkillInvocation = JSON.parse(msgFromPython);
         if (this.hasDiedWhileAwaitingInvocation) {
           this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
           const result = new GenericSkillResults.DeathWhileAwaitingInvocation(
             skillInvocation.skillName,
           );
+          // NOTE: Faux skill-resolution w/out ever ever having an active skill
           this.handleSkillResolution(result);
         } else {
           this.invokeSkill(skillInvocation);
@@ -262,8 +261,9 @@ export class SemanticSteve {
 
       // Self-preservation
       if (this.selfPreserver.shouldSelfPreserve()) {
-        if (this.currentSkill) {
-          await this.currentSkill.pause();
+        if (this.activeSkill) {
+          await this.activeSkill.pause();
+          assert(this.activeSkill.status === SkillStatus.ACTIVE_PAUSED);
         }
         const start = Date.now();
         await this.selfPreserver.invoke(); // Await resolution before continuing
@@ -275,8 +275,8 @@ export class SemanticSteve {
           // like this means the variable won't necessarily reflect what its name implies
           // (nitpick, not urgent)
         }
-        if (this.currentSkill) {
-          await this.currentSkill.resume();
+        if (this.activeSkill) {
+          await this.activeSkill.resume();
         }
       }
     }

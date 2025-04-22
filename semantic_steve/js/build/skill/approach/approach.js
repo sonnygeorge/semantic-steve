@@ -26,9 +26,8 @@ const generic_1 = require("../../utils/generic");
 class Approach extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        this.pathfindToCoordinates = new pathfind_to_coordinates_1.PathfindToCoordinates(bot, this.resolveAfterPathfinding.bind(this));
     }
-    resolveAfterPathfinding(result, envStateIsHydrated) {
+    resolveFromSubskillResolution(result, envStateIsHydrated) {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.thing);
             (0, assert_1.default)(this.targetThingCoords);
@@ -37,13 +36,13 @@ class Approach extends skill_1.Skill {
             if (result instanceof
                 results_2.PathfindToCoordinatesResults.FoundThingInDistantSurroundings) {
                 result = new results_1.ApproachResults.FoundThingInDistantSurroundings(this.thing.name, result.foundThingName);
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
                 return;
             }
             else if (result instanceof
                 results_2.PathfindToCoordinatesResults.FoundThingInImmediateSurroundings) {
                 result = new results_1.ApproachResults.FoundThingInImmediateSurroundings(this.thing.name, result.foundThingName);
-                this.onResolution(result, envStateIsHydrated);
+                this.resolve(result, envStateIsHydrated);
                 return;
             }
             // Otherwise, check to see if the approach was successful & handle
@@ -56,23 +55,23 @@ class Approach extends skill_1.Skill {
                     const curItemTotal = this.thing.getTotalCountInInventory();
                     const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
                     result = new results_1.ApproachResults.SuccessItemEntity(this.thing.name, this.direction, netItemGain);
-                    this.onResolution(result, envStateIsHydrated);
+                    this.resolve(result, envStateIsHydrated);
                 }
                 else {
                     const successResult = new results_1.ApproachResults.Success(this.thing.name, this.direction);
-                    this.onResolution(successResult, envStateIsHydrated);
+                    this.resolve(successResult, envStateIsHydrated);
                 }
             }
             else {
                 const failureResult = new results_1.ApproachResults.Failure(this.thing.name);
-                this.onResolution(failureResult, envStateIsHydrated);
+                this.resolve(failureResult, envStateIsHydrated);
             }
         });
     }
-    // ==================================
-    // Implementation of Skill interface
-    // ==================================
-    invoke(thing, direction, stopIfFound) {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke(thing, direction, stopIfFound) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             if (typeof thing === "string") {
@@ -82,7 +81,7 @@ class Approach extends skill_1.Skill {
                 catch (err) {
                     if (err instanceof types_2.InvalidThingError) {
                         const result = new results_1.ApproachResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString());
-                        this.onResolution(result);
+                        this.resolve(result);
                         return;
                     }
                 }
@@ -93,7 +92,7 @@ class Approach extends skill_1.Skill {
             (0, assert_1.default)(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
             if (!Object.values(types_1.Direction).includes(direction)) {
                 const result = new results_1.ApproachResults.InvalidDirection(direction);
-                this.onResolution(result);
+                this.resolve(result);
                 return;
             }
             this.direction = direction;
@@ -104,30 +103,36 @@ class Approach extends skill_1.Skill {
                 yield ((_a = this.thing) === null || _a === void 0 ? void 0 : _a.locateNearestInDistantSurroundings(this.direction));
             if (!this.targetThingCoords) {
                 const result = new results_1.ApproachResults.ThingNotInDistantSurroundingsDirection(this.thing.name, direction);
-                this.onResolution(result);
+                this.resolve(result);
                 return;
             }
             // If the thing is an ItemEntity, record how many the bot has at the start of pathfinding
             if (this.thing instanceof thing_1.ItemEntity) {
                 this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
             }
-            yield this.pathfindToCoordinates.invoke([
-                this.targetThingCoords.x,
-                this.targetThingCoords.y,
-                this.targetThingCoords.z,
-            ], stopIfFound);
+            // Invoke pathfinding to the coordinates of the thing
+            this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, (result) => {
+                this.resolveFromSubskillResolution(result, true);
+            });
+            yield this.activeSubskill.invoke(this.targetThingCoords, stopIfFound);
         });
     }
-    pause() {
+    doPause() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${Approach.METADATA.name}'`);
-            yield this.pathfindToCoordinates.pause();
+            (0, assert_1.default)(this.activeSubskill);
+            yield this.activeSubskill.pause();
         });
     }
-    resume() {
+    doResume() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Resuming '${Approach.METADATA.name}'`);
-            yield this.pathfindToCoordinates.resume();
+            (0, assert_1.default)(this.activeSubskill);
+            yield this.activeSubskill.resume();
+        });
+    }
+    doStop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, assert_1.default)(this.activeSubskill);
+            yield this.activeSubskill.stop();
         });
     }
 }

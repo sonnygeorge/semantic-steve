@@ -61,49 +61,6 @@ class TakeScreenshotOf extends skill_1.Skill {
         // global.THREE = require('three')
         // global.Worker = require('worker_threads').Worker
     }
-    invoke(thing, atCoordinates) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                // Find the Thing object using the bot's thing factory
-                let targetThing;
-                try {
-                    targetThing = this.bot.thingFactory.createThing(thing);
-                }
-                catch (error) {
-                    console.log(error);
-                    if (error instanceof types_1.InvalidThingError) {
-                        // Invalid thing name
-                        this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
-                        return;
-                    }
-                    // Other errors
-                    throw error;
-                }
-                // Check if the Thing is visible in immediate surroundings
-                if (!targetThing.isVisibleInImmediateSurroundings()) {
-                    // The thing exists but isn't visible in immediate surroundings
-                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, `${thing_1.SUPPORTED_THING_TYPES} that are visible in immediate surroundings`));
-                    return;
-                }
-                // Take the screenshot
-                const screenshotBuffer = yield this.captureScreenshot(targetThing);
-                if (!screenshotBuffer) {
-                    // Screenshot capture failed
-                    this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
-                    return;
-                }
-                // Save the screenshot
-                const screenshotPath = yield this.saveScreenshot(screenshotBuffer, thing);
-                // Return success with the appropriate result type
-                this.onResolution(new results_1.TakeScreenshotOfResults.Success(thing, screenshotPath));
-            }
-            catch (error) {
-                console.log("error", error);
-                // Use InvalidThing result for any errors
-                this.onResolution(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
-            }
-        });
-    }
     viewDistanceToNumber() {
         switch (this.bot.settings.viewDistance) {
             case "tiny":
@@ -268,15 +225,61 @@ class TakeScreenshotOf extends skill_1.Skill {
             return filePath;
         });
     }
-    pause() {
+    // ============================
+    // Implementation of Skill API
+    // ============================
+    doInvoke(thing, atCoordinates) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Pausing '${TakeScreenshotOf.METADATA.name}'`);
+            try {
+                // Find the Thing object using the bot's thing factory
+                let targetThing;
+                try {
+                    targetThing = this.bot.thingFactory.createThing(thing);
+                }
+                catch (error) {
+                    console.log(error);
+                    if (error instanceof types_1.InvalidThingError) {
+                        // Invalid thing name
+                        this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
+                        return;
+                    }
+                    // Other errors
+                    throw error;
+                }
+                // Check if the Thing is visible in immediate surroundings
+                if (!targetThing.isVisibleInImmediateSurroundings()) {
+                    // The thing exists but isn't visible in immediate surroundings
+                    this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, `${thing_1.SUPPORTED_THING_TYPES} that are visible in immediate surroundings`));
+                    return;
+                }
+                // Take the screenshot
+                const screenshotBuffer = yield this.captureScreenshot(targetThing);
+                if (!screenshotBuffer) {
+                    // Screenshot capture failed
+                    this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
+                    return;
+                }
+                // Save the screenshot
+                const screenshotPath = yield this.saveScreenshot(screenshotBuffer, thing);
+                // Return success with the appropriate result type
+                this.resolve(new results_1.TakeScreenshotOfResults.Success(thing, screenshotPath));
+            }
+            catch (error) {
+                console.log("error", error);
+                // Use InvalidThing result for any errors
+                this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
+            }
         });
     }
-    resume() {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Resuming '${TakeScreenshotOf.METADATA.name}'`);
-        });
+    // TODO:
+    doPause() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    doResume() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    doStop() {
+        return __awaiter(this, void 0, void 0, function* () { });
     }
 }
 exports.TakeScreenshotOf = TakeScreenshotOf;

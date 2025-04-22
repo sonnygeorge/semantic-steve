@@ -10,11 +10,14 @@ export const BLOCK_PLACEMENT_WAIT_MS = 200;
 // Amount of wait time for a block drop to settle after mining
 export const BLOCK_DROP_WAIT_MS = 400;
 
+// Amount of wait time to ensure crafted items register in the bot's inventory after crafting
+export const CRAFTING_WAIT_MS = 100;
+
 // Slightly lowered (normal is 4.5) distance from the bot at which a block can be placed
 export const MAX_PLACEMENT_REACH = 4;
 
 // The maximum distance from the bot at which a block can be reached for mining
-export const MAX_MINING_REACH = 5;
+export const MAX_MINING_REACH = 4.5;
 
 // Bot eye height in meters
 export const BOT_EYE_HEIGHT = 1.62;

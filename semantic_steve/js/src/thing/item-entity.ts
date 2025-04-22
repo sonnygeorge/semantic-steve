@@ -49,7 +49,7 @@ export class ItemEntity implements Thing {
     );
   }
 
-  locateNearest(): MaybePromise<Vec3 | undefined> {
+  locateNearest(): Vec3 | undefined {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult) {
@@ -60,7 +60,7 @@ export class ItemEntity implements Thing {
     return this.locateNearestInDistantSurroundings();
   }
 
-  locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined> {
+  locateNearestInImmediateSurroundings(): Vec3 | undefined {
     const immediate =
       this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
         this.name,
@@ -77,9 +77,7 @@ export class ItemEntity implements Thing {
     }
   }
 
-  locateNearestInDistantSurroundings(
-    direction?: Direction,
-  ): MaybePromise<Vec3 | undefined> {
+  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =

@@ -37,7 +37,7 @@ export class Block implements Thing {
     );
   }
 
-  locateNearest(): MaybePromise<Vec3 | undefined> {
+  public locateNearest(): Vec3 | undefined {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult) {
@@ -48,7 +48,7 @@ export class Block implements Thing {
     return this.locateNearestInDistantSurroundings();
   }
 
-  locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined> {
+  public locateNearestInImmediateSurroundings(): Vec3 | undefined {
     const immediate =
       this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
     if (immediate && immediate.length > 0) {
@@ -63,9 +63,7 @@ export class Block implements Thing {
     }
   }
 
-  locateNearestInDistantSurroundings(
-    direction?: Direction,
-  ): MaybePromise<Vec3 | undefined> {
+  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =

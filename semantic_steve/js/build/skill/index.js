@@ -6,7 +6,7 @@ const skill_1 = require("./skill");
 Object.defineProperty(exports, "Skill", { enumerable: true, get: function () { return skill_1.Skill; } });
 Object.defineProperty(exports, "SkillStatus", { enumerable: true, get: function () { return skill_1.SkillStatus; } });
 const pathfind_to_coordinates_1 = require("./pathfind-to-coordinates/pathfind-to-coordinates");
-// import { CraftItems } from "./craft-items/craft-items";
+const craft_items_1 = require("./craft-items/craft-items");
 const mine_blocks_1 = require("./mine-blocks/mine-blocks");
 const place_block_1 = require("./place-block/place-block");
 // import { SmeltItems } from "./smelt-items/smelt-items";
@@ -20,7 +20,7 @@ function buildSkillsRegistry(bot, onResolution) {
     return {
         [pathfind_to_coordinates_1.PathfindToCoordinates.METADATA.name]: new pathfind_to_coordinates_1.PathfindToCoordinates(bot, onResolution),
         [take_screenshot_of_1.TakeScreenshotOf.METADATA.name]: new take_screenshot_of_1.TakeScreenshotOf(bot, onResolution),
-        // [CraftItems.METADATA.name]: new CraftItems(bot, onResolution),
+        [craft_items_1.CraftItems.METADATA.name]: new craft_items_1.CraftItems(bot, onResolution),
         [mine_blocks_1.MineBlocks.METADATA.name]: new mine_blocks_1.MineBlocks(bot, onResolution),
         [place_block_1.PlaceBlock.METADATA.name]: new place_block_1.PlaceBlock(bot, onResolution),
         // [SmeltItems.METADATA.name]: new SmeltItems(bot, onResolution),

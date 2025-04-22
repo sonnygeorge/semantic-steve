@@ -32,7 +32,7 @@ export class Inventory {
    */
   public get itemSlots(): PItem[] {
     return this.bot.inventory.slots.filter(
-      (item): item is PItem => item !== null
+      (item): item is PItem => item !== null,
     );
   }
 

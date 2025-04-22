@@ -40,7 +40,7 @@ export class Biome implements Thing {
     );
   }
 
-  locateNearest(): MaybePromise<Vec3 | undefined> {
+  locateNearest(): Vec3 | undefined {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult !== null) {
@@ -51,15 +51,13 @@ export class Biome implements Thing {
     return this.locateNearestInDistantSurroundings();
   }
 
-  locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined> {
+  locateNearestInImmediateSurroundings(): Vec3 | undefined {
     if (this.isVisibleInImmediateSurroundings()) {
       return this.bot.entity.position.clone(); // assume we are in it
     }
   }
 
-  locateNearestInDistantSurroundings(
-    direction?: Direction,
-  ): MaybePromise<Vec3 | undefined> {
+  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =

@@ -1,191 +1,378 @@
-// import { Bot } from "mineflayer";
-// import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-// import { CraftItemsResults } from "./results";
-// import {
-//   hasCraftingTableInInventory,
-//   findNearbyCraftingTable,
-//   placeCraftingTable,
-// } from "./utils";
-// import type { Recipe } from "prismarine-recipe";
+import assert from "assert";
+import { Bot } from "mineflayer";
+import type { Recipe } from "prismarine-recipe";
+import { Block as PBlock } from "prismarine-block";
+import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
+import { CraftItemsResults } from "./results";
+import { ItemEntity } from "../../thing/item-entity";
+import { Block } from "../../thing/block";
+import { InvalidThingError, SkillResult } from "../../types";
+import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
+import { PlaceBlock } from "../place-block/place-block";
+import { asyncSleep } from "../../utils/generic";
+import {
+  BOT_EYE_HEIGHT,
+  CRAFTING_WAIT_MS,
+  MAX_PLACEMENT_REACH,
+} from "../../constants";
+import { PlaceBlockResults } from "../place-block/results";
 
-// export class CraftItems extends Skill {
-//   public static readonly TIMEOUT_MS: number = 10000; // 10 seconds
-//   public static readonly METADATA: SkillMetadata = {
-//     name: "craftItems",
-//     signature: "craftItems(item: string, quantity: number = 1)",
-//     docstring: `
-//         /**
-//          * Crafts one or more of an item, assuming a crafting table (if necessary for the
-//          * recipe) is either in inventory or in the immediate surroundings.
-//          * @param item - The item to craft.
-//          * @param quantity - Optional quantity to craft. Defaults to 1.
-//          */
-//       `,
-//   };
+export class CraftItems extends Skill {
+  public static readonly TIMEOUT_MS: number = 10000; // 10 seconds
+  public static readonly METADATA: SkillMetadata = {
+    name: "craftItems",
+    signature: "craftItems(item: string, quantity: number = 1)",
+    docstring: `
+        /**
+         * Crafts one or more of an item, assuming a crafting table (if necessary for the
+         * recipe) is either in inventory or in the immediate surroundings.
+         * @param item - The item to craft.
+         * @param quantity - Optional quantity to craft. Defaults to 1.
+         */
+      `,
+  };
 
-//   private isCrafting: boolean = false;
-//   private craftItem: string = "";
-//   private wantedItemQuantity: number = 0;
-//   private craftCount: number = 0;
-//   private selectedRecipe: Recipe | null = null;
-//   private craftingTableRequired: boolean = false;
+  private activeSubskill?: PathfindToCoordinates | PlaceBlock;
+  private shouldBeCrafting: boolean = false;
+  private itemToCraft?: ItemEntity;
+  private quantityToCraft?: number;
+  private selectedRecipe?: Recipe;
+  private quantityInInventoryBeforeCrafting?: number;
+  private useCraftingTable?: boolean;
 
-//   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
-//     super(bot, onResolution);
-//   }
+  constructor(bot: Bot, onResolution: SkillResolutionHandler) {
+    super(bot, onResolution);
+  }
 
-//   public async invoke(item: string, quantity: number = 1): Promise<void> {
-//     this.isCrafting = true;
-//     this.craftItem = item;
-//     this.wantedItemQuantity = quantity;
+  private get itemDifferentialSinceInvoke(): number {
+    assert(this.itemToCraft);
+    assert(this.quantityInInventoryBeforeCrafting);
+    const quantityInInventory = this.itemToCraft.getTotalCountInInventory();
+    return quantityInInventory - this.quantityInInventoryBeforeCrafting;
+  }
 
-//     try {
-//       // Normalize item name
-//       const normalizedItem = item;
+  private async botCraft(
+    recipe: Recipe,
+    quantity: number,
+    table?: PBlock,
+  ): Promise<void> {
+    assert(this.itemToCraft);
+    assert(this.quantityInInventoryBeforeCrafting);
+    assert(this.selectedRecipe);
+    assert(this.quantityToCraft);
+    assert(this.useCraftingTable);
 
-//       const id = this.bot.registry.itemsByName[normalizedItem]?.id;
-//       if (!id) {
-//         this.isCrafting = false;
-//         return this.onResolution(new CraftItemsResults.InvalidItem(item));
-//       }
+    if (this.shouldBeCrafting) {
+      await this.bot.craft(recipe, quantity, table);
+      if (!this.shouldBeCrafting) {
+        // Exit on pause or stop
+        return;
+      }
+      while (this.itemDifferentialSinceInvoke < this.quantityToCraft) {
+        // Wait for the items to register as being in the bot's inventory
+        await asyncSleep(CRAFTING_WAIT_MS);
+        if (!this.shouldBeCrafting) {
+          // Exit on pause or stop
+          return;
+        }
+      }
+      this.shouldBeCrafting = false;
+      const result = new CraftItemsResults.Success(
+        this.itemToCraft.name,
+        this.quantityToCraft,
+      );
+      this.resolve(result);
+      return;
+    }
+  }
 
-//       // Get all available recipes from the bot
-//       const recipes = this.bot.recipesFor(id, null, quantity, true);
+  private async startOrResumeCrafting(): Promise<void> {
+    assert(this.itemToCraft);
+    assert(this.quantityToCraft);
+    assert(this.selectedRecipe);
+    assert(this.quantityInInventoryBeforeCrafting !== undefined);
+    assert(this.useCraftingTable !== undefined);
 
-//       if (recipes.length === 0) {
-//         this.isCrafting = false;
-//         return this.onResolution(new CraftItemsResults.InvalidItem(item));
-//       }
+    if (this.itemDifferentialSinceInvoke >= this.quantityToCraft) {
+      // We've acquired the expected amount of the item to craft...
+      // ...almost certainly from a pause that occured while awaiting bot.craft,
+      // or asyncSleep(CRAFTING_WAIT_MS), causing this.shouldBeCrafting to be set to false,
+      // false, and preventing resolution, which is why, after resume, we end up here.
+      this.shouldBeCrafting = false;
+      const result = new CraftItemsResults.Success(
+        this.itemToCraft.name,
+        this.quantityToCraft,
+      );
+      this.resolve(result);
+      return;
+    }
 
-//       // Attempt to find a recipe we can craft with our current inventory
-//       this.craftingTableRequired = false;
-//       this.selectedRecipe = null;
+    if (!this.useCraftingTable) {
+      return await this.botCraft(this.selectedRecipe, this.quantityToCraft);
+    }
 
-//       for (const recipe of recipes) {
-//         if (recipe.requiresTable) {
-//           this.craftingTableRequired = true;
-//         }
+    // Crafting table case
+    assert(this.useCraftingTable);
+    const craftingTableBlockType = new Block(this.bot, "crafting_table");
+    const craftingTableItemType = new ItemEntity(this.bot, "crafting_table");
+    const craftingTableIsInInventory =
+      craftingTableItemType.getTotalCountInInventory() > 0;
+    let nearestImmediateSurroundingsTableCoords =
+      craftingTableBlockType.locateNearestInImmediateSurroundings();
 
-//         // Check if we have enough ingredients for this recipe
-//         // this will have to use my plugin.
+    if (
+      !nearestImmediateSurroundingsTableCoords &&
+      !craftingTableIsInInventory
+    ) {
+      // The only reason this could happen is if, during a pause, the bot moved away
+      // from the crafting table that this skill placed (removing it from the inventory)
+      this.shouldBeCrafting = false;
+      this.resolve(
+        new CraftItemsResults.TableNoLongerInImmediateSurroundings(),
+      );
+      return;
+    }
 
-//         // const canCraft = this.bot.canCraft(recipe);
-//         // if (canCraft) {
-//         this.selectedRecipe = recipe;
-//         //   break;
-//         // }
-//       }
+    // Place the crafting table if necessary
+    if (
+      !nearestImmediateSurroundingsTableCoords &&
+      craftingTableIsInInventory
+    ) {
+      let placeCraftingTableResult: SkillResult | undefined = undefined;
 
-//       // If no recipe was found that we can craft
-//       if (!this.selectedRecipe) {
-//         this.isCrafting = false;
-//         return this.onResolution(
-//           new CraftItemsResults.InsufficientRecipeIngredients(item, quantity)
-//         );
-//       }
+      const handlePlaceCraftingTableResolution = (result: SkillResult) => {
+        this.activeSubskill = undefined;
+        placeCraftingTableResult = result;
+      };
 
-//       // If crafting table is required, check if we have one or can access one
-//       if (this.craftingTableRequired) {
-//         const craftingTable = await this.findCraftingTable();
+      this.activeSubskill = new PlaceBlock(
+        this.bot,
+        handlePlaceCraftingTableResolution.bind(this),
+      );
+      await this.activeSubskill.invoke(craftingTableItemType);
 
-//         if (!craftingTable) {
-//           this.isCrafting = false;
-//           return this.onResolution(new CraftItemsResults.NoCraftingTable(item));
-//         }
-//       }
+      while (placeCraftingTableResult === undefined) {
+        await asyncSleep(50);
+      }
+      const wasSuccess =
+        (placeCraftingTableResult as SkillResult) instanceof
+        PlaceBlockResults.Success;
 
-//       this.craftCount = Math.ceil(
-//         this.wantedItemQuantity / this.selectedRecipe.result.count
-//       );
+      if (!wasSuccess) {
+        this.shouldBeCrafting = false;
+        const result = new CraftItemsResults.CraftingTablePlacementFailed(
+          placeCraftingTableResult,
+        );
+        this.resolve(result);
+        return;
+      }
 
-//       // Perform the actual crafting operation
-//       return this.doCrafting();
-//     } catch (error) {
-//       // Handle unexpected errors
-//       console.error(`Error crafting ${item}:`, error);
-//       this.isCrafting = false;
-//       return this.onResolution(
-//         new CraftItemsResults.InsufficientRecipeIngredients(item, quantity)
-//       );
-//     }
-//   }
+      if (!this.shouldBeCrafting) {
+        // Exit on pause or stop
+        return;
+      }
+    }
 
-//   async pause(): Promise<void> {
-//     this.isCrafting = false;
-//     console.log("Pausing crafting operation...");
-//     return Promise.resolve();
-//   }
+    assert(nearestImmediateSurroundingsTableCoords); // Should always be set by now
 
-//   async resume(): Promise<void> {
-//     if (this.craftItem && this.selectedRecipe) {
-//       this.isCrafting = true;
-//       console.log("Resuming crafting operation...");
-//       return this.doCrafting();
-//     }
-//     return Promise.resolve();
-//   }
+    const tableIsReachable = () => {
+      const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+      nearestImmediateSurroundingsTableCoords =
+        craftingTableBlockType.locateNearestInImmediateSurroundings();
+      assert(nearestImmediateSurroundingsTableCoords);
+      const distanceToCraftingTable = eyePosition.distanceTo(
+        nearestImmediateSurroundingsTableCoords,
+      );
+      return distanceToCraftingTable <= MAX_PLACEMENT_REACH;
+    };
 
-//   /**
-//    * Helper method that performs the actual crafting operation
-//    * Called by both invoke and resume
-//    */
-//   private async doCrafting(): Promise<void> {
-//     try {
-//       if (!this.isCrafting || !this.selectedRecipe) {
-//         return Promise.resolve();
-//       }
+    if (!tableIsReachable()) {
+      // Pathfind to the crafting table
+      let tableIsInRangeAfterPathfinding: boolean | undefined = undefined;
 
-//       // If a crafting table is required, find one
-//       if (this.craftingTableRequired) {
-//         const craftingTable = await this.findCraftingTable();
-//         if (craftingTable) {
-//           await this.bot.craft(
-//             this.selectedRecipe,
-//             this.craftCount,
-//             craftingTable
-//           );
-//         } else {
-//           throw new Error("Crafting table required but not found");
-//         }
-//       } else {
-//         // Otherwise craft without a crafting table
-//         await this.bot.craft(this.selectedRecipe, this.craftCount);
-//       }
+      const handlePathfindingResolution = (result: SkillResult) => {
+        this.activeSubskill = undefined;
+        tableIsInRangeAfterPathfinding = tableIsReachable();
+      };
 
-//       // Successfully crafted all requested items
-//       this.isCrafting = false;
-//       return this.onResolution(
-//         new CraftItemsResults.Success(this.craftItem, this.wantedItemQuantity)
-//       );
-//     } catch (error) {
-//       // Handle unexpected errors
-//       console.error(`Error in doCrafting:`, error);
-//       this.isCrafting = false;
-//       return this.onResolution(
-//         new CraftItemsResults.InsufficientRecipeIngredients(
-//           this.craftItem,
-//           this.wantedItemQuantity
-//         )
-//       );
-//     }
-//   }
+      this.activeSubskill = new PathfindToCoordinates(
+        this.bot,
+        handlePathfindingResolution.bind(this),
+      );
+      await this.activeSubskill.invoke(nearestImmediateSurroundingsTableCoords);
+      while (tableIsInRangeAfterPathfinding === undefined) {
+        await asyncSleep(50);
+      }
+      if (!tableIsInRangeAfterPathfinding) {
+        this.shouldBeCrafting = false;
+        const result = new CraftItemsResults.FailedToGetCloseEnoughToTable(
+          nearestImmediateSurroundingsTableCoords,
+        );
+        this.resolve(result);
+        return;
+      }
 
-//   /**
-//    * Finds a crafting table in the bot's inventory or nearby in the world
-//    * @returns The crafting table block if found, null otherwise
-//    */
-//   private async findCraftingTable() {
-//     // First check if we have a crafting table in our inventory
-//     const craftingTableItem = hasCraftingTableInInventory(this.bot);
-//     if (craftingTableItem) {
-//       // If we have a crafting table in inventory, try to place it
-//       const placed = await placeCraftingTable(this.bot);
-//       if (placed) {
-//         return findNearbyCraftingTable(this.bot);
-//       }
-//     }
+      if (!this.shouldBeCrafting) {
+        // Exit on pause or stop
+        return;
+      }
+    }
 
-//     // If we don't have one in inventory or couldn't place it, look for one nearby
-//     return findNearbyCraftingTable(this.bot);
-//   }
-// }
+    assert(tableIsReachable());
+
+    // Finally, we craft the item
+    const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
+    assert(table);
+    return await this.botCraft(
+      this.selectedRecipe,
+      this.quantityToCraft,
+      table,
+    );
+  }
+
+  // ============================
+  // Implementation of Skill API
+  // ============================
+
+  public async doInvoke(
+    item: string | ItemEntity,
+    quantity: number = 1,
+  ): Promise<void> {
+    if (typeof item === "string") {
+      // Validate the item string
+      try {
+        this.itemToCraft = new ItemEntity(this.bot, item);
+      } catch (err) {
+        if (err instanceof InvalidThingError) {
+          const result = new CraftItemsResults.InvalidItem(item);
+          this.resolve(result);
+          return;
+        } else {
+          throw err;
+        }
+      }
+    } else {
+      // If the item is an ItemEntity, we can use it directly
+      this.itemToCraft = item;
+    }
+    assert(this.itemToCraft); // TS compiler doesn't know this despite always being true
+
+    const tableRecipes = this.bot.recipesAll(this.itemToCraft.id, null, true);
+    const nonTableRecipes = this.bot.recipesAll(
+      this.itemToCraft.id,
+      null,
+      false,
+    );
+    const allRecipes = tableRecipes.concat(nonTableRecipes);
+
+    // Check if the item is craftable generally (any recipes exist)
+    if (allRecipes.length === 0) {
+      this.resolve(
+        new CraftItemsResults.NonCraftableItem(this.itemToCraft.name),
+      );
+      return;
+    }
+
+    // Check if the item requires a crafting table but none are available
+    const craftingTableIsAvailable = () => {
+      const craftingTable = new ItemEntity(this.bot, "crafting_table");
+      return (
+        craftingTable.isVisibleInImmediateSurroundings() ||
+        craftingTable.getTotalCountInInventory() > 0
+      );
+    };
+
+    if (nonTableRecipes.length === 0 && !craftingTableIsAvailable()) {
+      this.resolve(
+        new CraftItemsResults.NoCraftingTable(this.itemToCraft.name),
+      );
+      return;
+    }
+
+    // Get feasible recipes for out desired minimum quantity
+    const recipes = this.bot.recipesFor(
+      this.itemToCraft.id,
+      null,
+      quantity, // Minimum resulting quantity
+      true, // Set of non-table recipes is a subset of the set of table recipes
+    );
+
+    let lastFeasibleNonTableRecipe: undefined | Recipe = undefined;
+    let lastFeasibleTableRecipe: undefined | Recipe = undefined;
+    for (const recipe of recipes) {
+      // NOTE: this.bot.recipesFor() only returns recipes:
+      // 1. that produce at least the requested quantity of items
+      // 2. for which the bot has sufficient ingredients
+      const isFeasibleNonTableRecipe = !recipe.requiresTable;
+      const isFeasibleTableRecipe =
+        recipe.requiresTable && craftingTableIsAvailable();
+      if (isFeasibleNonTableRecipe) {
+        lastFeasibleNonTableRecipe = recipe;
+      }
+      if (isFeasibleTableRecipe) {
+        lastFeasibleTableRecipe = recipe;
+      }
+    }
+
+    // Select the recipe (preferring to not use a crafting table if not required)
+    if (lastFeasibleNonTableRecipe) {
+      this.selectedRecipe = lastFeasibleNonTableRecipe;
+      this.useCraftingTable = false;
+    } else if (lastFeasibleTableRecipe) {
+      this.selectedRecipe = lastFeasibleTableRecipe;
+      this.useCraftingTable = true;
+    } else {
+      // Since we already determined:
+      // 1. that the item is craftable
+      // 2. that we have a crafting table if needed
+      // Therefore, the only reason recipesFor would return an empty array is if the bot
+      // doesn't have the required ingredients in its inventory.
+      this.resolve(
+        new CraftItemsResults.InsufficientRecipeIngredients(
+          this.itemToCraft.name,
+          quantity,
+        ),
+      );
+      return;
+    }
+
+    // NOTE: quantityToCraft can/should be larger than the requested quantity if a recipe
+    // produces only multiples of the resulting item (e.g. 4 or 8) and the requested
+    // quantity is not a multiple of that number.
+    this.quantityToCraft = Math.ceil(
+      quantity / this.selectedRecipe.result.count,
+    );
+    this.shouldBeCrafting = true;
+    this.quantityInInventoryBeforeCrafting =
+      this.itemToCraft.getTotalCountInInventory();
+    this.startOrResumeCrafting();
+  }
+
+  public async doPause(): Promise<void> {
+    assert(this.itemToCraft);
+    assert(this.quantityToCraft);
+    assert(this.selectedRecipe);
+    assert(this.quantityInInventoryBeforeCrafting !== undefined);
+    assert(this.useCraftingTable !== undefined);
+    this.shouldBeCrafting = false;
+  }
+
+  public async doResume(): Promise<void> {
+    assert(this.itemToCraft);
+    assert(this.quantityToCraft);
+    assert(this.selectedRecipe);
+    assert(this.quantityInInventoryBeforeCrafting !== undefined);
+    assert(this.useCraftingTable !== undefined);
+    this.shouldBeCrafting = true;
+    this.startOrResumeCrafting();
+  }
+
+  public async doStop(): Promise<void> {
+    assert(this.itemToCraft);
+    assert(this.quantityToCraft);
+    assert(this.selectedRecipe);
+    assert(this.quantityInInventoryBeforeCrafting !== undefined);
+    assert(this.useCraftingTable !== undefined);
+    this.shouldBeCrafting = false;
+  }
+}

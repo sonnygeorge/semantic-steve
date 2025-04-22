@@ -5,10 +5,34 @@ var CraftItemsResults;
 (function (CraftItemsResults) {
     class InvalidItem {
         constructor(item) {
-            this.message = `SkillInvocationError: '${item}' is not a recognized craftable minecraft item.`;
+            this.message = `SkillInvocationError: '${item}' is not a recognized minecraft item.`;
         }
     }
     CraftItemsResults.InvalidItem = InvalidItem;
+    class NonCraftableItem {
+        constructor(item) {
+            this.message = `SkillInvocationError: '${item}' is not a craftable item.`;
+        }
+    }
+    CraftItemsResults.NonCraftableItem = NonCraftableItem;
+    class TableNoLongerInImmediateSurroundings {
+        constructor() {
+            this.message = `Failure: Some self-preservation behavior resulted in movement that left the crafting outside of the immediate surroundings.`;
+        }
+    }
+    CraftItemsResults.TableNoLongerInImmediateSurroundings = TableNoLongerInImmediateSurroundings;
+    class FailedToGetCloseEnoughToTable {
+        constructor(tableCoords) {
+            this.message = `Unable to pathfind close enough to the crafting table at [${tableCoords.x}, ${tableCoords.y}, ${tableCoords.z}] to craft.`;
+        }
+    }
+    CraftItemsResults.FailedToGetCloseEnoughToTable = FailedToGetCloseEnoughToTable;
+    class CraftingTablePlacementFailed {
+        constructor(placeBlockResult) {
+            this.message = `Crafting failed since crafting table placement didn't resolve with success. ${placeBlockResult.message}`;
+        }
+    }
+    CraftItemsResults.CraftingTablePlacementFailed = CraftingTablePlacementFailed;
     class InsufficientRecipeIngredients {
         constructor(item, quantity) {
             this.message = `SkillInvocationError: You do not have the prerequisite ingredients to craft '${quantity}' of '${item}'.`;
@@ -23,7 +47,7 @@ var CraftItemsResults;
     CraftItemsResults.NoCraftingTable = NoCraftingTable;
     class Success {
         constructor(item, quantity) {
-            this.message = `You successfully crafted '${quantity}' of '${item}'.`;
+            this.message = `You acquired ${quantity} of '${item}'.`;
         }
     }
     CraftItemsResults.Success = Success;

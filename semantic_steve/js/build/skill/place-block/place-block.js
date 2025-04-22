@@ -74,23 +74,27 @@ class PlaceBlock extends skill_1.Skill {
     // ============================
     doInvoke(block, atCoordinates) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                this.blockToPlace = new thing_1.Block(this.bot, block);
-            }
-            catch (err) {
-                if (err instanceof types_1.InvalidThingError) {
-                    this.resolvePlacing(new results_1.PlaceBlockResults.InvalidBlock(block));
-                    return;
+            if (typeof block === "string") {
+                try {
+                    this.blockToPlace = new thing_1.Block(this.bot, block);
                 }
-                throw err;
+                catch (err) {
+                    if (err instanceof types_1.InvalidThingError) {
+                        this.resolvePlacing(new results_1.PlaceBlockResults.InvalidBlock(block));
+                        return;
+                    }
+                    throw err;
+                }
             }
+            else {
+                this.blockToPlace = block;
+            }
+            (0, assert_1.default)(this.blockToPlace); // TS compiler doesn't know this despite always being true
             this.itemToPlace = this.bot.inventory.items().find((item) => {
-                // This assert is obviously true (above), but TS compiler doesn't know this
-                (0, assert_1.default)(this.blockToPlace !== undefined);
                 return item.name === this.blockToPlace.name;
             });
             if (!this.itemToPlace) {
-                this.resolvePlacing(new results_1.PlaceBlockResults.BlockNotInInventory(block));
+                this.resolvePlacing(new results_1.PlaceBlockResults.BlockNotInInventory(this.blockToPlace.name));
                 return;
             }
             if (!atCoordinates) {

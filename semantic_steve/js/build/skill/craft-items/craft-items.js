@@ -24,6 +24,8 @@ const place_block_1 = require("../place-block/place-block");
 const generic_1 = require("../../utils/generic");
 const constants_1 = require("../../constants");
 const results_2 = require("../place-block/results");
+// TODO: Resolve w/ a failure result if there is no space in the inventory for the crafted
+// items to be received in the inventory.
 class CraftItems extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
@@ -31,36 +33,39 @@ class CraftItems extends skill_1.Skill {
     }
     get itemDifferentialSinceInvoke() {
         (0, assert_1.default)(this.itemToCraft);
-        (0, assert_1.default)(this.quantityInInventoryBeforeCrafting);
+        (0, assert_1.default)(this.quantityInInventoryBeforeCrafting !== undefined);
         const quantityInInventory = this.itemToCraft.getTotalCountInInventory();
         return quantityInInventory - this.quantityInInventoryBeforeCrafting;
     }
-    botCraft(recipe, quantity, table) {
+    botCraft(table) {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.itemToCraft);
-            (0, assert_1.default)(this.quantityInInventoryBeforeCrafting);
+            (0, assert_1.default)(this.quantityInInventoryBeforeCrafting !== undefined);
             (0, assert_1.default)(this.selectedRecipe);
             (0, assert_1.default)(this.quantityToCraft);
-            (0, assert_1.default)(this.useCraftingTable);
-            if (this.shouldBeCrafting) {
-                yield this.bot.craft(recipe, quantity, table);
+            (0, assert_1.default)(this.useCraftingTable !== undefined);
+            if (!this.shouldBeCrafting) {
+                // Exit on pause or stop
+                return;
+            }
+            const quantityOfRecipe = this.quantityToCraft / this.selectedRecipe.result.count;
+            yield this.bot.craft(this.selectedRecipe, quantityOfRecipe, table);
+            if (!this.shouldBeCrafting) {
+                // Exit on pause or stop
+                return;
+            }
+            while (this.itemDifferentialSinceInvoke < this.quantityToCraft) {
+                // Wait for the items to register as being in the bot's inventory
+                yield (0, generic_1.asyncSleep)(constants_1.CRAFTING_WAIT_MS);
                 if (!this.shouldBeCrafting) {
                     // Exit on pause or stop
                     return;
                 }
-                while (this.itemDifferentialSinceInvoke < this.quantityToCraft) {
-                    // Wait for the items to register as being in the bot's inventory
-                    yield (0, generic_1.asyncSleep)(constants_1.CRAFTING_WAIT_MS);
-                    if (!this.shouldBeCrafting) {
-                        // Exit on pause or stop
-                        return;
-                    }
-                }
-                this.shouldBeCrafting = false;
-                const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
-                this.resolve(result);
-                return;
             }
+            this.shouldBeCrafting = false;
+            const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
+            this.resolve(result);
+            return;
         });
     }
     startOrResumeCrafting() {
@@ -81,7 +86,7 @@ class CraftItems extends skill_1.Skill {
                 return;
             }
             if (!this.useCraftingTable) {
-                return yield this.botCraft(this.selectedRecipe, this.quantityToCraft);
+                return yield this.botCraft();
             }
             // Crafting table case
             (0, assert_1.default)(this.useCraftingTable);
@@ -106,7 +111,7 @@ class CraftItems extends skill_1.Skill {
                     placeCraftingTableResult = result;
                 };
                 this.activeSubskill = new place_block_1.PlaceBlock(this.bot, handlePlaceCraftingTableResolution.bind(this));
-                yield this.activeSubskill.invoke(craftingTableItemType);
+                yield this.activeSubskill.invoke(craftingTableBlockType);
                 while (placeCraftingTableResult === undefined) {
                     yield (0, generic_1.asyncSleep)(50);
                 }
@@ -122,6 +127,8 @@ class CraftItems extends skill_1.Skill {
                     // Exit on pause or stop
                     return;
                 }
+                nearestImmediateSurroundingsTableCoords =
+                    craftingTableBlockType.locateNearestInImmediateSurroundings();
             }
             (0, assert_1.default)(nearestImmediateSurroundingsTableCoords); // Should always be set by now
             const tableIsReachable = () => {
@@ -159,7 +166,7 @@ class CraftItems extends skill_1.Skill {
             // Finally, we craft the item
             const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
             (0, assert_1.default)(table);
-            return yield this.botCraft(this.selectedRecipe, this.quantityToCraft, table);
+            return yield this.botCraft(table);
         });
     }
     // ============================
@@ -184,7 +191,6 @@ class CraftItems extends skill_1.Skill {
                 }
             }
             else {
-                // If the item is an ItemEntity, we can use it directly
                 this.itemToCraft = item;
             }
             (0, assert_1.default)(this.itemToCraft); // TS compiler doesn't know this despite always being true
@@ -198,17 +204,20 @@ class CraftItems extends skill_1.Skill {
             }
             // Check if the item requires a crafting table but none are available
             const craftingTableIsAvailable = () => {
-                const craftingTable = new item_entity_1.ItemEntity(this.bot, "crafting_table");
-                return (craftingTable.isVisibleInImmediateSurroundings() ||
-                    craftingTable.getTotalCountInInventory() > 0);
+                const craftingTableItemType = new item_entity_1.ItemEntity(this.bot, "crafting_table");
+                const craftingTableBlockType = new block_1.Block(this.bot, "crafting_table");
+                return (craftingTableBlockType.isVisibleInImmediateSurroundings() ||
+                    craftingTableItemType.getTotalCountInInventory() > 0);
             };
-            if (nonTableRecipes.length === 0 && !craftingTableIsAvailable()) {
+            const requiresCraftingTable = nonTableRecipes.length === 0;
+            if (requiresCraftingTable && !craftingTableIsAvailable()) {
                 this.resolve(new results_1.CraftItemsResults.NoCraftingTable(this.itemToCraft.name));
                 return;
             }
             // Get feasible recipes for out desired minimum quantity
             const recipes = this.bot.recipesFor(this.itemToCraft.id, null, quantity, // Minimum resulting quantity
-            true);
+            true // Set of non-table recipes is a subset of the set of table recipes
+            );
             let lastFeasibleNonTableRecipe = undefined;
             let lastFeasibleTableRecipe = undefined;
             for (const recipe of recipes) {
@@ -245,7 +254,9 @@ class CraftItems extends skill_1.Skill {
             // NOTE: quantityToCraft can/should be larger than the requested quantity if a recipe
             // produces only multiples of the resulting item (e.g. 4 or 8) and the requested
             // quantity is not a multiple of that number.
-            this.quantityToCraft = Math.ceil(quantity / this.selectedRecipe.result.count);
+            this.quantityToCraft =
+                Math.ceil(quantity / this.selectedRecipe.result.count) *
+                    this.selectedRecipe.result.count;
             this.shouldBeCrafting = true;
             this.quantityInInventoryBeforeCrafting =
                 this.itemToCraft.getTotalCountInInventory();
@@ -285,7 +296,7 @@ class CraftItems extends skill_1.Skill {
     }
 }
 exports.CraftItems = CraftItems;
-CraftItems.TIMEOUT_MS = 10000; // 10 seconds
+CraftItems.TIMEOUT_MS = 19000; // 19 seconds
 CraftItems.METADATA = {
     name: "craftItems",
     signature: "craftItems(item: string, quantity: number = 1)",

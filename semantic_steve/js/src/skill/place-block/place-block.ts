@@ -55,12 +55,12 @@ export class PlaceBlock extends Skill {
     const referenceBlockAndFaceVector =
       getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
         this.bot,
-        this.targetPosition,
+        this.targetPosition
       );
 
     if (!referenceBlockAndFaceVector) {
       const result = new PlaceBlockResults.UnplaceableCoords(
-        `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+        `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
       );
       this.resolvePlacing(result);
       return;
@@ -73,7 +73,7 @@ export class PlaceBlock extends Skill {
     if (this.shouldBePlacing) {
       await this.bot.placeBlock(
         referenceBlockAndFaceVector[0],
-        referenceBlockAndFaceVector[1],
+        referenceBlockAndFaceVector[1]
       );
     }
 
@@ -92,15 +92,15 @@ export class PlaceBlock extends Skill {
         this.resolvePlacing(
           new PlaceBlockResults.PlacingFailure(
             this.blockToPlace.name,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
-          ),
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
+          )
         );
       } else {
         this.resolvePlacing(
           new PlaceBlockResults.Success(
             this.blockToPlace.name,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
-          ),
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
+          )
         );
       }
     }
@@ -111,27 +111,32 @@ export class PlaceBlock extends Skill {
   // ============================
 
   public async doInvoke(
-    block: string,
-    atCoordinates?: [number, number, number],
+    block: string | Block,
+    atCoordinates?: [number, number, number]
   ): Promise<void> {
-    try {
-      this.blockToPlace = new Block(this.bot, block);
-    } catch (err) {
-      if (err instanceof InvalidThingError) {
-        this.resolvePlacing(new PlaceBlockResults.InvalidBlock(block));
-        return;
+    if (typeof block === "string") {
+      try {
+        this.blockToPlace = new Block(this.bot, block);
+      } catch (err) {
+        if (err instanceof InvalidThingError) {
+          this.resolvePlacing(new PlaceBlockResults.InvalidBlock(block));
+          return;
+        }
+        throw err;
       }
-      throw err;
+    } else {
+      this.blockToPlace = block;
     }
+    assert(this.blockToPlace); // TS compiler doesn't know this despite always being true
 
     this.itemToPlace = this.bot.inventory.items().find((item) => {
-      // This assert is obviously true (above), but TS compiler doesn't know this
-      assert(this.blockToPlace !== undefined);
-      return item.name === this.blockToPlace.name;
+      return item.name === this.blockToPlace!.name;
     });
 
     if (!this.itemToPlace) {
-      this.resolvePlacing(new PlaceBlockResults.BlockNotInInventory(block));
+      this.resolvePlacing(
+        new PlaceBlockResults.BlockNotInInventory(this.blockToPlace.name)
+      );
       return;
     }
 
@@ -139,7 +144,7 @@ export class PlaceBlock extends Skill {
       this.targetPosition = getPlaceableCoords(this.bot);
       if (!this.targetPosition) {
         this.resolvePlacing(
-          new GetPlaceableCoordinatesResults.NoPlaceableCoords(),
+          new GetPlaceableCoordinatesResults.NoPlaceableCoords()
         );
         return;
       }
@@ -147,7 +152,7 @@ export class PlaceBlock extends Skill {
       this.targetPosition = new Vec3(
         atCoordinates[0],
         atCoordinates[1],
-        atCoordinates[2],
+        atCoordinates[2]
       );
     }
 

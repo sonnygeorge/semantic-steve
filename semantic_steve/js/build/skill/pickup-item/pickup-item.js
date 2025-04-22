@@ -40,7 +40,7 @@ class PickupItem extends skill_1.Skill {
                 return;
             }
             // Otherwise, we are resolving from PathfindToCoordinates
-            (0, assert_1.default)(this.itemTotalAtPathingStart);
+            (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
             (0, assert_1.default)(this.targetItemCoords);
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetItemCoords);
             if (vicinityOfOriginalTargetCoords !== types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
@@ -84,7 +84,6 @@ class PickupItem extends skill_1.Skill {
                 }
             }
             else {
-                // If the item is an ItemEntity, we can use it directly
                 this.itemEntity = item;
             }
             if (direction) {

@@ -4,12 +4,18 @@ import { Thing } from "./thing";
 import { Vec3 } from "vec3";
 import { Direction, Vicinity } from "../env-state/surroundings";
 import { MaybePromise } from "../types";
+
 export class Biome implements Thing {
   bot: Bot;
   name: string;
   id: number;
 
   constructor(bot: Bot, name: string) {
+    const biomeNames = Object.values(bot.registry.biomes).map((b) => b.name);
+    if (!biomeNames.includes(name)) {
+      throw new Error(`Invalid biome type: ${name}.`);
+    }
+
     this.bot = bot;
     this.name = name;
     this.id = -1;
@@ -20,7 +26,7 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be impossible if this object is being created by the factory`,
+      `This should be impossible. We should have thrown an error above.`,
     );
   }
 
@@ -34,42 +40,34 @@ export class Biome implements Thing {
     );
   }
 
-  // Main locateNearest method that follows the interface pattern
-  locateNearest(): MaybePromise<Vec3> {
+  locateNearest(): Vec3 | undefined {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult !== null) {
       return immediateResult;
     }
-    
+
     // If not found in immediate surroundings, try distant surroundings
     return this.locateNearestInDistantSurroundings();
   }
 
-  // Method to locate in immediate surroundings
-  locateNearestInImmediateSurroundings():  MaybePromise<Vec3> {
+  locateNearestInImmediateSurroundings(): Vec3 | undefined {
     if (this.isVisibleInImmediateSurroundings()) {
       return this.bot.entity.position.clone(); // assume we are in it
     }
-    return null;
   }
 
-  // Method to locate in distant surroundings with optional direction
-  locateNearestInDistantSurroundings(direction?: Vicinity): MaybePromise<Vec3> {
-    const id = this.id;
-    
+  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
-    if (direction && direction !== "immediate") {
-      const distant = this.bot.envState.surroundings.distant.get(
-        direction as unknown as Direction,
-      );
-      if (distant != null) {
-        const coords = distant.biomesToClosestCoords.get(id);
-        if (coords != null) {
-          return coords.clone();
-        }
+    if (direction) {
+      const surroundingsInDirection =
+        this.bot.envState.surroundings.distant.get(direction);
+      if (surroundingsInDirection) {
+        return surroundingsInDirection.biomesToClosestCoords
+          .get(this.id)
+          ?.clone();
       }
-      return null;
+      return undefined; // No blocks found in the specified direction
     }
 
     // If no direction specified, check all directions
@@ -78,18 +76,14 @@ export class Biome implements Thing {
     );
 
     // Find the closest coordinates across all directions
-    let closestCoords: Vec3 | null = null;
+    let closestCoords: Vec3 | undefined = undefined;
     let minDistance = Infinity;
-
     for (const dir of directions) {
       const distant = this.bot.envState.surroundings.distant.get(dir);
-      if (distant != null) {
-        const coords = distant.biomesToClosestCoords.get(id);
-        if (coords != null) {
-          // Calculate distance to these coordinates
+      if (distant) {
+        const coords = distant.biomesToClosestCoords.get(this.id);
+        if (coords) {
           const distance = coords.distanceTo(this.bot.entity.position);
-
-          // Update closest if this is closer than what we've found so far
           if (distance < minDistance) {
             minDistance = distance;
             closestCoords = coords.clone();

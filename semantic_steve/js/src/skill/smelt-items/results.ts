@@ -1,56 +1,96 @@
+import { Vec3 } from "vec3";
 import { SkillResult } from "../../types";
+import { ItemEntity } from "../../thing/item-entity";
 
 export namespace SmeltItemsResults {
   export class InvalidItem implements SkillResult {
     message: string;
     constructor(item: string) {
-      this.message = `SkillInvocationError: '${item}' is not a recognized smeltable minecraft item.`;
+      this.message = `SkillInvocationError: '${item}' is not a recognized minecraft item.`;
     }
   }
 
-  export class SpecifiedFuelItemNotInInventory implements SkillResult {
+  export class InvalidFuelItem implements SkillResult {
     message: string;
-    constructor(item: string, quantity: number) {
-      this.message = `SkillInvocationError: The specified fuel item '${item}' is not in your inventory.`;
+    constructor(fuelItem: string) {
+      this.message = `SkillInvocationError: '${fuelItem}' is not a recognized minecraft item.`;
     }
   }
 
-  export class FuelItemNotInInventory implements SkillResult {
-    message: string;
-    constructor(item: string) {
-      this.message = `SkillInvocationError: Smelting requires a fuel item (e.g., coal), but there is no such item in your inventory.`;
-    }
-  }
-
-  export class NoFurnaceEtc implements SkillResult {
+  export class NonSmeltableItem implements SkillResult {
     message: string;
     constructor(item: string) {
-      this.message = `SkillInvocationError: Smelting requires something to smelt in (e.g., a furnace), but there is no such thing in your inventory or immediate surroundings.`;
+      this.message = `SkillInvocationError: '${item}' is not a smeltable item.`;
     }
   }
 
-  export class PartialSuccess implements SkillResult {
+  export class CannotSmeltMoreThan64AtATime implements SkillResult {
     message: string;
-    constructor(
-      smeltedItem: string,
-      smeltedItemQuantity: number,
-      targetItemQuantity: number,
-      resultingItem: string,
-      resultingItemQuantity: number
-    ) {
-      this.message = `You were only able to smelt ${smeltedItemQuantity} of the intended ${targetItemQuantity} of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
+    constructor() {
+      this.message = `SkillInvocationError: You cannot smelt more than 64 items at a time.`;
+    }
+  }
+
+  export class FuelItemNotUsableAsFuel implements SkillResult {
+    message: string;
+    constructor(fuelItem: string) {
+      this.message = `SkillInvocationError: '${fuelItem}' cannot be used as fuel in a furnace.`;
+    }
+  }
+
+  export class NoFurnaceAvailable implements SkillResult {
+    message: string;
+    constructor(item: string) {
+      this.message = `SkillInvocationError: Smelting ${item} requires a furnace, but there is no furnace in your inventory or immediate surroundings.`;
+    }
+  }
+
+  export class FurnaceNoLongerInImmediateSurroundings implements SkillResult {
+    message: string;
+    constructor() {
+      this.message = `Failure: Some self-preservation behavior resulted in movement that left the furnace outside of the immediate surroundings.`;
+    }
+  }
+
+  export class FailedToGetCloseEnoughToFurnace implements SkillResult {
+    message: string;
+    constructor(furnaceCoords: Vec3) {
+      this.message = `Unable to pathfind close enough to the furnace at [${furnaceCoords.x}, ${furnaceCoords.y}, ${furnaceCoords.z}] to smelt.`;
+    }
+  }
+
+  export class FurnacePlacementFailed implements SkillResult {
+    message: string;
+    constructor(placeBlockResult: SkillResult) {
+      this.message = `Smelting failed since furnace placement didn't resolve with success. ${placeBlockResult.message}`;
+    }
+  }
+
+  export class InsufficientToSmeltItems implements SkillResult {
+    message: string;
+    constructor(quantity: number, item: string) {
+      this.message = `SkillInvocationError: You do not have enough '${item}' to smelt ${quantity} of them.`;
+    }
+  }
+
+  export class FuelItemNotInventory implements SkillResult {
+    message: string;
+    constructor(fuelItem: ItemEntity, itemToSmelt: string) {
+      this.message = `SkillInvocationError: You need to have at least one the specified fuel item '${fuelItem.name}' in your inventory.`;
     }
   }
 
   export class Success implements SkillResult {
     message: string;
-    constructor(
-      smeltedItem: string,
-      smeltedItemQuantity: number,
-      resultingItem: string,
-      resultingItemQuantity: number
-    ) {
-      this.message = `You successfully smelted '${smeltedItemQuantity}' of '${smeltedItem}', acquiring '${resultingItemQuantity}' of '${resultingItem}'.`;
+    constructor() {
+      this.message = `Smelting attempt complete.`;
+    }
+  }
+
+  export class RanOutOfFuelBeforeFullCompletion implements SkillResult {
+    message: string;
+    constructor(fuelItemName: string) {
+      this.message = `You ran out of '${fuelItemName}' before smelting all items.`;
     }
   }
 }

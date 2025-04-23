@@ -6,6 +6,7 @@ import {
   SurroundingsRadii,
   SurroundingsDTO,
 } from "./surroundings";
+import { Inventory, InventoryItemDTO } from "./inventory";
 
 // TODO: Daytime/nightime?
 
@@ -37,7 +38,7 @@ export type EnvStateDTO = {
   playerCoordinates: [number, number, number];
   health: string;
   hunger: string;
-  inventory: Record<string, number>;
+  inventory: InventoryItemDTO[];
   equipped: Map<EquipmentDestination, string | undefined>;
   surroundings: SurroundingsDTO;
 };
@@ -45,10 +46,12 @@ export type EnvStateDTO = {
 export class EnvState {
   private bot: Bot;
   public surroundings: Surroundings;
+  public inventory: Inventory;
 
   constructor(bot: Bot, surroundingsRadii: SurroundingsRadii) {
     this.bot = bot;
     this.surroundings = new Surroundings(bot, surroundingsRadii);
+    this.inventory = new Inventory(bot);
   }
 
   public get botCoords(): Vec3 {
@@ -61,12 +64,6 @@ export class EnvState {
 
   public get hunger(): number {
     return this.bot.food;
-  }
-
-  public get inventory(): PItem[] {
-    return this.bot.inventory.slots.filter(
-      (item) => item !== null
-    ) as unknown as PItem[];
   }
 
   public get equipped(): Map<EquipmentDestination, PItem | undefined> {
@@ -94,14 +91,12 @@ export class EnvState {
       ],
       health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
       hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
-      inventory: Object.fromEntries(
-        this.inventory.map((item) => [item.name, item.count])
-      ) as Record<string, number>,
+      inventory: this.inventory.getDTO(),
       equipped: Object.fromEntries(
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ])
+        ]),
       ) as Map<EquipmentDestination, string | undefined>,
       surroundings: this.surroundings.getDTO(),
     };

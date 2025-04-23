@@ -1,5 +1,11 @@
 import { SkillResult } from "../../types";
 
+export enum MineBlocksPartialSuccessReason {
+  TOOL_CONSUMED = "The necessary tool was consumed during use.",
+  NO_MORE_IN_IMMEDIATE_SURROUNDINGS = "No more blocks of this type are in the immediate surroundings.",
+  COULD_NOT_PATHFIND_UNTIL_REACHABLE = "Could not pathfind close enough to reach the block.",
+}
+
 export namespace MineBlocksResults {
   export class InvalidBlock implements SkillResult {
     message: string;
@@ -15,7 +21,7 @@ export namespace MineBlocksResults {
     }
   }
 
-  export class BlockNotInSurroundings implements SkillResult {
+  export class BlockNotInImmediateSurroundings implements SkillResult {
     message: string;
     constructor(block: string) {
       this.message = `SkillInvocationError: At least 1 of block '${block}' must be in the immediate surroundings to invoke this skill.`;
@@ -24,15 +30,41 @@ export namespace MineBlocksResults {
 
   export class PartialSuccess implements SkillResult {
     message: string;
-    constructor(block: string, quantityMined: number, targetQuantity: number) {
-      this.message = `You only mined ${quantityMined} of the intended ${targetQuantity} of '${block}'.`;
+    constructor(
+      block: string,
+      quantityBroken: number,
+      targetQuantity: number,
+      dropName?: string,
+      numDropsAqcuired?: number,
+      reason?: MineBlocksPartialSuccessReason | string,
+    ) {
+      this.message = `You broke at least ${quantityBroken} of the intended ${targetQuantity} of '${block}'`;
+      if (dropName && numDropsAqcuired) {
+        this.message += ` and acquired ${numDropsAqcuired} of '${dropName}'.`;
+      } else {
+        this.message += ` but did not acquire any drops.`;
+      }
+      if (reason) {
+        this.message += ` NOTE: ${reason}`;
+      }
     }
   }
 
   export class Success implements SkillResult {
     message: string;
-    constructor(block: string, quantityMined: number) {
-      this.message = `You successfully mined ${quantityMined} of '${block}'.`;
+    constructor(
+      block: string,
+      quantityBroken: number,
+      targetQuantity: number,
+      dropName?: string,
+      numDropsAqcuired?: number,
+    ) {
+      this.message = `You successfully broke at least ${quantityBroken} of the intended of the ${targetQuantity} of '${block}'`;
+      if (dropName && numDropsAqcuired) {
+        this.message += ` and acquired ${numDropsAqcuired} of '${dropName}'.`;
+      } else {
+        this.message += ` and did not acquire any drops.`;
+      }
     }
   }
 }

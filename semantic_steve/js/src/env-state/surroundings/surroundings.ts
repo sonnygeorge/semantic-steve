@@ -1,5 +1,6 @@
 import { Bot } from "mineflayer";
-import { _Surroundings, SurroundingsRadii } from "./types";
+import { Vec3 } from "vec3";
+import { _Surroundings, SurroundingsRadii, Vicinity } from "./types";
 import { SurroundingsHydrater } from "./hydrater";
 
 class HydratableSurroundings extends _Surroundings {
@@ -24,6 +25,10 @@ class HydratableSurroundings extends _Surroundings {
       Object.assign(this, hydrated);
       this.timeOfLastHydration = new Date();
     }
+  }
+
+  public getVicinityForPosition(pos: Vec3): Vicinity {
+    return this.hydrater.getVicinityForPosition(pos);
   }
 }
 

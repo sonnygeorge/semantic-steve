@@ -34,6 +34,7 @@ pip install git+https://github.com/sonnygeorge/semantic-steve.git@dev
 See `examples.py`.
 
 NOTE:
+
 - You must have Node.js 22 such that `node --version` outputs `v22.x.x`.
 - You must have `yarn` installed.
 

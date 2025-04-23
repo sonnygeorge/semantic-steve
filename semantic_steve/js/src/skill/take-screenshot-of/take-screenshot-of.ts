@@ -11,7 +11,8 @@ const {
   WorldView,
   getBufferFromStream,
 } = require("prismarine-viewer/viewer");
-import { SUPPORTED_THING_TYPES, Thing, InvalidThingError } from "../../thing";
+import { SUPPORTED_THING_TYPES, Thing } from "../../thing";
+import { InvalidThingError } from "../../types";
 import { TakeScreenshotOfResults } from "./results";
 
 export class TakeScreenshotOf extends Skill {
@@ -25,7 +26,7 @@ export class TakeScreenshotOf extends Skill {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the 
+       * @param atCoordinates - Optional coordinates to disamiguate where the
        * thing is located.
        */
     `,
@@ -36,70 +37,6 @@ export class TakeScreenshotOf extends Skill {
 
     // global.THREE = require('three')
     // global.Worker = require('worker_threads').Worker
-  }
-
-  public async invoke(
-    thing: string,
-    atCoordinates?: [number, number, number]
-  ): Promise<void> {
-    try {
-      // Find the Thing object using the bot's thing factory
-      let targetThing: Thing;
-      try {
-        targetThing = this.bot.thingFactory.createThing(thing);
-      } catch (error) {
-        console.log(error);
-        if (error instanceof InvalidThingError) {
-          // Invalid thing name
-          this.onResolution(
-            new TakeScreenshotOfResults.InvalidThing(
-              thing,
-              SUPPORTED_THING_TYPES
-            )
-          );
-          return;
-        }
-        // Other errors
-        throw error;
-      }
-
-      // Check if the Thing is visible in immediate surroundings
-      if (!targetThing.isVisibleInImmediateSurroundings()) {
-        // The thing exists but isn't visible in immediate surroundings
-        this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(
-            thing,
-            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`
-          )
-        );
-        return;
-      }
-
-      // Take the screenshot
-      const screenshotBuffer = await this.captureScreenshot(targetThing);
-
-      if (!screenshotBuffer) {
-        // Screenshot capture failed
-        this.onResolution(
-          new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
-        );
-        return;
-      }
-
-      // Save the screenshot
-      const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
-
-      // Return success with the appropriate result type
-      this.onResolution(
-        new TakeScreenshotOfResults.Success(thing, screenshotPath)
-      );
-    } catch (error) {
-      console.log("error", error);
-      // Use InvalidThing result for any errors
-      this.onResolution(
-        new TakeScreenshotOfResults.InvalidThing(thing, SUPPORTED_THING_TYPES)
-      );
-    }
   }
 
   private viewDistanceToNumber(): number {
@@ -161,7 +98,7 @@ export class TakeScreenshotOf extends Skill {
       viewer.camera.position.set(
         cameraPosition.x,
         cameraPosition.y,
-        cameraPosition.z
+        cameraPosition.z,
       );
 
       // calculate the yaw and pitch of the bot's current position to the target
@@ -234,7 +171,7 @@ export class TakeScreenshotOf extends Skill {
    * Necessary for positioning the camera to take a screenshot.
    */
   private async getThingDetails(
-    thing: Thing
+    thing: Thing,
   ): Promise<{ position: Vec3; type: string; object: any } | null> {
     // First, check if it's an entity
     const entities = this.bot.entities;
@@ -300,11 +237,83 @@ export class TakeScreenshotOf extends Skill {
     return filePath;
   }
 
-  public async pause(): Promise<void> {
-    console.log(`Pausing '${TakeScreenshotOf.METADATA.name}'`);
+  // ============================
+  // Implementation of Skill API
+  // ============================
+
+  public async doInvoke(
+    thing: string,
+    atCoordinates?: [number, number, number],
+  ): Promise<void> {
+    try {
+      // Find the Thing object using the bot's thing factory
+      let targetThing: Thing;
+      try {
+        targetThing = this.bot.thingFactory.createThing(thing);
+      } catch (error) {
+        console.log(error);
+        if (error instanceof InvalidThingError) {
+          // Invalid thing name
+          this.resolve(
+            new TakeScreenshotOfResults.InvalidThing(
+              thing,
+              SUPPORTED_THING_TYPES.toString(),
+            ),
+          );
+          return;
+        }
+        // Other errors
+        throw error;
+      }
+
+      // Check if the Thing is visible in immediate surroundings
+      if (!targetThing.isVisibleInImmediateSurroundings()) {
+        // The thing exists but isn't visible in immediate surroundings
+        this.resolve(
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`,
+          ),
+        );
+        return;
+      }
+
+      // Take the screenshot
+      const screenshotBuffer = await this.captureScreenshot(targetThing);
+
+      if (!screenshotBuffer) {
+        // Screenshot capture failed
+        this.resolve(
+          new TakeScreenshotOfResults.InvalidThing(
+            thing,
+            SUPPORTED_THING_TYPES.toString(),
+          ),
+        );
+        return;
+      }
+
+      // Save the screenshot
+      const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
+
+      // Return success with the appropriate result type
+      this.resolve(new TakeScreenshotOfResults.Success(thing, screenshotPath));
+    } catch (error) {
+      console.log("error", error);
+      // Use InvalidThing result for any errors
+      this.resolve(
+        new TakeScreenshotOfResults.InvalidThing(
+          thing,
+          SUPPORTED_THING_TYPES.toString(),
+        ),
+      );
+    }
   }
 
-  public async resume(): Promise<void> {
-    console.log(`Resuming '${TakeScreenshotOf.METADATA.name}'`);
-  }
+  // TODO:
+
+  public async doPause(): Promise<void> {}
+
+  public async doResume(): Promise<void> {}
+
+  public async doStop(): Promise<void> {}
 }

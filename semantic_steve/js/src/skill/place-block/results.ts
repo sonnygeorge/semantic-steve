@@ -15,10 +15,17 @@ export namespace PlaceBlockResults {
     }
   }
 
-  export class CoordinatesTooFar implements SkillResult {
+  export class UnplaceableCoords implements SkillResult {
     message: string;
-    constructor() {
-      this.message = `SkillInvocationError: The specified coordinates must be within your immediate surroundings. Please pathfind to or near the coordinates first.`;
+    constructor(coordinates: string) {
+      this.message = `SkillInvocationError: The coordinates '${coordinates}' are not placeable. Please call 'getPlaceableCoordinates' and try again with placeable coordinates.`;
+    }
+  }
+
+  export class PlacingFailure implements SkillResult {
+    message: string;
+    constructor(block: string, coordinates: string) {
+      this.message = `For some reason, the attempted placement of '${block}' at coordinates '${coordinates}' did not result in the block now being at those coordinates.`;
     }
   }
 

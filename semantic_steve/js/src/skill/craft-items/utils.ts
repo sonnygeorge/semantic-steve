@@ -6,9 +6,9 @@ import { Vec3 } from "vec3";
  * @returns The crafting table item if found, null otherwise
  */
 export function hasCraftingTableInInventory(bot: Bot) {
-  const craftingTableItem = bot.inventory
-    .items()
-    .find((item) => item.name === "crafting_table");
+  const craftingTableItem = bot.inventory.slots.find(
+    (item) => item && item.name === "crafting_table",
+  );
   return craftingTableItem || null;
 }
 
@@ -42,6 +42,7 @@ export function findSuitablePlacementPosition(bot: Bot) {
       const blockAbove = bot.blockAt(block.position.offset(0, 1, 0));
       return !!blockAbove && blockAbove.name === "air";
     },
+    useExtraInfo: true,
     maxDistance: 3,
     count: 5, // Look for a few options
   });
@@ -86,7 +87,7 @@ export async function placeCraftingTable(bot: Bot): Promise<boolean> {
     // Place the crafting table
     await bot.placeBlock(
       placementPosition.referenceBlock,
-      placementPosition.faceVector
+      placementPosition.faceVector,
     );
     return true;
   } catch (error) {

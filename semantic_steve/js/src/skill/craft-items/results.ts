@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import { SkillResult } from "../../types";
+import { Skill } from "../skill";
 
 export namespace CraftItemsResults {
   export class InvalidItem implements SkillResult {
@@ -55,6 +56,20 @@ export namespace CraftItemsResults {
     message: string;
     constructor(item: string, quantity: number) {
       this.message = `You acquired ${quantity} of '${item}'.`;
+    }
+  }
+
+  export class SuccessProblemCollectingCraftingTable implements SkillResult {
+    message: string;
+    constructor(
+      item: string,
+      quantity: number,
+      mineBlocksResult?: SkillResult,
+    ) {
+      this.message = `You acquired ${quantity} of '${item}', but the crafting table was not collected.`;
+      if (mineBlocksResult) {
+        this.message += ` ${mineBlocksResult.message}`;
+      }
     }
   }
 }

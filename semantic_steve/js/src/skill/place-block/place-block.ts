@@ -71,10 +71,24 @@ export class PlaceBlock extends Skill {
     }
 
     if (this.shouldBePlacing) {
-      await this.bot.placeBlock(
-        referenceBlockAndFaceVector[0],
-        referenceBlockAndFaceVector[1],
-      );
+      try {
+        this.bot.setControlState("sneak", true);
+        await this.bot.placeBlock(
+          referenceBlockAndFaceVector[0],
+          referenceBlockAndFaceVector[1],
+        );
+        this.bot.setControlState("sneak", false);
+      } catch (err) {
+        if (err instanceof Error) {
+          const result = new PlaceBlockResults.PlacingFailure(
+            this.blockToPlace.name,
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          );
+          this.resolvePlacing(result);
+          return;
+        }
+        throw err;
+      }
     }
 
     // Wait for things to settle (e.g., gravel to fall)

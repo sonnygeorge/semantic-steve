@@ -13,6 +13,8 @@ import { asyncSleep } from "../../utils/generic";
 import { PlaceBlockResults } from "../place-block/results";
 import { isWithinInteractionReach } from "../../utils/block";
 import { isFuel, getSmeltingProductName } from "../../utils/smelting";
+import { MineBlocks } from "../mine-blocks/mine-blocks";
+import { MineBlocksResults } from "../mine-blocks/results";
 
 // TODO: Possible refactor ideas
 // - Waiting on subskill (should terminate, pause, etc.) abstraction that gets inherited from skill
@@ -66,7 +68,7 @@ export class SmeltItems extends Skill {
       `,
   };
 
-  private activeSubskill?: PathfindToCoordinates | PlaceBlock;
+  private activeSubskill?: PathfindToCoordinates | PlaceBlock | MineBlocks;
   private shouldBeDoingStuff: boolean = false;
   private shouldTerminateSubskillWaiting: boolean = false;
 
@@ -104,7 +106,7 @@ export class SmeltItems extends Skill {
     return this.getNumOfResultItemAcquired() >= this.expectedResultItemQuantity;
   }
 
-  private resolveAfterSmelting(): void {
+  private resolveAfterSmelting(mineFurnaceResult?: SkillResult): void {
     assert(this.itemToSmelt);
     assert(this.quantityToSmelt);
     assert(this.expectedResultItem);
@@ -118,18 +120,22 @@ export class SmeltItems extends Skill {
         this.fuelItem.name,
       );
     }
+    if (
+      mineFurnaceResult &&
+      !(mineFurnaceResult instanceof MineBlocksResults.Success)
+    ) {
+      result.message += ` ${mineFurnaceResult.message}`;
+    }
     this.resolve(result);
   }
 
   private closeFurnaceWindow(): void {
     if (this.bot.currentWindow) {
       this.bot.closeWindow(this.bot.currentWindow);
-      console.log("Closed furnace window");
     }
   }
 
   private async withdrawAllItemsFromFurnace(furnace: PBlock): Promise<void> {
-    console.log("Entered withdrawAllItemsFromFurnace");
     assert(isWithinInteractionReach(this.bot, furnace.position));
     const furnaceObj = await this.bot.openFurnace(furnace);
     if (furnaceObj.fuelItem()) {
@@ -145,7 +151,6 @@ export class SmeltItems extends Skill {
   }
 
   private async putToSmeltItemsIntoFurnace(furnace: PBlock): Promise<void> {
-    console.log("Entered putItemsIntoFurnace");
     assert(isWithinInteractionReach(this.bot, furnace.position));
     assert(this.itemToSmelt);
     assert(this.quantityToSmelt);
@@ -157,7 +162,6 @@ export class SmeltItems extends Skill {
   }
 
   private async waitForSmeltingToFinish(): Promise<void> {
-    console.log("Entered waitForSmeltingToFinish");
     assert(this.furnaceWithItems);
     assert(this.fuelItem);
     assert(isWithinInteractionReach(this.bot, this.furnaceWithItems.position));
@@ -171,12 +175,10 @@ export class SmeltItems extends Skill {
         try {
           await furnaceObj.putFuel(this.fuelItem.id, null, 1);
         } catch (err) {
-          console.log("Error taking fuel from furnace:", err);
           // Presumably errored because no fuel left
           break;
         }
         assert(furnaceObj.fuelItem());
-        console.log("Added fuel to furnace");
       }
       await asyncSleep(100);
       if (!this.shouldBeDoingStuff) {
@@ -188,7 +190,6 @@ export class SmeltItems extends Skill {
   }
 
   private async pathfindToFurnaceIfNeeded(furnaceCoords: Vec3): Promise<void> {
-    console.log("Entered pathfindToFurnaceIfNeeded");
     if (isWithinInteractionReach(this.bot, furnaceCoords)) {
       return; // Already in range
     }
@@ -225,7 +226,6 @@ export class SmeltItems extends Skill {
   }
 
   private async placeFurnace(): Promise<void> {
-    console.log("Entered placeFurnace");
     let placeFurnaceResult: SkillResult | undefined = undefined;
 
     const handlePlaceFurnaceResolution = (result: SkillResult) => {
@@ -259,20 +259,38 @@ export class SmeltItems extends Skill {
     }
   }
 
+  private async mineFurnaceAfterSmeltingIfNeededAndResolve(): Promise<void> {
+    const handleMineBlocksResolution = (mineBlocksResult: SkillResult) => {
+      this.activeSubskill = undefined;
+      this.resolveAfterSmelting(mineBlocksResult);
+    };
+
+    this.activeSubskill = new MineBlocks(
+      this.bot,
+      handleMineBlocksResolution.bind(this),
+    );
+    await this.activeSubskill.invoke("furnace", 1);
+
+    // Wait for the mining to finish
+    while (this.activeSubskill) {
+      await asyncSleep(50);
+      if (this.shouldTerminateSubskillWaiting) {
+        this.activeSubskill = undefined;
+        this.resolveAfterSmelting();
+        return;
+      }
+    }
+  }
+
   private async startOrResumeSmelting(): Promise<void> {
     assert(this.itemToSmelt);
     assert(this.quantityToSmelt);
     assert(this.resultQuantityInInventoryBeforeSmelting !== undefined);
-    console.log("Entered startOrResumeSmelting");
 
     if (this.hasAcquiredExpectedResult()) {
-      console.log(
-        "Already had expected result by the time we entered startOrResumeSmelting",
-      );
-
       // We likely got here from resuming after a pause that occured while awaiting
       // this.withdrawAllItemsFromFurnace() (which put the results into the inventory)
-      this.resolveAfterSmelting();
+      await this.mineFurnaceAfterSmeltingIfNeededAndResolve();
       return;
     }
 
@@ -298,7 +316,6 @@ export class SmeltItems extends Skill {
       // Place a furnace if none in immediate surroundings
       if (!nearestImmediateSurroundingsFurnaceCoords && furnaceIsInInventory) {
         await this.placeFurnace();
-        console.log("Placed furnace");
         if (!this.shouldBeDoingStuff) {
           return; // Exit on pause or stop
         }
@@ -311,7 +328,6 @@ export class SmeltItems extends Skill {
       await this.pathfindToFurnaceIfNeeded(
         nearestImmediateSurroundingsFurnaceCoords,
       );
-      console.log("Finished pathfinding to furnace if needed");
       if (!this.shouldBeDoingStuff) {
         return; // Exit on pause or stop
       }
@@ -340,7 +356,6 @@ export class SmeltItems extends Skill {
     assert(this.furnaceWithItems);
 
     await this.waitForSmeltingToFinish();
-    console.log("Finished waiting for smelting to finish");
 
     if (!this.shouldBeDoingStuff) {
       return; // Exit on pause or stop
@@ -350,7 +365,8 @@ export class SmeltItems extends Skill {
     if (!this.shouldBeDoingStuff) {
       return; // Exit on pause or stop
     }
-    this.resolveAfterSmelting();
+
+    await this.mineFurnaceAfterSmeltingIfNeededAndResolve();
   }
 
   // ============================
@@ -469,6 +485,7 @@ export class SmeltItems extends Skill {
       this.expectedResultItem.getTotalCountInInventory();
     this.furnaceWithItems = undefined;
     this.shouldBeDoingStuff = true;
+    this.shouldTerminateSubskillWaiting = false;
     this.startOrResumeSmelting();
   }
 

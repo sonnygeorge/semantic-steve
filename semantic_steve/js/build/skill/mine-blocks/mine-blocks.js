@@ -34,21 +34,6 @@ class MineBlocks extends skill_1.Skill {
         this.numBlocksBroken = 0;
         this.numDropPickupsAttempted = 0;
     }
-    resolve(result) {
-        if (this.quantityOfDropInInventoryAtInvocation &&
-            this.blockToMineDrop &&
-            this.numBlocksToMine) {
-            const numAcquired = this.blockToMineDrop.itemEntity.getTotalCountInInventory() -
-                this.quantityOfDropInInventoryAtInvocation;
-            if (this.didAcquireExpectedMinDropCount()) {
-                result = new results_1.MineBlocksResults.Success(this.blockTypeToMine.name, this.numBlocksBroken, this.numBlocksToMine, this.blockToMineDrop.itemEntity.name, numAcquired);
-            }
-            else {
-                result = new results_1.MineBlocksResults.PartialSuccess(this.blockTypeToMine.name, this.numBlocksBroken, this.numBlocksToMine, this.blockToMineDrop.itemEntity.name, numAcquired, result.message);
-            }
-        }
-        super.resolve(result);
-    }
     /**
      * Gets the block to mine drop info if this.blockTypeToMine is defined.
      *
@@ -109,7 +94,7 @@ class MineBlocks extends skill_1.Skill {
     didAcquireExpectedMinDropCount() {
         (0, assert_1.default)(this.blockToMineDrop);
         (0, assert_1.default)(this.numBlocksToMine);
-        (0, assert_1.default)(this.quantityOfDropInInventoryAtInvocation);
+        (0, assert_1.default)(this.quantityOfDropInInventoryAtInvocation !== undefined);
         const expectedMinDropCount = this.blockToMineDrop.minCount * this.numBlocksToMine;
         const numInInventory = this.blockToMineDrop.itemEntity.getTotalCountInInventory();
         const numAcquired = numInInventory - this.quantityOfDropInInventoryAtInvocation;
@@ -127,7 +112,7 @@ class MineBlocks extends skill_1.Skill {
                 return this.resolve(new results_1.MineBlocksResults.Success(this.blockTypeToMine.name, this.numBlocksBroken, this.numBlocksToMine, undefined, 0));
             }
         }
-        (0, assert_1.default)(this.quantityOfDropInInventoryAtInvocation);
+        (0, assert_1.default)(this.quantityOfDropInInventoryAtInvocation !== undefined);
         const numAcquired = this.blockToMineDrop.itemEntity.getTotalCountInInventory() -
             this.quantityOfDropInInventoryAtInvocation;
         if (this.didAcquireExpectedMinDropCount()) {

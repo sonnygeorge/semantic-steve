@@ -57,37 +57,6 @@ export class MineBlocks extends Skill {
     super(bot, onResolution);
   }
 
-  public resolve(result: SkillResult): void {
-    if (
-      this.quantityOfDropInInventoryAtInvocation &&
-      this.blockToMineDrop &&
-      this.numBlocksToMine
-    ) {
-      const numAcquired =
-        this.blockToMineDrop.itemEntity.getTotalCountInInventory() -
-        this.quantityOfDropInInventoryAtInvocation;
-      if (this.didAcquireExpectedMinDropCount()) {
-        result = new MineBlocksResults.Success(
-          this.blockTypeToMine!.name,
-          this.numBlocksBroken,
-          this.numBlocksToMine,
-          this.blockToMineDrop.itemEntity.name,
-          numAcquired,
-        );
-      } else {
-        result = new MineBlocksResults.PartialSuccess(
-          this.blockTypeToMine!.name,
-          this.numBlocksBroken,
-          this.numBlocksToMine,
-          this.blockToMineDrop.itemEntity.name,
-          numAcquired,
-          result.message,
-        );
-      }
-    }
-    super.resolve(result);
-  }
-
   /**
    * Gets the block to mine drop info if this.blockTypeToMine is defined.
    *
@@ -156,7 +125,7 @@ export class MineBlocks extends Skill {
   private didAcquireExpectedMinDropCount(): boolean {
     assert(this.blockToMineDrop);
     assert(this.numBlocksToMine);
-    assert(this.quantityOfDropInInventoryAtInvocation);
+    assert(this.quantityOfDropInInventoryAtInvocation !== undefined);
     const expectedMinDropCount =
       this.blockToMineDrop.minCount * this.numBlocksToMine;
     const numInInventory =
@@ -198,7 +167,7 @@ export class MineBlocks extends Skill {
         );
       }
     }
-    assert(this.quantityOfDropInInventoryAtInvocation);
+    assert(this.quantityOfDropInInventoryAtInvocation !== undefined);
     const numAcquired =
       this.blockToMineDrop.itemEntity.getTotalCountInInventory() -
       this.quantityOfDropInInventoryAtInvocation;

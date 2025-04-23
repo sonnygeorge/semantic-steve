@@ -34,7 +34,7 @@ var MineBlocksResults;
                 this.message += ` and acquired ${numDropsAqcuired} of '${dropName}'.`;
             }
             else {
-                this.message += ` and did not acquire any drops.`;
+                this.message += ` but did not acquire any drops.`;
             }
             if (reason) {
                 this.message += ` NOTE: ${reason}`;

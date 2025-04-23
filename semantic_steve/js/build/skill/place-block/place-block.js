@@ -50,7 +50,19 @@ class PlaceBlock extends skill_1.Skill {
                 yield this.bot.equip(this.itemToPlace, "hand");
             }
             if (this.shouldBePlacing) {
-                yield this.bot.placeBlock(referenceBlockAndFaceVector[0], referenceBlockAndFaceVector[1]);
+                try {
+                    this.bot.setControlState("sneak", true);
+                    yield this.bot.placeBlock(referenceBlockAndFaceVector[0], referenceBlockAndFaceVector[1]);
+                    this.bot.setControlState("sneak", false);
+                }
+                catch (err) {
+                    if (err instanceof Error) {
+                        const result = new results_1.PlaceBlockResults.PlacingFailure(this.blockToPlace.name, `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`);
+                        this.resolvePlacing(result);
+                        return;
+                    }
+                    throw err;
+                }
             }
             // Wait for things to settle (e.g., gravel to fall)
             yield (0, generic_1.asyncSleep)(constants_1.BLOCK_PLACEMENT_WAIT_MS);

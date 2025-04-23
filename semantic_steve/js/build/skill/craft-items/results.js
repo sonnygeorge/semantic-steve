@@ -51,4 +51,13 @@ var CraftItemsResults;
         }
     }
     CraftItemsResults.Success = Success;
+    class SuccessProblemCollectingCraftingTable {
+        constructor(item, quantity, mineBlocksResult) {
+            this.message = `You acquired ${quantity} of '${item}', but the crafting table was not collected.`;
+            if (mineBlocksResult) {
+                this.message += ` ${mineBlocksResult.message}`;
+            }
+        }
+    }
+    CraftItemsResults.SuccessProblemCollectingCraftingTable = SuccessProblemCollectingCraftingTable;
 })(CraftItemsResults || (exports.CraftItemsResults = CraftItemsResults = {}));

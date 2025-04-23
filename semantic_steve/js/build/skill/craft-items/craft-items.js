@@ -21,9 +21,11 @@ const block_1 = require("../../thing/block");
 const types_1 = require("../../types");
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
 const place_block_1 = require("../place-block/place-block");
+const mine_blocks_1 = require("../mine-blocks/mine-blocks");
 const generic_1 = require("../../utils/generic");
 const constants_1 = require("../../constants");
 const results_2 = require("../place-block/results");
+const results_3 = require("../mine-blocks/results");
 // TODO: Resolve w/ a failure result if there is no space in the inventory for the crafted
 // items to be received in the inventory.
 class CraftItems extends skill_1.Skill {
@@ -63,10 +65,6 @@ class CraftItems extends skill_1.Skill {
                     return;
                 }
             }
-            this.shouldBeDoingStuff = false;
-            const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
-            this.resolve(result);
-            return;
         });
     }
     startOrResumeCrafting() {
@@ -87,7 +85,14 @@ class CraftItems extends skill_1.Skill {
                 return;
             }
             if (!this.useCraftingTable) {
-                return yield this.botCraft();
+                yield this.botCraft();
+                if (!this.shouldBeDoingStuff) {
+                    // Exit on pause or stop
+                    return;
+                }
+                const result = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
+                this.resolve(result);
+                return;
             }
             // Crafting table case
             (0, assert_1.default)(this.useCraftingTable);
@@ -169,7 +174,30 @@ class CraftItems extends skill_1.Skill {
             // Finally, we craft the item
             const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
             (0, assert_1.default)(table);
-            return yield this.botCraft(table);
+            yield this.botCraft(table);
+            // Always collect the crafting table after crafting
+            const handleMineBlocksResolution = (mineBlocksResult) => {
+                this.activeSubskill = undefined;
+                (0, assert_1.default)(this.itemToCraft);
+                (0, assert_1.default)(this.quantityToCraft);
+                this.shouldBeDoingStuff = false;
+                let craftItemsResult = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
+                if (!(mineBlocksResult instanceof results_3.MineBlocksResults.Success)) {
+                    craftItemsResult =
+                        new results_1.CraftItemsResults.SuccessProblemCollectingCraftingTable(this.itemToCraft.name, this.quantityToCraft, mineBlocksResult);
+                }
+                this.resolve(craftItemsResult);
+            };
+            this.activeSubskill = new mine_blocks_1.MineBlocks(this.bot, handleMineBlocksResolution.bind(this));
+            yield this.activeSubskill.invoke(craftingTableBlockType.name);
+            while (this.activeSubskill) {
+                yield (0, generic_1.asyncSleep)(50);
+                if (this.shouldTerminateSubskillWaiting) {
+                    const result = new results_1.CraftItemsResults.SuccessProblemCollectingCraftingTable(this.itemToCraft.name, this.quantityToCraft);
+                    this.resolve(result);
+                    return;
+                }
+            }
         });
     }
     // ============================

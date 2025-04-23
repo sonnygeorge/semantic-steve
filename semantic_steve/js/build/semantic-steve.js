@@ -112,7 +112,7 @@ class SemanticSteve {
             }
         }), 0);
     }
-    handleSkillResolution(result,
+    handleSkillResolution(result, 
     // NOTE: Although worrying about this isn't their responsability, `Skill`s can
     // propogate this flag if they have _just barely_ hydrated the envState
     envStateIsHydrated) {

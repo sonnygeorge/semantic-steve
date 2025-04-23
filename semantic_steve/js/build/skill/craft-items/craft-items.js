@@ -219,8 +219,7 @@ class CraftItems extends skill_1.Skill {
             }
             // Get feasible recipes for out desired minimum quantity
             const recipes = this.bot.recipesFor(this.itemToCraft.id, null, quantity, // Minimum resulting quantity
-            true // Set of non-table recipes is a subset of the set of table recipes
-            );
+            true);
             let lastFeasibleNonTableRecipe = undefined;
             let lastFeasibleTableRecipe = undefined;
             for (const recipe of recipes) {
@@ -288,11 +287,11 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.useCraftingTable !== undefined);
             this.shouldBeDoingStuff = true;
             if (this.activeSubskill) {
-                // TODO: Comment
+                // TODO: Explanatory comment (for now, see the analogous comment in mine-blocks.ts)
                 yield this.activeSubskill.resume();
             }
             else {
-                // TODO: Comment
+                // TODO: Explanatory comment (for now, see the analogous comment in mine-blocks.ts)
                 this.startOrResumeCrafting();
             }
         });

@@ -9,7 +9,7 @@ import { PathfindToCoordinates } from "./pathfind-to-coordinates/pathfind-to-coo
 import { CraftItems } from "./craft-items/craft-items";
 import { MineBlocks } from "./mine-blocks/mine-blocks";
 import { PlaceBlock } from "./place-block/place-block";
-// import { SmeltItems } from "./smelt-items/smelt-items";
+import { SmeltItems } from "./smelt-items/smelt-items";
 import { TakeScreenshotOf } from "./take-screenshot-of/take-screenshot-of";
 import { Approach } from "./approach/approach";
 import { PickupItem } from "./pickup-item/pickup-item";
@@ -37,7 +37,7 @@ export function buildSkillsRegistry(
     [CraftItems.METADATA.name]: new CraftItems(bot, onResolution),
     [MineBlocks.METADATA.name]: new MineBlocks(bot, onResolution),
     [PlaceBlock.METADATA.name]: new PlaceBlock(bot, onResolution),
-    // [SmeltItems.METADATA.name]: new SmeltItems(bot, onResolution),
+    [SmeltItems.METADATA.name]: new SmeltItems(bot, onResolution),
     [Approach.METADATA.name]: new Approach(bot, onResolution),
     [PickupItem.METADATA.name]: new PickupItem(bot, onResolution),
     [GetPlaceableCoordinates.METADATA.name]: new GetPlaceableCoordinates(

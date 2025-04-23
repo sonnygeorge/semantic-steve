@@ -21,6 +21,12 @@ var SmeltItemsResults;
         }
     }
     SmeltItemsResults.NonSmeltableItem = NonSmeltableItem;
+    class CannotSmeltMoreThan64AtATime {
+        constructor() {
+            this.message = `SkillInvocationError: You cannot smelt more than 64 items at a time.`;
+        }
+    }
+    SmeltItemsResults.CannotSmeltMoreThan64AtATime = CannotSmeltMoreThan64AtATime;
     class FuelItemNotUsableAsFuel {
         constructor(fuelItem) {
             this.message = `SkillInvocationError: '${fuelItem}' cannot be used as fuel in a furnace.`;
@@ -51,22 +57,28 @@ var SmeltItemsResults;
         }
     }
     SmeltItemsResults.FurnacePlacementFailed = FurnacePlacementFailed;
-    class InsufficientSmeltItems {
+    class InsufficientToSmeltItems {
         constructor(quantity, item) {
             this.message = `SkillInvocationError: You do not have enough '${item}' to smelt ${quantity} of them.`;
         }
     }
-    SmeltItemsResults.InsufficientSmeltItems = InsufficientSmeltItems;
-    class InsufficientFuel {
+    SmeltItemsResults.InsufficientToSmeltItems = InsufficientToSmeltItems;
+    class FuelItemNotInventory {
         constructor(fuelItem, itemToSmelt) {
-            this.message = `SkillInvocationError: You do not have enough '${fuelItem.name}' to use as fuel for smelting '${itemToSmelt}'.`;
+            this.message = `SkillInvocationError: You need to have at least one the specified fuel item '${fuelItem.name}' in your inventory.`;
         }
     }
-    SmeltItemsResults.InsufficientFuel = InsufficientFuel;
+    SmeltItemsResults.FuelItemNotInventory = FuelItemNotInventory;
     class Success {
-        constructor(item, quantity) {
-            this.message = `You acquired ${quantity} of smelted '${item}'.`;
+        constructor() {
+            this.message = `Smelting attempt complete.`;
         }
     }
     SmeltItemsResults.Success = Success;
+    class RanOutOfFuelBeforeFullCompletion {
+        constructor(fuelItemName) {
+            this.message = `You ran out of '${fuelItemName}' before smelting all items.`;
+        }
+    }
+    SmeltItemsResults.RanOutOfFuelBeforeFullCompletion = RanOutOfFuelBeforeFullCompletion;
 })(SmeltItemsResults || (exports.SmeltItemsResults = SmeltItemsResults = {}));

@@ -24,6 +24,13 @@ export namespace SmeltItemsResults {
     }
   }
 
+  export class CannotSmeltMoreThan64AtATime implements SkillResult {
+    message: string;
+    constructor() {
+      this.message = `SkillInvocationError: You cannot smelt more than 64 items at a time.`;
+    }
+  }
+
   export class FuelItemNotUsableAsFuel implements SkillResult {
     message: string;
     constructor(fuelItem: string) {
@@ -59,24 +66,31 @@ export namespace SmeltItemsResults {
     }
   }
 
-  export class InsufficientSmeltItems implements SkillResult {
+  export class InsufficientToSmeltItems implements SkillResult {
     message: string;
     constructor(quantity: number, item: string) {
       this.message = `SkillInvocationError: You do not have enough '${item}' to smelt ${quantity} of them.`;
     }
   }
 
-  export class InsufficientFuel implements SkillResult {
+  export class FuelItemNotInventory implements SkillResult {
     message: string;
     constructor(fuelItem: ItemEntity, itemToSmelt: string) {
-      this.message = `SkillInvocationError: You do not have enough '${fuelItem.name}' to use as fuel for smelting '${itemToSmelt}'.`;
+      this.message = `SkillInvocationError: You need to have at least one the specified fuel item '${fuelItem.name}' in your inventory.`;
     }
   }
 
   export class Success implements SkillResult {
     message: string;
-    constructor(item: string, quantity: number) {
-      this.message = `You acquired ${quantity} of smelted '${item}'.`;
+    constructor() {
+      this.message = `Smelting attempt complete.`;
+    }
+  }
+
+  export class RanOutOfFuelBeforeFullCompletion implements SkillResult {
+    message: string;
+    constructor(fuelItemName: string) {
+      this.message = `You ran out of '${fuelItemName}' before smelting all items.`;
     }
   }
 }

@@ -100,12 +100,24 @@ class SemanticSteve {
             const skillToInvoke = this.skills[skillInvocation.skillName];
             // Set fields that are to be set while skills are running
             this.activeSkill = (_a = this.skills[skillInvocation.skillName]) !== null && _a !== void 0 ? _a : undefined;
+            console.log(`Invoking skill ${skillInvocation.skillName} w/ args: ${skillInvocation.args}`);
             this.timeOfLastSkillInvocation = Date.now();
             try {
                 yield skillToInvoke.invoke(...skillInvocation.args);
             }
             catch (error) {
-                (0, assert_1.default)(this.activeSkill);
+                if (!this.activeSkill) {
+                    console.warn(`Skill.invoke (${skillInvocation.skillName}) threw an error and, somehow, ` +
+                        `the SemanticSteve.activeSkill became undefined before the error was ` +
+                        `thrown. Presumably, ${skillInvocation.skillName} called ` +
+                        `Skill.onResolution (which should = SemanticSteve.handleSkillResolution,` +
+                        ` the only place where SemanticSteve.activeSkill is supposed to set to ` +
+                        `undefined). This is the error that was thrown by Skill.invoke()...`);
+                    console.error(error);
+                    return;
+                }
+                console.warn(`Skill ${skillInvocation.skillName} threw an error!`);
+                console.error(error);
                 const result = new skill_1.GenericSkillResults.UnhandledInvocationError(skillInvocation.skillName, error);
                 this.activeSkill.stop();
                 this.activeSkill.resolve(result);

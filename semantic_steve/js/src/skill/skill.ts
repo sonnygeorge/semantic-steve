@@ -46,7 +46,9 @@ export abstract class Skill {
       `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`,
     );
     this.status = SkillStatus.PENDING_INVOCATION;
-    this.onResolution(result, envStateIsHydrated);
+    setTimeout(() => {
+      this.onResolution(result, envStateIsHydrated);
+    }, 0);
   }
 
   /**

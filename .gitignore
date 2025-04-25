@@ -178,3 +178,6 @@ cython_debug/
 # Node modules
 node_modules/
 screenshots/
+
+# .DS_Store files
+.DS_Store

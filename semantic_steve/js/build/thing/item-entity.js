@@ -28,6 +28,17 @@ class ItemEntity {
         }
         this.bot = bot;
     }
+    // ======================
+    // Item-specific methods
+    // ======================
+    getTotalCountInInventory() {
+        // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
+        // its name should(?) correspond the item as it would be if picked up and in inventory.
+        return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
+    }
+    // ============================
+    // Implementation of Thing API
+    // ============================
     isVisibleInImmediateSurroundings() {
         return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(this.name);
     }
@@ -91,10 +102,12 @@ class ItemEntity {
         }
         return closestCoords;
     }
-    getTotalCountInInventory() {
-        // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
-        // its name should(?) correspond the item as it would be if picked up and in inventory.
-        return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
+    oneIsVisableInImmediateSurroundingsAt(coords) {
+        const immediate = this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(this.name);
+        if (immediate) {
+            return immediate.some((coord) => coord.equals(coords));
+        }
+        return false;
     }
 }
 exports.ItemEntity = ItemEntity;

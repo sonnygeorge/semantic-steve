@@ -25,6 +25,70 @@ export class Block implements Thing {
     this.name = name;
   }
 
+  // =======================
+  // Block-specific methods
+  // =======================
+
+  /**
+   * Assess the current mineability of the block type generally.
+   *
+   * @returns [boolean, number | null] - A tuple where the first element indicates if the
+   *   block is mineable and the second element is the best tool id to use (or null if no
+   *   tool is needed).
+   */
+  public assessCurrentMineability(): [boolean, number | null] {
+    const pblock = this.pblock; // new PBlock(this.pblock.id, 0, 0); // Default metadata/stateId
+    if (!pblock.diggable) {
+      return [false, null];
+    }
+
+    const canMine = (itemID: number | null): boolean => {
+      const pBlockHasNoDrops = !pblock.drops || pblock.drops.length === 0;
+      const pBlockHasNoHarvestTools = !pblock.harvestTools;
+      if (pBlockHasNoDrops || pBlockHasNoHarvestTools) {
+        return getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000; // 100 seconds
+      } else {
+        if (itemID === null || !pblock.harvestTools) {
+          return false;
+        }
+        return (
+          itemID in pblock.harvestTools &&
+          getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000 // 100 seconds
+        );
+      }
+    };
+
+    let fastestDigTime = Number.MAX_VALUE;
+    let bestTool: PItem | undefined = undefined;
+    for (const item of this.bot.envState.inventory.itemSlots) {
+      const itemID = item.type;
+      if (canMine(itemID)) {
+        const digTime = getDigTimeMS(
+          this.bot,
+          this.pblock.id,
+          itemID,
+          item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
+          this.bot.entity.effects,
+        );
+        if (digTime < fastestDigTime) {
+          fastestDigTime = digTime;
+          bestTool = item;
+        }
+      }
+    }
+
+    if (bestTool) {
+      return [true, bestTool.type];
+    } else if (canMine(null)) {
+      return [true, null]; // If the block can be mined with the hand
+    }
+    return [false, null]; // No viable tool and block can't be mined w/ hand
+  }
+
+  // ============================
+  // Implementation of Thing API
+  // ============================
+
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
       this.name,
@@ -105,59 +169,12 @@ export class Block implements Thing {
     return closestCoords;
   }
 
-  /**
-   * Assess the current mineability of the block type generally.
-   *
-   * @returns [boolean, number | null] - A tuple where the first element indicates if the
-   *   block is mineable and the second element is the best tool id to use (or null if no
-   *   tool is needed).
-   */
-  public assessCurrentMineability(): [boolean, number | null] {
-    const pblock = this.pblock; // new PBlock(this.pblock.id, 0, 0); // Default metadata/stateId
-    if (!pblock.diggable) {
-      return [false, null];
+  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+    const immediate =
+      this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
+    if (immediate) {
+      return immediate.some((coord) => coord.equals(coords));
     }
-
-    const canMine = (itemID: number | null): boolean => {
-      const pBlockHasNoDrops = !pblock.drops || pblock.drops.length === 0;
-      const pBlockHasNoHarvestTools = !pblock.harvestTools;
-      if (pBlockHasNoDrops || pBlockHasNoHarvestTools) {
-        return getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000; // 100 seconds
-      } else {
-        if (itemID === null || !pblock.harvestTools) {
-          return false;
-        }
-        return (
-          itemID in pblock.harvestTools &&
-          getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000 // 100 seconds
-        );
-      }
-    };
-
-    let fastestDigTime = Number.MAX_VALUE;
-    let bestTool: PItem | undefined = undefined;
-    for (const item of this.bot.envState.inventory.itemSlots) {
-      const itemID = item.type;
-      if (canMine(itemID)) {
-        const digTime = getDigTimeMS(
-          this.bot,
-          this.pblock.id,
-          itemID,
-          item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
-          this.bot.entity.effects,
-        );
-        if (digTime < fastestDigTime) {
-          fastestDigTime = digTime;
-          bestTool = item;
-        }
-      }
-    }
-
-    if (bestTool) {
-      return [true, bestTool.type];
-    } else if (canMine(null)) {
-      return [true, null]; // If the block can be mined with the hand
-    }
-    return [false, null]; // No viable tool and block can't be mined w/ hand
+    return false;
   }
 }

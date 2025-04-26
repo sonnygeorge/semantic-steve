@@ -8,11 +8,16 @@ export interface Thing {
   name: string;
 
   isVisibleInImmediateSurroundings(): boolean;
+
   isVisibleInDistantSurroundings(): boolean;
 
   locateNearest(): MaybePromise<Vec3 | undefined>;
+
   locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined>;
+
   locateNearestInDistantSurroundings(
     direction?: Direction,
   ): MaybePromise<Vec3 | undefined>;
+
+  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean;
 }

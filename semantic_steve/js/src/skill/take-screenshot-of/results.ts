@@ -15,10 +15,10 @@ export namespace TakeScreenshotOfResults {
     }
   }
 
-  export class CoordinatesNotInImmediateSurroundings implements SkillResult {
+  export class InvalidCoords implements SkillResult {
     message: string;
     constructor(thing: string) {
-      this.message = `SkillInvocationError: the coordinates specifying the location of the '${thing}' to take a screenshot of are not visible in your immediate surroundings.`;
+      this.message = `SkillInvocationError: The provided coordinates were either not visible in your immediate surroundings or a '${thing}' did not exist at that location.`;
     }
   }
 
@@ -26,6 +26,13 @@ export namespace TakeScreenshotOfResults {
     message: string;
     constructor(thing: string, filePath: string) {
       this.message = `You successfully took a screenshot of '${thing}'. The screenshot has been saved to file path: '${filePath}'.`;
+    }
+  }
+
+  export class Failed implements SkillResult {
+    message: string;
+    constructor(thing: string) {
+      this.message = `SkillInvocationError: Failed to take a screenshot of '${thing}'.`;
     }
   }
 }

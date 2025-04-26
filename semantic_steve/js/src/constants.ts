@@ -13,6 +13,12 @@ export const BLOCK_DROP_WAIT_MS = 400;
 // Amount of wait time to ensure crafted items register in the bot's inventory after crafting
 export const CRAFTING_WAIT_MS = 100;
 
+// Amount of wait time to ensure a minecraft command is fulfilled
+export const MC_COMMAND_WAIT_MS = 350;
+
+// Amount of wait time for f2 to take a screenshot
+export const SCREENSHOT_WAIT_MS = 300;
+
 // Slightly lowered (normal is 4.5) distance from the bot at which a block can be placed
 export const MAX_PLACEMENT_REACH = 4;
 

@@ -1,8 +1,12 @@
 import asyncio
+import os
 
 import zmq
 
-from semantic_steve.py.constants import SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE
+from semantic_steve.py.constants import (
+    DEFAULT_PATH_TO_SCREENSHOT_DIR,
+    SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
+)
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
 from semantic_steve.py.schema import SemanticSteveDocs, SemanticSteveUsageError
@@ -14,6 +18,7 @@ class SemanticSteve:
     def __init__(
         self,
         zmq_port: int = 5555,
+        screenshot_dir: str | os.PathLike = DEFAULT_PATH_TO_SCREENSHOT_DIR,
         # Users should never use the following args (only devs):
         _debug: bool = False,
         _should_rebuild_typescript: bool = False,
@@ -22,6 +27,7 @@ class SemanticSteve:
         self.js_process_manager = SemanticSteveJsProcessManager(
             should_rebuild_typescript=_should_rebuild_typescript, debug=_debug
         )
+        os.environ["SEMANTIC_STEVE_SCREENSHOT_DIR"] = str(screenshot_dir)
         self.zmq_port = zmq_port
         self.debug = _debug
         self.socket: zmq.Socket | None = None

@@ -37,6 +37,20 @@ export class ItemEntity implements Thing {
     this.bot = bot;
   }
 
+  // ======================
+  // Item-specific methods
+  // ======================
+
+  getTotalCountInInventory(): number {
+    // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
+    // its name should(?) correspond the item as it would be if picked up and in inventory.
+    return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
+  }
+
+  // ============================
+  // Implementation of Thing API
+  // ============================
+
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(
       this.name,
@@ -125,9 +139,14 @@ export class ItemEntity implements Thing {
     return closestCoords;
   }
 
-  getTotalCountInInventory(): number {
-    // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
-    // its name should(?) correspond the item as it would be if picked up and in inventory.
-    return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
+  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+    const immediate =
+      this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
+        this.name,
+      );
+    if (immediate) {
+      return immediate.some((coord) => coord.equals(coords));
+    }
+    return false;
   }
 }

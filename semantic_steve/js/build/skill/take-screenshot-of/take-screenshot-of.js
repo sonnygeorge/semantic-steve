@@ -46,20 +46,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TakeScreenshotOf = void 0;
+const assert_1 = __importDefault(require("assert"));
 const skill_1 = require("../skill");
 const THREE = __importStar(require("three"));
 const { createCanvas } = require("node-canvas-webgl/lib");
-const promises_1 = __importDefault(require("fs/promises"));
-const path_1 = __importDefault(require("path"));
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs"));
+const vec3_1 = require("vec3");
+const nut_js_1 = require("@nut-tree-fork/nut-js");
+const child_process_1 = require("child_process");
 const { Viewer, WorldView, getBufferFromStream, } = require("prismarine-viewer/viewer");
 const thing_1 = require("../../thing");
 const types_1 = require("../../types");
 const results_1 = require("./results");
+const generic_1 = require("../../utils/generic");
+const constants_1 = require("../../constants");
+const constants_2 = require("../../constants");
+// TODO: Currently this skill isn't pausable/resumable like it should be.
+const CANVAS_WIDTH = 512;
+const CANVAS_HEIGHT = 512;
+// NOTE: If this is slower, commands in the chat are prone to returning:
+// "Chat disabled due to expired profile public key. Please try reconnecting."
+nut_js_1.keyboard.config.autoDelayMs = 130;
+// NOTE: This is a macOS-specific implementation.
+const MC_SCREENSHOT_DIR_PATH = path.join(process.env.HOME || "", "Library", "Application Support", "minecraft", "screenshots");
 class TakeScreenshotOf extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
-        // global.THREE = require('three')
-        // global.Worker = require('worker_threads').Worker
+        this.screenshotDir = process.env.SEMANTIC_STEVE_SCREENSHOT_DIR;
+        // Ensure screenshot directory exists
+        if (!fs.existsSync(this.screenshotDir)) {
+            fs.mkdirSync(this.screenshotDir, { recursive: true });
+        }
     }
     viewDistanceToNumber() {
         switch (this.bot.settings.viewDistance) {
@@ -75,154 +93,143 @@ class TakeScreenshotOf extends skill_1.Skill {
                 return 12; // Default to normal if not recognized
         }
     }
-    captureScreenshot(thing) {
+    takePOVScreenshotWithViewer(destinationPath) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const viewDistance = this.viewDistanceToNumber();
-                const width = 1920;
-                const height = 1080;
-                const version = this.bot.version;
-                // Get the world from bot
-                const world = this.bot.world;
-                // Create canvas and renderer
-                const canvas = createCanvas(width, height);
-                const renderer = new THREE.WebGLRenderer({ canvas });
-                const viewer = new Viewer(renderer);
-                if (!viewer.setVersion(version)) {
-                    throw new Error(`Unsupported version: ${version}`);
-                }
-                // Get the thing's position
-                const position = yield thing.locateNearest();
-                if (!position) {
-                    console.error(`Could not find ${thing.name}`);
-                    return null;
-                }
-                //   const thingDetails = await this.getThingDetails(thing);
-                //   if (!thingDetails) return null;
-                //   const { position } = thingDetails!;
-                // Use bot's head position and viewing angle for the camera
-                // This is a simplified approach - we'll just position the camera where the bot is
-                const cameraPosition = this.bot.entity.position.clone();
-                cameraPosition.y += this.bot.entity.height; // Position at head level
-                // Create world view
-                const worldView = new WorldView(world, viewDistance, cameraPosition);
-                viewer.listen(worldView);
-                // Position the camera at the bot's position
-                viewer.camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z);
-                // calculate the yaw and pitch of the bot's current position to the target
-                const targetPosition = position;
-                const dx = targetPosition.x - cameraPosition.x;
-                const dy = targetPosition.y - cameraPosition.y;
-                const dz = targetPosition.z - cameraPosition.z;
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                // Calculate pitch (vertical angle) - in Minecraft/Mineflayer coordinate system
-                const pitch = Math.asin(dy / distance); // Negative because looking up is negative in Minecraft
-                // Calculate yaw (horizontal angle) - in Minecraft/Mineflayer coordinate system
-                const yaw = Math.atan2(-dx, -dz); // Adjust for Minecraft's coordinate system
-                // Set the camera rotation
-                viewer.camera.rotation.set(pitch, yaw, 0, "ZYX");
-                // TODO: In the future, implement smart camera positioning logic to frame the target
-                // This would involve calculating an offset based on the thing's type and size
-                // For now, we're just using the bot's viewpoint
-                // Initialize the world view
-                yield worldView.init(cameraPosition);
-                // Synchronize with bot's entities if available
-                if (this.bot.entities) {
-                    for (const entityId in this.bot.entities) {
-                        const e = this.bot.entities[entityId];
-                        if (e !== this.bot.entity) {
-                            // Add other entities to the world view
-                            viewer.updateEntity({
-                                id: e.id,
-                                pos: e.position,
-                                pitch: e.pitch,
-                                yaw: e.yaw,
-                            });
-                        }
+            (0, assert_1.default)(this.atCoords);
+            const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            const viewer = new Viewer(renderer);
+            if (!viewer.setVersion(this.bot.version)) {
+                throw new Error(`prismarine-viewer does not support version: ${this.bot.version}`);
+            }
+            const eyePosition = this.bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+            // Create world view
+            const worldView = new WorldView(this.bot.world, this.viewDistanceToNumber(), eyePosition);
+            viewer.listen(worldView);
+            // Set up the viewer
+            viewer.camera.position.set(eyePosition.x, eyePosition.y, eyePosition.z);
+            viewer.camera.lookAt(this.atCoords.x, this.atCoords.y, this.atCoords.z);
+            // Initialize the world view
+            yield worldView.init(eyePosition);
+            // Synchronize with bot's entities if available
+            if (this.bot.entities) {
+                for (const entityId in this.bot.entities) {
+                    const e = this.bot.entities[entityId];
+                    if (e !== this.bot.entity) {
+                        // Add other entities to the world view
+                        viewer.updateEntity({
+                            id: e.id,
+                            pos: e.position,
+                            pitch: e.pitch,
+                            yaw: e.yaw,
+                        });
                     }
                 }
-                // Wait for chunks to render
-                yield viewer.world.waitForChunksToRender();
-                // Render the scene
-                renderer.render(viewer.scene, viewer.camera);
-                // Create image stream
-                const imageStream = canvas.createJPEGStream({
-                    // bufsize: 4096,
-                    quality: 100,
-                    progressive: false,
-                });
-                // Get buffer from stream
-                const buffer = yield getBufferFromStream(imageStream);
-                // Clean up resources
-                //   viewer.dispose();
-                //   renderer.dispose();
-                return buffer;
+            }
+            // Wait for chunks to render
+            yield viewer.world.waitForChunksToRender();
+            // Render the scene
+            renderer.render(viewer.scene, viewer.camera);
+            // Create image stream
+            const imageStream = canvas.createJPEGStream({
+                // bufsize: 4096,
+                quality: 100,
+                progressive: false,
+            });
+            // Get buffer from stream
+            const buffer = yield getBufferFromStream(imageStream);
+            fs.writeFileSync(destinationPath, buffer); // Save the screenshot to the destination path
+            // Clean up resources
+            // viewer.dispose();
+            // renderer.dispose();
+            return true;
+        });
+    }
+    // NOTE: This is a macOS-specific implementation.
+    takePOVScreenshotWithComputerControlAndSpectatorMode(destinationPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const typeMinecraftChat = (command) => __awaiter(this, void 0, void 0, function* () {
+                yield nut_js_1.keyboard.type(nut_js_1.Key.Enter); // Make sure chat is closed
+                yield nut_js_1.keyboard.type(nut_js_1.Key.T); // Open chat
+                yield nut_js_1.keyboard.type(command);
+                yield nut_js_1.keyboard.type(nut_js_1.Key.Enter);
+                yield (0, generic_1.asyncSleep)(constants_2.MC_COMMAND_WAIT_MS); // Wait for command to process
+            });
+            // Get the currently focused application
+            let previousApp = null;
+            try {
+                previousApp = (0, child_process_1.execSync)(`osascript -e 'tell application "System Events" to get bundle identifier of (first process whose frontmost is true)'`)
+                    .toString()
+                    .trim();
             }
             catch (error) {
-                console.error("Error capturing screenshot:", error);
-                return null;
+                console.error("Failed to get current frontmost application:", error);
             }
-        });
-    }
-    /**
-     * Gets the position details for a Thing.
-     * Necessary for positioning the camera to take a screenshot.
-     */
-    getThingDetails(thing) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // First, check if it's an entity
-            const entities = this.bot.entities;
-            for (const entityId in entities) {
-                const entity = entities[entityId];
-                // Check if this entity matches the thing's name
-                if ((entity.name &&
-                    entity.name.toLowerCase() === thing.name.toLowerCase()) ||
-                    (entity.displayName &&
-                        entity.displayName.toLowerCase().includes(thing.name.toLowerCase()))) {
-                    return {
-                        position: entity.position,
-                        type: "entity",
-                        object: entity,
-                    };
+            // Focus the Minecraft window
+            console.log("Attempting to focus Minecraft window...");
+            try {
+                (0, child_process_1.execSync)(`osascript -e 'tell application "System Events" to tell (first process whose name contains "java" or name contains "Minecraft") to set frontmost to true'`);
+            }
+            catch (error) {
+                console.error("Failed to focus Minecraft window:", error);
+                return false;
+            }
+            // Spectate player
+            yield typeMinecraftChat("/gamemode spectator");
+            yield typeMinecraftChat(`/spectate ${this.bot.username}`);
+            // Take screenshot
+            const beforeFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
+            yield nut_js_1.keyboard.type(nut_js_1.Key.F2); // Take screenshot
+            yield (0, generic_1.asyncSleep)(constants_2.SCREENSHOT_WAIT_MS); // Wait for screenshot to be taken
+            const afterFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
+            const newFiles = afterFiles.filter((file) => !beforeFiles.includes(file));
+            if (newFiles.length === 0) {
+                console.error("No new screenshot file detected");
+                return false;
+            }
+            const screenshotPath = path.join(MC_SCREENSHOT_DIR_PATH, newFiles[0]);
+            fs.copyFileSync(screenshotPath, destinationPath); // Copy over to destination path
+            // Open the chat again (allowing us to restore the previous app)
+            yield nut_js_1.keyboard.type(nut_js_1.Key.T); // Open chat
+            yield (0, generic_1.asyncSleep)(constants_2.MC_COMMAND_WAIT_MS); // Wait for chat to open
+            // Restore the previously focused application
+            console.log("Restoring focus of previous application:", previousApp);
+            if (previousApp) {
+                try {
+                    (0, child_process_1.execSync)(`osascript -e 'tell application id "${previousApp}" to activate'`);
+                }
+                catch (error) {
+                    console.error("Failed to restore previous application:", error);
                 }
             }
-            // Then check if it's a block
-            const blocks = this.bot.findBlocks({
-                matching: (block) => {
-                    var _a;
-                    const blockName = (_a = this.bot.registry.blocksByStateId[block.stateId]) === null || _a === void 0 ? void 0 : _a.name;
-                    return blockName === null || blockName === void 0 ? void 0 : blockName.toLowerCase().includes(thing.name.toLowerCase());
-                },
-                maxDistance: 32,
-                count: 1,
-            });
-            if (blocks.length > 0) {
-                const blockPos = blocks[0];
-                const block = this.bot.blockAt(blockPos);
-                if (block) {
-                    return {
-                        position: block.position,
-                        type: "block",
-                        object: block,
-                    };
-                }
-            }
-            return null;
+            return true;
         });
     }
-    saveScreenshot(buffer, thing) {
+    startOrResumeScreenshotting() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Create screenshots directory if it doesn't exist
-            const screenshotsDir = path_1.default.join(process.cwd(), "screenshots");
-            yield promises_1.default.mkdir(screenshotsDir, { recursive: true });
-            // Create filename based on thing and timestamp
-            const fileName = `${thing
-                .toLowerCase()
-                .replace(/\s+/g, "_")}_${Date.now()}.jpg`;
-            const filePath = path_1.default.join(screenshotsDir, fileName);
-            // Write the file
-            yield promises_1.default.writeFile(filePath, buffer);
-            return filePath;
+            (0, assert_1.default)(this.atCoords);
+            (0, assert_1.default)(this.thing);
+            // Look at the target thing
+            yield this.bot.lookAt(this.atCoords);
+            // Take screenshot of bot's POV
+            const destinationPath = path.join(this.screenshotDir, `${new Date().toISOString()}_${this.thing.name}.png`);
+            let wasSuccess = false;
+            if (process.env.USE_COMPUTER_CONTROL_FOR_SCREENSHOT &&
+                process.env.USE_COMPUTER_CONTROL_FOR_SCREENSHOT === "true") {
+                wasSuccess =
+                    yield this.takePOVScreenshotWithComputerControlAndSpectatorMode(destinationPath);
+            }
+            else {
+                wasSuccess = yield this.takePOVScreenshotWithViewer(destinationPath);
+            }
+            if (wasSuccess) {
+                const result = new results_1.TakeScreenshotOfResults.Success(this.thing.name, destinationPath);
+                this.resolve(result);
+            }
+            else {
+                const result = new results_1.TakeScreenshotOfResults.Failed(this.thing.name);
+                this.resolve(result);
+            }
         });
     }
     // ============================
@@ -230,45 +237,37 @@ class TakeScreenshotOf extends skill_1.Skill {
     // ============================
     doInvoke(thing, atCoordinates) {
         return __awaiter(this, void 0, void 0, function* () {
+            // Validate thing
             try {
-                // Find the Thing object using the bot's thing factory
-                let targetThing;
-                try {
-                    targetThing = this.bot.thingFactory.createThing(thing);
-                }
-                catch (error) {
-                    console.log(error);
-                    if (error instanceof types_1.InvalidThingError) {
-                        // Invalid thing name
-                        this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
-                        return;
-                    }
-                    // Other errors
-                    throw error;
-                }
-                // Check if the Thing is visible in immediate surroundings
-                if (!targetThing.isVisibleInImmediateSurroundings()) {
-                    // The thing exists but isn't visible in immediate surroundings
-                    this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, `${thing_1.SUPPORTED_THING_TYPES} that are visible in immediate surroundings`));
+                this.thing = this.bot.thingFactory.createThing(thing);
+            }
+            catch (err) {
+                if (err instanceof types_1.InvalidThingError) {
+                    const result = new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString());
+                    this.resolve(result);
                     return;
                 }
-                // Take the screenshot
-                const screenshotBuffer = yield this.captureScreenshot(targetThing);
-                if (!screenshotBuffer) {
-                    // Screenshot capture failed
-                    this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
+            }
+            (0, assert_1.default)(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
+            // Validate/ascertain atCoords
+            if (atCoordinates) {
+                this.atCoords = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
+                if (!this.thing.oneIsVisableInImmediateSurroundingsAt(this.atCoords)) {
+                    const result = new results_1.TakeScreenshotOfResults.InvalidCoords(thing);
+                    this.resolve(result);
                     return;
                 }
-                // Save the screenshot
-                const screenshotPath = yield this.saveScreenshot(screenshotBuffer, thing);
-                // Return success with the appropriate result type
-                this.resolve(new results_1.TakeScreenshotOfResults.Success(thing, screenshotPath));
             }
-            catch (error) {
-                console.log("error", error);
-                // Use InvalidThing result for any errors
-                this.resolve(new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString()));
+            else {
+                this.atCoords = yield this.thing.locateNearestInImmediateSurroundings();
+                if (!this.atCoords) {
+                    const result = new results_1.TakeScreenshotOfResults.ThingNotInImmediateSurroundings(thing);
+                    this.resolve(result);
+                    return;
+                }
             }
+            // Enter screenshot taking
+            yield this.startOrResumeScreenshotting();
         });
     }
     // TODO:
@@ -292,7 +291,7 @@ TakeScreenshotOf.METADATA = {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the
+       * @param atCoordinates - Optional coordinates to disambiguate where the
        * thing is located.
        */
     `,

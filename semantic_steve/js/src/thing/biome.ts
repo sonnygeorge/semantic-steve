@@ -30,6 +30,10 @@ export class Biome implements Thing {
     );
   }
 
+  // =======================
+  // Biome-specific methods
+  // =======================
+
   public isVisibleInImmediateSurroundings(): boolean {
     return this.bot.envState.surroundings.immediate.biomes.has(this.id);
   }
@@ -93,5 +97,11 @@ export class Biome implements Thing {
     }
 
     return closestCoords;
+  }
+
+  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+    throw new Error(
+      "Method not implemented. This method is yet not usable for biomes.",
+    );
   }
 }

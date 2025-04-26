@@ -15,16 +15,22 @@ var TakeScreenshotOfResults;
         }
     }
     TakeScreenshotOfResults.ThingNotInImmediateSurroundings = ThingNotInImmediateSurroundings;
-    class CoordinatesNotInImmediateSurroundings {
+    class InvalidCoords {
         constructor(thing) {
-            this.message = `SkillInvocationError: the coordinates specifying the location of the '${thing}' to take a screenshot of are not visible in your immediate surroundings.`;
+            this.message = `SkillInvocationError: The provided coordinates were either not visible in your immediate surroundings or a '${thing}' did not exist at that location.`;
         }
     }
-    TakeScreenshotOfResults.CoordinatesNotInImmediateSurroundings = CoordinatesNotInImmediateSurroundings;
+    TakeScreenshotOfResults.InvalidCoords = InvalidCoords;
     class Success {
         constructor(thing, filePath) {
             this.message = `You successfully took a screenshot of '${thing}'. The screenshot has been saved to file path: '${filePath}'.`;
         }
     }
     TakeScreenshotOfResults.Success = Success;
+    class Failed {
+        constructor(thing) {
+            this.message = `SkillInvocationError: Failed to take a screenshot of '${thing}'.`;
+        }
+    }
+    TakeScreenshotOfResults.Failed = Failed;
 })(TakeScreenshotOfResults || (exports.TakeScreenshotOfResults = TakeScreenshotOfResults = {}));

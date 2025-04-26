@@ -1,11 +1,13 @@
+import assert from "assert";
 import { Bot } from "mineflayer";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import * as THREE from "three";
-import { Worker } from "worker_threads";
 const { createCanvas } = require("node-canvas-webgl/lib");
-import fs from "fs/promises";
-import path from "path";
+import * as path from "path";
+import * as fs from "fs";
 import { Vec3 } from "vec3";
+import { keyboard, Key } from "@nut-tree-fork/nut-js";
+import { execSync } from "child_process";
 const {
   Viewer,
   WorldView,
@@ -14,6 +16,27 @@ const {
 import { SUPPORTED_THING_TYPES, Thing } from "../../thing";
 import { InvalidThingError } from "../../types";
 import { TakeScreenshotOfResults } from "./results";
+import { asyncSleep } from "../../utils/generic";
+import { BOT_EYE_HEIGHT } from "../../constants";
+import { MC_COMMAND_WAIT_MS, SCREENSHOT_WAIT_MS } from "../../constants";
+
+// TODO: Currently this skill isn't pausable/resumable like it should be.
+
+const CANVAS_WIDTH = 512;
+const CANVAS_HEIGHT = 512;
+
+// NOTE: If this is slower, commands in the chat are prone to returning:
+// "Chat disabled due to expired profile public key. Please try reconnecting."
+keyboard.config.autoDelayMs = 130;
+
+// NOTE: This is a macOS-specific implementation.
+const MC_SCREENSHOT_DIR_PATH = path.join(
+  process.env.HOME || "",
+  "Library",
+  "Application Support",
+  "minecraft",
+  "screenshots"
+);
 
 export class TakeScreenshotOf extends Skill {
   public static readonly TIMEOUT_MS: number = 18000; // 18 seconds
@@ -26,17 +49,23 @@ export class TakeScreenshotOf extends Skill {
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
        * @param thing - The thing to take a screenshot of.
-       * @param atCoordinates - Optional coordinates to disamiguate where the
+       * @param atCoordinates - Optional coordinates to disambiguate where the
        * thing is located.
        */
     `,
   };
 
+  public screenshotDir: string;
+  private thing?: Thing;
+  private atCoords?: Vec3;
+
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
-
-    // global.THREE = require('three')
-    // global.Worker = require('worker_threads').Worker
+    this.screenshotDir = process.env.SEMANTIC_STEVE_SCREENSHOT_DIR as string;
+    // Ensure screenshot directory exists
+    if (!fs.existsSync(this.screenshotDir)) {
+      fs.mkdirSync(this.screenshotDir, { recursive: true });
+    }
   }
 
   private viewDistanceToNumber(): number {
@@ -54,187 +83,181 @@ export class TakeScreenshotOf extends Skill {
     }
   }
 
-  private async captureScreenshot(thing: Thing): Promise<Buffer | null> {
-    try {
-      const viewDistance = this.viewDistanceToNumber();
-      const width = 1920;
-      const height = 1080;
-      const version = this.bot.version;
-
-      // Get the world from bot
-      const world = this.bot.world;
-
-      // Create canvas and renderer
-      const canvas = createCanvas(width, height);
-      const renderer = new THREE.WebGLRenderer({ canvas });
-      const viewer = new Viewer(renderer);
-
-      if (!viewer.setVersion(version)) {
-        throw new Error(`Unsupported version: ${version}`);
-      }
-
-      // Get the thing's position
-      const position = await thing.locateNearest();
-      if (!position) {
-        console.error(`Could not find ${thing.name}`);
-        return null;
-      }
-
-      //   const thingDetails = await this.getThingDetails(thing);
-      //   if (!thingDetails) return null;
-
-      //   const { position } = thingDetails!;
-
-      // Use bot's head position and viewing angle for the camera
-      // This is a simplified approach - we'll just position the camera where the bot is
-      const cameraPosition = this.bot.entity.position.clone();
-      cameraPosition.y += this.bot.entity.height; // Position at head level
-
-      // Create world view
-      const worldView = new WorldView(world, viewDistance, cameraPosition);
-      viewer.listen(worldView);
-
-      // Position the camera at the bot's position
-      viewer.camera.position.set(
-        cameraPosition.x,
-        cameraPosition.y,
-        cameraPosition.z,
+  private async takePOVScreenshotWithViewer(
+    destinationPath: string
+  ): Promise<boolean> {
+    assert(this.atCoords);
+    const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+    const renderer = new THREE.WebGLRenderer({ canvas });
+    const viewer = new Viewer(renderer);
+    if (!viewer.setVersion(this.bot.version)) {
+      throw new Error(
+        `prismarine-viewer does not support version: ${this.bot.version}`
       );
+    }
 
-      // calculate the yaw and pitch of the bot's current position to the target
-      const targetPosition = position;
-      const dx = targetPosition.x - cameraPosition.x;
-      const dy = targetPosition.y - cameraPosition.y;
-      const dz = targetPosition.z - cameraPosition.z;
-      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
 
-      // Calculate pitch (vertical angle) - in Minecraft/Mineflayer coordinate system
-      const pitch = Math.asin(dy / distance); // Negative because looking up is negative in Minecraft
+    // Create world view
+    const worldView = new WorldView(
+      this.bot.world,
+      this.viewDistanceToNumber(),
+      eyePosition
+    );
+    viewer.listen(worldView);
 
-      // Calculate yaw (horizontal angle) - in Minecraft/Mineflayer coordinate system
-      const yaw = Math.atan2(-dx, -dz); // Adjust for Minecraft's coordinate system
+    // Set up the viewer
+    viewer.camera.position.set(eyePosition.x, eyePosition.y, eyePosition.z);
+    viewer.camera.lookAt(this.atCoords.x, this.atCoords.y, this.atCoords.z);
 
-      // Set the camera rotation
-      viewer.camera.rotation.set(pitch, yaw, 0, "ZYX");
-      // TODO: In the future, implement smart camera positioning logic to frame the target
-      // This would involve calculating an offset based on the thing's type and size
-      // For now, we're just using the bot's viewpoint
+    // Initialize the world view
+    await worldView.init(eyePosition);
 
-      // Initialize the world view
-      await worldView.init(cameraPosition);
-
-      // Synchronize with bot's entities if available
-      if (this.bot.entities) {
-        for (const entityId in this.bot.entities) {
-          const e = this.bot.entities[entityId];
-          if (e !== this.bot.entity) {
-            // Add other entities to the world view
-            viewer.updateEntity({
-              id: e.id,
-              pos: e.position,
-              pitch: e.pitch,
-              yaw: e.yaw,
-            });
-          }
+    // Synchronize with bot's entities if available
+    if (this.bot.entities) {
+      for (const entityId in this.bot.entities) {
+        const e = this.bot.entities[entityId];
+        if (e !== this.bot.entity) {
+          // Add other entities to the world view
+          viewer.updateEntity({
+            id: e.id,
+            pos: e.position,
+            pitch: e.pitch,
+            yaw: e.yaw,
+          });
         }
       }
-
-      // Wait for chunks to render
-      await viewer.world.waitForChunksToRender();
-
-      // Render the scene
-      renderer.render(viewer.scene, viewer.camera);
-
-      // Create image stream
-      const imageStream = canvas.createJPEGStream({
-        // bufsize: 4096,
-        quality: 100,
-        progressive: false,
-      });
-
-      // Get buffer from stream
-      const buffer = await getBufferFromStream(imageStream);
-
-      // Clean up resources
-      //   viewer.dispose();
-      //   renderer.dispose();
-
-      return buffer;
-    } catch (error) {
-      console.error("Error capturing screenshot:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the position details for a Thing.
-   * Necessary for positioning the camera to take a screenshot.
-   */
-  private async getThingDetails(
-    thing: Thing,
-  ): Promise<{ position: Vec3; type: string; object: any } | null> {
-    // First, check if it's an entity
-    const entities = this.bot.entities;
-    for (const entityId in entities) {
-      const entity = entities[entityId];
-
-      // Check if this entity matches the thing's name
-      if (
-        (entity.name &&
-          entity.name.toLowerCase() === thing.name.toLowerCase()) ||
-        (entity.displayName &&
-          entity.displayName.toLowerCase().includes(thing.name.toLowerCase()))
-      ) {
-        return {
-          position: entity.position,
-          type: "entity",
-          object: entity,
-        };
-      }
     }
 
-    // Then check if it's a block
-    const blocks = this.bot.findBlocks({
-      matching: (block) => {
-        const blockName =
-          this.bot.registry.blocksByStateId[block.stateId]?.name;
-        return blockName?.toLowerCase().includes(thing.name.toLowerCase());
-      },
-      maxDistance: 32,
-      count: 1,
+    // Wait for chunks to render
+    await viewer.world.waitForChunksToRender();
+
+    // Render the scene
+    renderer.render(viewer.scene, viewer.camera);
+
+    // Create image stream
+    const imageStream = canvas.createJPEGStream({
+      // bufsize: 4096,
+      quality: 100,
+      progressive: false,
     });
 
-    if (blocks.length > 0) {
-      const blockPos = blocks[0];
-      const block = this.bot.blockAt(blockPos);
+    // Get buffer from stream
+    const buffer = await getBufferFromStream(imageStream);
+    fs.writeFileSync(destinationPath, buffer); // Save the screenshot to the destination path
 
-      if (block) {
-        return {
-          position: block.position,
-          type: "block",
-          object: block,
-        };
+    // Clean up resources
+    // viewer.dispose();
+    // renderer.dispose();
+
+    return true;
+  }
+
+  // NOTE: This is a macOS-specific implementation.
+  private async takePOVScreenshotWithComputerControlAndSpectatorMode(
+    destinationPath: string
+  ): Promise<boolean> {
+    const typeMinecraftChat = async (command: string): Promise<void> => {
+      await keyboard.type(Key.Enter); // Make sure chat is closed
+      await keyboard.type(Key.T); // Open chat
+      await keyboard.type(command);
+      await keyboard.type(Key.Enter);
+      await asyncSleep(MC_COMMAND_WAIT_MS); // Wait for command to process
+    };
+
+    // Get the currently focused application
+    let previousApp: string | null = null;
+    try {
+      previousApp = execSync(
+        `osascript -e 'tell application "System Events" to get bundle identifier of (first process whose frontmost is true)'`
+      )
+        .toString()
+        .trim();
+    } catch (error) {
+      console.error("Failed to get current frontmost application:", error);
+    }
+
+    // Focus the Minecraft window
+    console.log("Attempting to focus Minecraft window...");
+    try {
+      execSync(
+        `osascript -e 'tell application "System Events" to tell (first process whose name contains "java" or name contains "Minecraft") to set frontmost to true'`
+      );
+    } catch (error) {
+      console.error("Failed to focus Minecraft window:", error);
+      return false;
+    }
+
+    // Spectate player
+    await typeMinecraftChat("/gamemode spectator");
+    await typeMinecraftChat(`/spectate ${this.bot.username}`);
+
+    // Take screenshot
+    const beforeFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
+    await keyboard.type(Key.F2); // Take screenshot
+    await asyncSleep(SCREENSHOT_WAIT_MS); // Wait for screenshot to be taken
+    const afterFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
+    const newFiles = afterFiles.filter((file) => !beforeFiles.includes(file));
+    if (newFiles.length === 0) {
+      console.error("No new screenshot file detected");
+      return false;
+    }
+    const screenshotPath = path.join(MC_SCREENSHOT_DIR_PATH, newFiles[0]);
+    fs.copyFileSync(screenshotPath, destinationPath); // Copy over to destination path
+
+    // Open the chat again (allowing us to restore the previous app)
+    await keyboard.type(Key.T); // Open chat
+    await asyncSleep(MC_COMMAND_WAIT_MS); // Wait for chat to open
+
+    // Restore the previously focused application
+    console.log("Restoring focus of previous application:", previousApp);
+    if (previousApp) {
+      try {
+        execSync(
+          `osascript -e 'tell application id "${previousApp}" to activate'`
+        );
+      } catch (error) {
+        console.error("Failed to restore previous application:", error);
       }
     }
 
-    return null;
+    return true;
   }
 
-  private async saveScreenshot(buffer: Buffer, thing: string): Promise<string> {
-    // Create screenshots directory if it doesn't exist
-    const screenshotsDir = path.join(process.cwd(), "screenshots");
-    await fs.mkdir(screenshotsDir, { recursive: true });
+  private async startOrResumeScreenshotting(): Promise<void> {
+    assert(this.atCoords);
+    assert(this.thing);
 
-    // Create filename based on thing and timestamp
-    const fileName = `${thing
-      .toLowerCase()
-      .replace(/\s+/g, "_")}_${Date.now()}.jpg`;
-    const filePath = path.join(screenshotsDir, fileName);
+    // Look at the target thing
+    await this.bot.lookAt(this.atCoords);
 
-    // Write the file
-    await fs.writeFile(filePath, buffer);
-
-    return filePath;
+    // Take screenshot of bot's POV
+    const destinationPath = path.join(
+      this.screenshotDir,
+      `${new Date().toISOString()}_${this.thing.name}.png`
+    );
+    let wasSuccess = false;
+    if (
+      process.env.USE_COMPUTER_CONTROL_FOR_SCREENSHOT &&
+      process.env.USE_COMPUTER_CONTROL_FOR_SCREENSHOT === "true"
+    ) {
+      wasSuccess =
+        await this.takePOVScreenshotWithComputerControlAndSpectatorMode(
+          destinationPath
+        );
+    } else {
+      wasSuccess = await this.takePOVScreenshotWithViewer(destinationPath);
+    }
+    if (wasSuccess) {
+      const result = new TakeScreenshotOfResults.Success(
+        this.thing.name,
+        destinationPath
+      );
+      this.resolve(result);
+    } else {
+      const result = new TakeScreenshotOfResults.Failed(this.thing.name);
+      this.resolve(result);
+    }
   }
 
   // ============================
@@ -243,70 +266,47 @@ export class TakeScreenshotOf extends Skill {
 
   public async doInvoke(
     thing: string,
-    atCoordinates?: [number, number, number],
+    atCoordinates?: [number, number, number]
   ): Promise<void> {
+    // Validate thing
     try {
-      // Find the Thing object using the bot's thing factory
-      let targetThing: Thing;
-      try {
-        targetThing = this.bot.thingFactory.createThing(thing);
-      } catch (error) {
-        console.log(error);
-        if (error instanceof InvalidThingError) {
-          // Invalid thing name
-          this.resolve(
-            new TakeScreenshotOfResults.InvalidThing(
-              thing,
-              SUPPORTED_THING_TYPES.toString(),
-            ),
-          );
-          return;
-        }
-        // Other errors
-        throw error;
-      }
-
-      // Check if the Thing is visible in immediate surroundings
-      if (!targetThing.isVisibleInImmediateSurroundings()) {
-        // The thing exists but isn't visible in immediate surroundings
-        this.resolve(
-          new TakeScreenshotOfResults.InvalidThing(
-            thing,
-            `${SUPPORTED_THING_TYPES} that are visible in immediate surroundings`,
-          ),
-        );
-        return;
-      }
-
-      // Take the screenshot
-      const screenshotBuffer = await this.captureScreenshot(targetThing);
-
-      if (!screenshotBuffer) {
-        // Screenshot capture failed
-        this.resolve(
-          new TakeScreenshotOfResults.InvalidThing(
-            thing,
-            SUPPORTED_THING_TYPES.toString(),
-          ),
-        );
-        return;
-      }
-
-      // Save the screenshot
-      const screenshotPath = await this.saveScreenshot(screenshotBuffer, thing);
-
-      // Return success with the appropriate result type
-      this.resolve(new TakeScreenshotOfResults.Success(thing, screenshotPath));
-    } catch (error) {
-      console.log("error", error);
-      // Use InvalidThing result for any errors
-      this.resolve(
-        new TakeScreenshotOfResults.InvalidThing(
+      this.thing = this.bot.thingFactory.createThing(thing);
+    } catch (err) {
+      if (err instanceof InvalidThingError) {
+        const result = new TakeScreenshotOfResults.InvalidThing(
           thing,
-          SUPPORTED_THING_TYPES.toString(),
-        ),
-      );
+          SUPPORTED_THING_TYPES.toString()
+        );
+        this.resolve(result);
+        return;
+      }
     }
+    assert(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
+
+    // Validate/ascertain atCoords
+    if (atCoordinates) {
+      this.atCoords = new Vec3(
+        atCoordinates[0],
+        atCoordinates[1],
+        atCoordinates[2]
+      );
+      if (!this.thing.oneIsVisableInImmediateSurroundingsAt(this.atCoords)) {
+        const result = new TakeScreenshotOfResults.InvalidCoords(thing);
+        this.resolve(result);
+        return;
+      }
+    } else {
+      this.atCoords = await this.thing.locateNearestInImmediateSurroundings();
+      if (!this.atCoords) {
+        const result =
+          new TakeScreenshotOfResults.ThingNotInImmediateSurroundings(thing);
+        this.resolve(result);
+        return;
+      }
+    }
+
+    // Enter screenshot taking
+    await this.startOrResumeScreenshotting();
   }
 
   // TODO:

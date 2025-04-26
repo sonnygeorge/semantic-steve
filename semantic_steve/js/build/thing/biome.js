@@ -21,6 +21,9 @@ class Biome {
         }
         (0, assert_1.default)(this.id !== -1, `This should be impossible. We should have thrown an error above.`);
     }
+    // =======================
+    // Biome-specific methods
+    // =======================
     isVisibleInImmediateSurroundings() {
         return this.bot.envState.surroundings.immediate.biomes.has(this.id);
     }
@@ -71,6 +74,9 @@ class Biome {
             }
         }
         return closestCoords;
+    }
+    oneIsVisableInImmediateSurroundingsAt(coords) {
+        throw new Error("Method not implemented. This method is yet not usable for biomes.");
     }
 }
 exports.Biome = Biome;

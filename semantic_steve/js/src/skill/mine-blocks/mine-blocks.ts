@@ -37,6 +37,7 @@ export class MineBlocks extends Skill {
          *
          * TIP: Don't mine too many at a time; prefer small, incremental quantities
          * (e.g. 1-6) in order to avoid timeout issues.
+         * TIP: Use 'pathfindToCoordinates' to dig down and not 'mineBlocks'!
          *
          * @param block - The block to mine.
          * @param quantity - Optional quantity to mine. Defaults to 1.

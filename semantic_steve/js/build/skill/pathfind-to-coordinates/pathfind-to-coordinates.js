@@ -229,6 +229,8 @@ PathfindToCoordinates.METADATA = {
        * TIP: Do not call this function with very distant coordinates, as this will likely
        * result in a timeout. Instead, prefer incremental invocations of this skill for
        * traversing long distances.
+       * TIP: Use this function to dig down by calling it with coordinates below the bot's
+       * current Y level.
        *
        * @param coordinates - The target coordinates as an array ordered [x, y, z].
        * @param stopIfFound - An optional array of strings representing things that, if

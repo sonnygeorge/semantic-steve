@@ -11,7 +11,7 @@ import { getGoodPathfindingTarget } from "./utils";
 const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
 
 export class PathfindToCoordinates extends Skill {
-  public static readonly TIMEOUT_MS: number = 2000; // 25 seconds
+  public static readonly TIMEOUT_MS: number = 25000; // 25 seconds
   public static readonly METADATA: SkillMetadata = {
     name: "pathfindToCoordinates",
     signature:

@@ -216,7 +216,7 @@ class PathfindToCoordinates extends skill_1.Skill {
     }
 }
 exports.PathfindToCoordinates = PathfindToCoordinates;
-PathfindToCoordinates.TIMEOUT_MS = 2000; // 25 seconds
+PathfindToCoordinates.TIMEOUT_MS = 25000; // 25 seconds
 PathfindToCoordinates.METADATA = {
     name: "pathfindToCoordinates",
     signature: "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",

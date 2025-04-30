@@ -27,6 +27,7 @@ export class SemanticSteve {
     bot: Bot,
     config: SemanticSteveConfig = new SemanticSteveConfig(),
   ) {
+    console.log("Javascript: Initializing SemanticSteve...");
     this.bot = bot;
 
     this.socket = new zmq.Pair({ receiveTimeout: 0 });

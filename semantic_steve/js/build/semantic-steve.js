@@ -55,6 +55,7 @@ const inventory_changes_1 = require("./utils/inventory-changes");
 class SemanticSteve {
     constructor(bot, config = new types_1.SemanticSteveConfig()) {
         this.hasDiedWhileAwaitingInvocation = false;
+        console.log("Javascript: Initializing SemanticSteve...");
         this.bot = bot;
         this.socket = new zmq.Pair({ receiveTimeout: 0 });
         this.zmqPort = config.zmqPort;

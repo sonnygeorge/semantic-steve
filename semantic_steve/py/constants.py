@@ -18,3 +18,4 @@ _PATH_TO_THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_JS_DIR = os.path.join(_PATH_TO_THIS_FILE_DIR, "../", "js")
 PATH_TO_SKILLS_DIR = os.path.join(PATH_TO_JS_DIR, "src", "skill")
 DEFAULT_PATH_TO_SCREENSHOT_DIR = os.path.join(PATH_TO_JS_DIR, "../", "screenshots/")
+SCREENSHORT_DIR_ENV_VAR_NAME = "SEMANTIC_STEVE_SCREENSHOT_DIR"

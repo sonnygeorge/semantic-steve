@@ -6,6 +6,7 @@ import zmq
 from semantic_steve.py.constants import (
     DEFAULT_PATH_TO_SCREENSHOT_DIR,
     SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
+    SCREENSHORT_DIR_ENV_VAR_NAME,
 )
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
@@ -27,7 +28,7 @@ class SemanticSteve:
         self.js_process_manager = SemanticSteveJsProcessManager(
             should_rebuild_typescript=_should_rebuild_typescript, debug=_debug
         )
-        os.environ["SEMANTIC_STEVE_SCREENSHOT_DIR"] = str(screenshot_dir)
+        os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
         self.zmq_port = zmq_port
         self.debug = _debug
         self.socket: zmq.Socket | None = None

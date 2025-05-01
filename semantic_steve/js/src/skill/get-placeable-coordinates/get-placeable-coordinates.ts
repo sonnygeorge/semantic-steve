@@ -5,7 +5,7 @@ import { GetPlaceableCoordinatesResults } from "./results";
 import { getAllPlaceableCoords } from "../../utils/placing";
 
 export class GetPlaceableCoordinates extends Skill {
-  public static readonly TIMEOUT_MS: number = 2000; // 2 seconds
+  public static readonly TIMEOUT_MS: number = 8000; // 8 seconds
   public static readonly METADATA: SkillMetadata = {
     name: "getPlaceableCoordinates",
     signature: "getPlaceableCoordinates()",

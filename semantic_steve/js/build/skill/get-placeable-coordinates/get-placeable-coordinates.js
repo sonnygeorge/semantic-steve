@@ -46,7 +46,7 @@ class GetPlaceableCoordinates extends skill_1.Skill {
     }
 }
 exports.GetPlaceableCoordinates = GetPlaceableCoordinates;
-GetPlaceableCoordinates.TIMEOUT_MS = 2000; // 2 seconds
+GetPlaceableCoordinates.TIMEOUT_MS = 8000; // 8 seconds
 GetPlaceableCoordinates.METADATA = {
     name: "getPlaceableCoordinates",
     signature: "getPlaceableCoordinates()",

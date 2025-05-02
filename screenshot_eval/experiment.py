@@ -8,6 +8,8 @@ import pandas as pd
 from tqdm import tqdm
 from tenacity import retry, stop_after_attempt
 
+from constants import SCORE_MAP, DATA_DIR
+
 
 MODEL = "gpt-4.1-2025-04-14"
 TEMPERATURE = 0.6
@@ -27,14 +29,6 @@ IMPORTANT! YOUR FINAL UTTERANCE MUST BE ONE OF THE FOLLOWING OPTIONS:
 - somewhat disagree
 - disagree
 """
-SCORE_MAP = {
-    "disagree": 0.0,
-    "somewhat disagree": 0.25,
-    "neutral": 0.5,
-    "somewhat agree": 0.75,
-    "agree": 1.0,
-}
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
 def extract_final_answer_from_response(response: str) -> str | None:

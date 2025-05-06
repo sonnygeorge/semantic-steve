@@ -1,0 +1,31 @@
+{
+  "name": "backend_ts",
+  "version": "1.0.0",
+  "main": "build/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "npx tsc",
+    "dev": "npx ts-node src/index.ts"
+  },
+  "devDependencies": {
+    "prismarine-entity": "^2.5.0",
+    "typed-emitter": "^2.1.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@nut-tree-fork/nut-js": "^4.2.6",
+    "@nxg-org/mineflayer-util-plugin": "^1.8.3",
+    "@types/three": "^0.175.0",
+    "canvas": "^3.1.0",
+    "mineflayer": "^4.26.0",
+    "mineflayer-pathfinder": "^2.4.5",
+    "node-canvas-webgl": "PrismarineJS/node-canvas-webgl",
+    "node-gyp": "^11.2.0",
+    "prismarine-viewer": "^1.33.0",
+    "three-software-renderer": "^1.2.0",
+    "zeromq": "^6.3.0"
+  },
+  "engines": {
+    "node": "22"
+  }
+}

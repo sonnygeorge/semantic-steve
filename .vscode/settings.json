@@ -1,0 +1,11 @@
+{
+    "print.colourScheme": "GitHub",
+    "files.associations": {
+        "*.cu": "cuda-cpp",
+        "*.cuh": "cuda-cpp",
+        "cstdint": "cpp",
+        "climits": "cpp"
+    },
+    "ecl.launchConfiguration": "not found",
+    "ecl.targetCluster": {}
+}

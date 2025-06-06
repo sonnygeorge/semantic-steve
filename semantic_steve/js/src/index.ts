@@ -1,4 +1,4 @@
-import { pathfinder } from "mineflayer-pathfinder";
+import { pathfinder, Movements } from "mineflayer-pathfinder";
 import type { Bot, BotOptions } from "mineflayer";
 import { EnvState } from "./env-state/env-state";
 import { ThingTypeFactory as ThingTypeFactory } from "./thing-type";
@@ -21,5 +21,10 @@ export function createPlugin(surroundingsRadii: SurroundingsRadii) {
     bot.thingTypeFactory = new ThingTypeFactory(bot);
     // Ensure Prismarine's 'mineflayer-pathfinder' plugin is loaded
     if (!bot.hasPlugin(pathfinder)) bot.loadPlugin(pathfinder);
+    // Configure 'mineflayer-pathfinder' to our desired settings
+    const customMovements = new Movements(bot);
+    customMovements.digCost = 0.8; // Make additional cost for digging cheaper (than default 1.0)
+    customMovements.placeCost = 1.2; // Make additional cost for placing more expensive (than default 1.0)
+    bot.pathfinder.setMovements(customMovements);
   };
 }

@@ -15,5 +15,10 @@ function createPlugin(surroundingsRadii) {
         // Ensure Prismarine's 'mineflayer-pathfinder' plugin is loaded
         if (!bot.hasPlugin(mineflayer_pathfinder_1.pathfinder))
             bot.loadPlugin(mineflayer_pathfinder_1.pathfinder);
+        // Configure 'mineflayer-pathfinder' to our desired settings
+        const customMovements = new mineflayer_pathfinder_1.Movements(bot);
+        customMovements.digCost = 0.8; // Make additional cost for digging cheaper (than default 1.0)
+        customMovements.placeCost = 1.2; // Make additional cost for placing more expensive (than default 1.0)
+        bot.pathfinder.setMovements(customMovements);
     };
 }

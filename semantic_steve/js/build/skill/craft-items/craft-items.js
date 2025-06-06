@@ -16,8 +16,7 @@ exports.CraftItems = void 0;
 const assert_1 = __importDefault(require("assert"));
 const skill_1 = require("../skill");
 const results_1 = require("./results");
-const item_entity_1 = require("../../thing/item-entity");
-const block_1 = require("../../thing/block");
+const thing_type_1 = require("../../thing-type");
 const types_1 = require("../../types");
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
 const place_block_1 = require("../place-block/place-block");
@@ -96,8 +95,8 @@ class CraftItems extends skill_1.Skill {
             }
             // Crafting table case
             (0, assert_1.default)(this.useCraftingTable);
-            const craftingTableBlockType = new block_1.Block(this.bot, "crafting_table");
-            const craftingTableItemType = new item_entity_1.ItemEntity(this.bot, "crafting_table");
+            const craftingTableBlockType = new thing_type_1.BlockType(this.bot, "crafting_table");
+            const craftingTableItemType = new thing_type_1.ItemType(this.bot, "crafting_table");
             const craftingTableIsInInventory = craftingTableItemType.getTotalCountInInventory() > 0;
             let nearestImmediateSurroundingsTableCoords = craftingTableBlockType.locateNearestInImmediateSurroundings();
             if (!nearestImmediateSurroundingsTableCoords &&
@@ -208,7 +207,7 @@ class CraftItems extends skill_1.Skill {
             if (typeof item === "string") {
                 // Validate the item string
                 try {
-                    this.itemToCraft = new item_entity_1.ItemEntity(this.bot, item);
+                    this.itemToCraft = new thing_type_1.ItemType(this.bot, item);
                 }
                 catch (err) {
                     if (err instanceof types_1.InvalidThingError) {
@@ -235,8 +234,8 @@ class CraftItems extends skill_1.Skill {
             }
             // Check if the item requires a crafting table but none are available
             const craftingTableIsAvailable = () => {
-                const craftingTableItemType = new item_entity_1.ItemEntity(this.bot, "crafting_table");
-                const craftingTableBlockType = new block_1.Block(this.bot, "crafting_table");
+                const craftingTableItemType = new thing_type_1.ItemType(this.bot, "crafting_table");
+                const craftingTableBlockType = new thing_type_1.BlockType(this.bot, "crafting_table");
                 return (craftingTableBlockType.isVisibleInImmediateSurroundings() ||
                     craftingTableItemType.getTotalCountInInventory() > 0);
             };
@@ -247,7 +246,8 @@ class CraftItems extends skill_1.Skill {
             }
             // Get feasible recipes for out desired minimum quantity
             const recipes = this.bot.recipesFor(this.itemToCraft.id, null, quantity, // Minimum resulting quantity
-            true);
+            true // Set of non-table recipes is a subset of the set of table recipes
+            );
             let lastFeasibleNonTableRecipe = undefined;
             let lastFeasibleTableRecipe = undefined;
             for (const recipe of recipes) {

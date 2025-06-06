@@ -1,12 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.asyncSleep = void 0;
+exports.isValidEmail = isValidEmail;
 exports.bilinearInterpolate = bilinearInterpolate;
 const vec3_1 = require("vec3");
 const asyncSleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
 };
 exports.asyncSleep = asyncSleep;
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
 /**
  * Calculates a point on a quadrilateral face using bilinear interpolation.
  * P = (1-u)(1-v)P₁ + u(1-v)P₂ + (1-u)vP₃ + uvP₄

@@ -4,6 +4,11 @@ export const asyncSleep = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 /**
  * Calculates a point on a quadrilateral face using bilinear interpolation.
  * P = (1-u)(1-v)P₁ + u(1-v)P₂ + (1-u)vP₃ + uvP₄
@@ -22,7 +27,7 @@ export function bilinearInterpolate(
   c1: Vec3,
   c2: Vec3,
   c3: Vec3,
-  c4: Vec3,
+  c4: Vec3
 ): Vec3 {
   function interpolateComponent(component: "x" | "y" | "z"): number {
     // Term 1: (1-u)(1-v)P₁ - Bottom-left corner contribution
@@ -40,6 +45,6 @@ export function bilinearInterpolate(
   return new Vec3(
     interpolateComponent("x"),
     interpolateComponent("y"),
-    interpolateComponent("z"),
+    interpolateComponent("z")
   );
 }

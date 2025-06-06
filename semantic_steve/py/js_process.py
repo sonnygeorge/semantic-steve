@@ -23,7 +23,7 @@ class SemanticSteveJsProcessManager:
     ########################
 
     def __enter__(self):
-        if self.should_rebuild_typescript and not self.debug:  # unneeded step if debugging.
+        if self.should_rebuild_typescript and not self.debug:  # Unneeded step if debugging
             self._rebuild_typescript()
 
         print(CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS)

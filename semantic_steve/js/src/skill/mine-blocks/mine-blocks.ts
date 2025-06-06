@@ -12,12 +12,11 @@ import {
   MineBlocksResults,
   MineBlocksPartialSuccessReason as PartialSuccessReason,
 } from "./results";
-import { Block } from "../../thing";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PickupItem } from "../pickup-item/pickup-item";
 import { SkillResult } from "../../types";
 import { asyncSleep } from "../../utils/generic";
-import { ItemEntity } from "../../thing/item-entity";
+import { BlockType, ItemType } from "../../thing-type";
 import { BLOCK_DROP_WAIT_MS } from "../../constants";
 
 // TODO: Add optional 'with' (tool) argument
@@ -48,7 +47,7 @@ export class MineBlocks extends Skill {
   private activeSubskill?: PathfindToCoordinates | PickupItem;
   private shouldBeDoingStuff: boolean = true;
   private shouldTerminateSubskillWaiting: boolean = false;
-  private blockTypeToMine?: Block;
+  private blockTypeToMine?: BlockType;
   private numBlocksToMine?: number;
   private numBlocksBroken: number = 0;
   private numDropPickupsAttempted: number = 0;
@@ -68,7 +67,7 @@ export class MineBlocks extends Skill {
   private get blockToMineDrop(): null | {
     minCount: number;
     maxCount: number;
-    itemEntity: ItemEntity;
+    itemEntity: ItemType;
   } {
     if (!this.blockTypeToMine) {
       return null;
@@ -93,8 +92,8 @@ export class MineBlocks extends Skill {
         } else {
           throw new Error(
             `Unexpected Pblock.drops format: ${JSON.stringify(
-              blockToMineDrops,
-            )}`,
+              blockToMineDrops
+            )}`
           );
         }
         minCount = firstDrop.minCount ?? 1; // Set to one if undefined
@@ -108,18 +107,18 @@ export class MineBlocks extends Skill {
       return null;
     } else {
       throw new Error(
-        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`,
+        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`
       );
     }
     if (itemID === -1) {
       throw new Error(
-        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`,
+        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`
       );
     }
     return {
       minCount: minCount,
       maxCount: maxCount,
-      itemEntity: new ItemEntity(this.bot, undefined, itemID),
+      itemEntity: new ItemType(this.bot, undefined, itemID),
     };
   }
 
@@ -137,7 +136,7 @@ export class MineBlocks extends Skill {
   }
 
   private resolveAfterSomeMining(
-    partialSuccessReason?: PartialSuccessReason,
+    partialSuccessReason?: PartialSuccessReason
   ): void {
     assert(this.blockTypeToMine);
     assert(this.numBlocksToMine);
@@ -153,8 +152,8 @@ export class MineBlocks extends Skill {
             this.numBlocksToMine,
             undefined,
             0,
-            partialSuccessReason,
-          ),
+            partialSuccessReason
+          )
         );
       } else {
         return this.resolve(
@@ -163,8 +162,8 @@ export class MineBlocks extends Skill {
             this.numBlocksBroken,
             this.numBlocksToMine,
             undefined,
-            0,
-          ),
+            0
+          )
         );
       }
     }
@@ -179,8 +178,8 @@ export class MineBlocks extends Skill {
           this.numBlocksBroken,
           this.numBlocksToMine,
           this.blockToMineDrop.itemEntity.name,
-          numAcquired,
-        ),
+          numAcquired
+        )
       );
     } else {
       return this.resolve(
@@ -190,8 +189,8 @@ export class MineBlocks extends Skill {
           this.numBlocksToMine,
           this.blockToMineDrop.itemEntity.name,
           numAcquired,
-          partialSuccessReason,
-        ),
+          partialSuccessReason
+        )
       );
     }
   }
@@ -204,7 +203,7 @@ export class MineBlocks extends Skill {
     assert(this.blockTypeToMine);
 
     const [canMine, bestToolID] =
-      this.blockTypeToMine.assessCurrentMineability();
+      this.blockTypeToMine.assessMineabilityWithCurrentTools();
 
     if (!canMine) {
       // NOTE: Reason = 'tool consumed' since we started w/ a viable tool
@@ -244,7 +243,7 @@ export class MineBlocks extends Skill {
       // Callback that sets the pathfindingToBlockWasSuccess variable to reflect
       // whether the pathfinding to block was successful
       const onPathfindToBlockResolution = async (
-        _: SkillResult,
+        _: SkillResult
       ): Promise<void> => {
         assert(this.activeSubskill);
         this.activeSubskill = undefined;
@@ -263,7 +262,7 @@ export class MineBlocks extends Skill {
       // Invoke pathfinding skill
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
-        onPathfindToBlockResolution,
+        onPathfindToBlockResolution
       );
       await this.activeSubskill.invoke([
         nearestPosOfBlockType.x,
@@ -303,7 +302,7 @@ export class MineBlocks extends Skill {
       let pickupAttemptComplete: boolean = false;
 
       const onPickupItemResolution = async (
-        result: SkillResult,
+        result: SkillResult
       ): Promise<void> => {
         assert(this.activeSubskill);
         this.activeSubskill = undefined;
@@ -368,18 +367,19 @@ export class MineBlocks extends Skill {
   public async doInvoke(block: string, quantity: number = 1): Promise<void> {
     this.status = SkillStatus.ACTIVE_RUNNING;
     try {
-      this.blockTypeToMine = new Block(this.bot, block);
+      this.blockTypeToMine = new BlockType(this.bot, block);
     } catch (err) {
       return this.resolve(new MineBlocksResults.InvalidBlock(block));
     }
 
     if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
       return this.resolve(
-        new MineBlocksResults.BlockNotInImmediateSurroundings(block),
+        new MineBlocksResults.BlockNotInImmediateSurroundings(block)
       );
     }
 
-    const [canMine, _] = this.blockTypeToMine.assessCurrentMineability();
+    const [canMine, _] =
+      this.blockTypeToMine.assessMineabilityWithCurrentTools();
     if (!canMine) {
       return this.resolve(new MineBlocksResults.MissingNecessaryTool(block));
     }

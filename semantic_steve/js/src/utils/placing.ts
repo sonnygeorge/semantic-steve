@@ -41,7 +41,7 @@ export function isBotOccupyingCoords(bot: Bot, coords: Vec3): boolean {
 
 export function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
   bot: Bot,
-  coords: Vec3,
+  coords: Vec3
 ): [PBlock, Vec3] | undefined {
   // Coords are not placeable if already occupied by a block
   if (blockExistsAt(bot, coords)) {
@@ -90,7 +90,7 @@ export function getAllPlaceableCoords(bot: Bot): Vec3[] {
   function isTooSmallAnOffsetToBeWorthChecking(
     x: number,
     y: number,
-    z: number,
+    z: number
   ): boolean {
     // If at least one coordinate is 0 and others are 0, 1, or -1
     // (i.e., the manhattan distance is less than 2^(1/2))

@@ -6,7 +6,7 @@ import { Approach } from "../approach/approach";
 import { isApproachResult } from "../approach/results";
 import { Vicinity } from "../../env-state/surroundings/types";
 import { PickupItemResults } from "./results";
-import { ItemEntity } from "../../thing";
+import { ItemType } from "../../thing-type";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { InvalidThingError, SkillResult } from "../../types";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
@@ -32,7 +32,7 @@ export class PickupItem extends Skill {
   };
 
   private activeSubskill?: PathfindToCoordinates | Approach;
-  private itemEntity?: ItemEntity;
+  private itemEntity?: ItemType;
   private itemTotalAtPathingStart?: number;
   private targetItemCoords?: Vec3;
 
@@ -42,7 +42,7 @@ export class PickupItem extends Skill {
 
   private async resolveFromSubskillResolution(
     result: SkillResult,
-    envStateIsHydrated?: boolean,
+    envStateIsHydrated?: boolean
   ): Promise<void> {
     assert(this.itemEntity);
     assert(this.activeSubskill);
@@ -60,13 +60,13 @@ export class PickupItem extends Skill {
 
     const vicinityOfOriginalTargetCoords =
       this.bot.envState.surroundings.getVicinityForPosition(
-        this.targetItemCoords,
+        this.targetItemCoords
       );
 
     if (vicinityOfOriginalTargetCoords !== Vicinity.IMMEDIATE_SURROUNDINGS) {
       const result =
         new PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(
-          this.itemEntity.name,
+          this.itemEntity.name
         );
       this.resolve(result, envStateIsHydrated);
       return;
@@ -80,12 +80,12 @@ export class PickupItem extends Skill {
       const netItemGain = curItemTotal - this.itemTotalAtPathingStart;
       const result = new PickupItemResults.SuccessImmediateSurroundings(
         this.itemEntity.name,
-        netItemGain,
+        netItemGain
       );
       this.resolve(result, envStateIsHydrated);
     } else {
       const result = new PickupItemResults.CouldNotProgramaticallyVerify(
-        this.itemEntity.name,
+        this.itemEntity.name
       );
       this.resolve(result, envStateIsHydrated);
     }
@@ -96,13 +96,13 @@ export class PickupItem extends Skill {
   // ============================
 
   public async doInvoke(
-    item: string | ItemEntity,
-    direction?: string,
+    item: string | ItemType,
+    direction?: string
   ): Promise<void> {
     // Validate the item string
     if (typeof item === "string") {
       try {
-        this.itemEntity = new ItemEntity(this.bot, item);
+        this.itemEntity = new ItemType(this.bot, item);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new PickupItemResults.InvalidItem(item);
@@ -120,7 +120,7 @@ export class PickupItem extends Skill {
       // If a direction is provided, we can just use/invoke approach
       this.activeSubskill = new Approach(
         this.bot,
-        this.resolveFromSubskillResolution.bind(this),
+        this.resolveFromSubskillResolution.bind(this)
       );
       this.activeSubskill.invoke(this.itemEntity, direction);
     } else {
@@ -129,7 +129,7 @@ export class PickupItem extends Skill {
         await this.itemEntity.locateNearestInImmediateSurroundings();
       if (!this.targetItemCoords) {
         const result = new PickupItemResults.NotInImmediateSurroundings(
-          this.itemEntity.name,
+          this.itemEntity.name
         );
         this.resolve(result);
         return;
@@ -138,7 +138,7 @@ export class PickupItem extends Skill {
       // Invoke pathfindToCoordinates
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
-        this.resolveFromSubskillResolution.bind(this),
+        this.resolveFromSubskillResolution.bind(this)
       );
       await this.activeSubskill.invoke(this.targetItemCoords);
     }

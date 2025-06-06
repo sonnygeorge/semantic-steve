@@ -1,11 +1,11 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
-import { Thing } from "./thing";
+import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { Direction, Vicinity } from "../env-state/surroundings";
-import { MaybePromise } from "../types";
+import { Direction, Vicinity } from "../../env-state/surroundings";
+import { MaybePromise } from "../../types";
 
-export class Biome implements Thing {
+export class BiomeType implements ThingType {
   bot: Bot;
   name: string;
   id: number;
@@ -26,7 +26,7 @@ export class Biome implements Thing {
     }
     assert(
       this.id !== -1,
-      `This should be impossible. We should have thrown an error above.`,
+      `This should be impossible. We should have thrown an error above.`
     );
   }
 
@@ -40,7 +40,7 @@ export class Biome implements Thing {
 
   public isVisibleInDistantSurroundings(): boolean {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.biomesToClosestCoords.has(this.id),
+      dir.biomesToClosestCoords.has(this.id)
     );
   }
 
@@ -76,7 +76,7 @@ export class Biome implements Thing {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -99,9 +99,9 @@ export class Biome implements Thing {
     return closestCoords;
   }
 
-  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+  isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean {
     throw new Error(
-      "Method not implemented. This method is yet not usable for biomes.",
+      "Method not implemented. This method is yet not usable for biomes."
     );
   }
 }

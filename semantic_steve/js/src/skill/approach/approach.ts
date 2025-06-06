@@ -6,7 +6,7 @@ import { Vicinity, Direction } from "../../env-state/surroundings/types";
 import { ApproachResults } from "./results";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { InvalidThingError, SkillResult } from "../../types";
-import { Thing, SUPPORTED_THING_TYPES, ItemEntity } from "../../thing";
+import { ThingType, SUPPORTED_THING_TYPES, ItemType } from "../../thing-type";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
 import { asyncSleep } from "../../utils/generic";
@@ -32,7 +32,7 @@ export class Approach extends Skill {
   };
 
   private activeSubskill?: Skill;
-  private thing?: Thing;
+  private thing?: ThingType;
   private itemTotalAtPathingStart?: number;
   private targetThingCoords?: Vec3;
   private direction?: Direction;
@@ -43,7 +43,7 @@ export class Approach extends Skill {
 
   private async resolveFromSubskillResolution(
     result: SkillResult,
-    envStateIsHydrated?: boolean,
+    envStateIsHydrated?: boolean
   ): Promise<void> {
     assert(this.thing);
     assert(this.targetThingCoords);
@@ -56,7 +56,7 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInDistantSurroundings(
         this.thing.name,
-        result.foundThingName,
+        result.foundThingName
       );
       this.resolve(result, envStateIsHydrated);
       return;
@@ -66,7 +66,7 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInImmediateSurroundings(
         this.thing.name,
-        result.foundThingName,
+        result.foundThingName
       );
       this.resolve(result, envStateIsHydrated);
       return;
@@ -75,11 +75,11 @@ export class Approach extends Skill {
     // Otherwise, check to see if the approach was successful & handle
     const vicinityOfOriginalTargetCoords =
       this.bot.envState.surroundings.getVicinityForPosition(
-        this.targetThingCoords,
+        this.targetThingCoords
       );
 
     if (vicinityOfOriginalTargetCoords == Vicinity.IMMEDIATE_SURROUNDINGS) {
-      if (this.thing instanceof ItemEntity) {
+      if (this.thing instanceof ItemType) {
         assert(this.itemTotalAtPathingStart !== undefined);
         // Wait for a bit to make sure the item is picked up
         await asyncSleep(ITEM_PICKUP_WAIT_MS);
@@ -88,13 +88,13 @@ export class Approach extends Skill {
         result = new ApproachResults.SuccessItemEntity(
           this.thing.name,
           this.direction,
-          netItemGain,
+          netItemGain
         );
         this.resolve(result, envStateIsHydrated);
       } else {
         const successResult = new ApproachResults.Success(
           this.thing.name,
-          this.direction,
+          this.direction
         );
         this.resolve(successResult, envStateIsHydrated);
       }
@@ -109,18 +109,18 @@ export class Approach extends Skill {
   // ============================
 
   public async doInvoke(
-    thing: string | Thing,
+    thing: string | ThingType,
     direction: string,
-    stopIfFound?: string[],
+    stopIfFound?: string[]
   ): Promise<void> {
     if (typeof thing === "string") {
       try {
-        this.thing = this.bot.thingFactory.createThing(thing);
+        this.thing = this.bot.thingTypeFactory.createThingType(thing);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new ApproachResults.InvalidThing(
             thing,
-            SUPPORTED_THING_TYPES.toString(),
+            SUPPORTED_THING_TYPES.toString()
           );
           this.resolve(result);
           return;
@@ -148,14 +148,14 @@ export class Approach extends Skill {
     if (!this.targetThingCoords) {
       const result = new ApproachResults.ThingNotInDistantSurroundingsDirection(
         this.thing.name,
-        direction,
+        direction
       );
       this.resolve(result);
       return;
     }
 
     // If the thing is an ItemEntity, record how many the bot has at the start of pathfinding
-    if (this.thing instanceof ItemEntity) {
+    if (this.thing instanceof ItemType) {
       this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
     }
 
@@ -164,7 +164,7 @@ export class Approach extends Skill {
       this.bot,
       (result: SkillResult) => {
         this.resolveFromSubskillResolution(result, true);
-      },
+      }
     );
     await this.activeSubskill.invoke(this.targetThingCoords, stopIfFound);
   }

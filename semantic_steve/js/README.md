@@ -2,11 +2,11 @@
 
 Welcome to the `js/` directory! **_Please treate it like a zen garden._** 🪷🧘‍♀️⛩️🏵🌿
 
-## Main Program Flow
+## ℹ️ Main Program Flow
 
 ### 1️⃣ Design of `SemanticSteve` class
 
-❗`SemanticSteve.run()` executes "parallel" (asynchronously) to 2️⃣ skill execution, hence the short asynchronous sleep 😴 to free the event loop.
+- ❗`SemanticSteve.run()` executes "parallel" (asynchronously) to 2️⃣ skill execution, hence the short asynchronous sleep 😴 to free the event loop.
 
 ```mermaid
 sequenceDiagram
@@ -56,7 +56,7 @@ sequenceDiagram
 
 ### 2️⃣ Design of `Skill` sub-classes
 
-❗These skills execute "parallel" (asynchronously) to 1️⃣ `SemanticSteve.run()`, so they need to make sure to block the event loop **as little as possible**.
+- ❗These skills execute "parallel" (asynchronously) to 1️⃣ `SemanticSteve.run()`, so they need to make sure to block the event loop **as little as possible**.
 
 ```mermaid
 sequenceDiagram
@@ -89,18 +89,23 @@ sequenceDiagram
     SS->>Python: Send result and environment state
 ```
 
-## "`Thing`"
+## ℹ️ "`Thing`"
 
-### `Thing` interface
+### Some nomenclature
+
+- **Thing Type**: A type of Minecraft "thing", e.g., "plains" is a would be a **_biome type_**, "zombie" would be a **_mob type_**, "oak log" would be a **_block type_**, etc.
+- **Thing**: An actual instance of Minecraft "thing" in the game, e.g., a specific "zombie" mob, a specific "oak log" block at a specific coordinate, etc.
+
+### `ThingType` interface
 
 Many SemanticSteve skills take "things" to act upon, react to, etc.
 
 Of course, there are a lot of possible types of "things" in single-player Minecraft (blocks, mobs, item entities, structures, etc).
 
-To cleanly decouple skills from needing to know about these "things" (allowing us to continually add support for new types of things without needing to modify skill code), we rely on a `Thing` interface.
+To cleanly decouple skills from needing to know about the unique quirks of different "thing" types (allowing us to continually add support for new types of things without needing to modify skill code), we rely on a `ThingType` interface.
 
-This `Thing` interface should expose a/the method(s) that all implementation ought to have. For example, all `Thing` implementations might expose a `isInSurroundings()` method so that, e.g.: the `pathfindToCoordinates` skill can use it check for `stopIfFound` things.
+This `ThingType` interface should expose a/the method(s) that all implementation ought to have. For example, all `ThingType` implementations might expose an `isInSurroundings()` method so that, e.g.: the `pathfindToCoordinates` skill can use it check for `stopIfFound` things.
 
-### `Thing` factory
+### `ThingType` factory
 
-Furthermore, to prevent skills from needing to know how convert an array of strings to an array of diverse `Thing`s, the `thingFactory` exists to decide which `Thing` any given string should be converted to.
+Furthermore, to prevent skills from needing to know how convert an array of strings to an array of `ThingType`s, the `thingTypeFactory` exists to decide which `ThingType` any given string should be converted to.

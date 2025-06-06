@@ -3,7 +3,7 @@ import type { Vec3 } from "vec3";
 import { Direction } from "../env-state/surroundings";
 import { MaybePromise } from "../types";
 
-export interface Thing {
+export interface ThingType {
   bot: Bot;
   name: string;
 
@@ -16,8 +16,8 @@ export interface Thing {
   locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined>;
 
   locateNearestInDistantSurroundings(
-    direction?: Direction,
+    direction?: Direction
   ): MaybePromise<Vec3 | undefined>;
 
-  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean;
+  isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean;
 }

@@ -19,7 +19,7 @@ const approach_1 = require("../approach/approach");
 const results_1 = require("../approach/results");
 const types_1 = require("../../env-state/surroundings/types");
 const results_2 = require("./results");
-const thing_1 = require("../../thing");
+const thing_type_1 = require("../../thing-type");
 const skill_1 = require("../skill");
 const types_2 = require("../../types");
 const constants_1 = require("../../constants");
@@ -70,7 +70,7 @@ class PickupItem extends skill_1.Skill {
             // Validate the item string
             if (typeof item === "string") {
                 try {
-                    this.itemEntity = new thing_1.ItemEntity(this.bot, item);
+                    this.itemEntity = new thing_type_1.ItemType(this.bot, item);
                 }
                 catch (err) {
                     if (err instanceof types_2.InvalidThingError) {

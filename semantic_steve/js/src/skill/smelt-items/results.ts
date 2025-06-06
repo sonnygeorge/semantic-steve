@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import { SkillResult } from "../../types";
-import { ItemEntity } from "../../thing/item-entity";
+import { ItemType } from "../../thing-type";
 
 export namespace SmeltItemsResults {
   export class InvalidItem implements SkillResult {
@@ -75,7 +75,7 @@ export namespace SmeltItemsResults {
 
   export class FuelItemNotInventory implements SkillResult {
     message: string;
-    constructor(fuelItem: ItemEntity, itemToSmelt: string) {
+    constructor(fuelItem: ItemType, itemToSmelt: string) {
       this.message = `SkillInvocationError: You need to have at least one the specified fuel item '${fuelItem.name}' in your inventory.`;
     }
   }

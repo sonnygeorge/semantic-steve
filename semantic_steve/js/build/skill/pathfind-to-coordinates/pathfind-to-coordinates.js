@@ -17,7 +17,7 @@ const assert_1 = __importDefault(require("assert"));
 const vec3_1 = require("vec3");
 const mineflayer_pathfinder_1 = require("mineflayer-pathfinder");
 const results_1 = require("./results");
-const thing_1 = require("../../thing");
+const thing_type_1 = require("../../thing-type");
 const types_1 = require("../../types");
 const skill_1 = require("../skill");
 const utils_1 = require("./utils");
@@ -75,7 +75,7 @@ class PathfindToCoordinates extends skill_1.Skill {
     }
     resolveInvalidThing(thingName) {
         console.log("Resolving pathfinding as invalid thing");
-        const result = new results_1.PathfindToCoordinatesResults.InvalidThing(thingName, thing_1.SUPPORTED_THING_TYPES.toString());
+        const result = new results_1.PathfindToCoordinatesResults.InvalidThing(thingName, thing_type_1.SUPPORTED_THING_TYPES.toString());
         this.resolve(result);
     }
     resolveThingFound(result) {
@@ -179,7 +179,7 @@ class PathfindToCoordinates extends skill_1.Skill {
             if (stopIfFound === null || stopIfFound === void 0 ? void 0 : stopIfFound.length) {
                 for (const thingName of stopIfFound) {
                     try {
-                        const thing = this.bot.thingFactory.createThing(thingName);
+                        const thing = this.bot.thingTypeFactory.createThingType(thingName);
                         this.stopIfFound.push(thing);
                     }
                     catch (error) {

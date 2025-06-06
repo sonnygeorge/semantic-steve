@@ -56,7 +56,7 @@ const vec3_1 = require("vec3");
 const nut_js_1 = require("@nut-tree-fork/nut-js");
 const child_process_1 = require("child_process");
 const { Viewer, WorldView, getBufferFromStream, } = require("prismarine-viewer/viewer");
-const thing_1 = require("../../thing");
+const thing_type_1 = require("../../thing-type");
 const types_1 = require("../../types");
 const results_1 = require("./results");
 const generic_1 = require("../../utils/generic");
@@ -239,11 +239,11 @@ class TakeScreenshotOf extends skill_1.Skill {
         return __awaiter(this, void 0, void 0, function* () {
             // Validate thing
             try {
-                this.thing = this.bot.thingFactory.createThing(thing);
+                this.thing = this.bot.thingTypeFactory.createThingType(thing);
             }
             catch (err) {
                 if (err instanceof types_1.InvalidThingError) {
-                    const result = new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString());
+                    const result = new results_1.TakeScreenshotOfResults.InvalidThing(thing, thing_type_1.SUPPORTED_THING_TYPES.toString());
                     this.resolve(result);
                     return;
                 }
@@ -252,7 +252,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             // Validate/ascertain atCoords
             if (atCoordinates) {
                 this.atCoords = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
-                if (!this.thing.oneIsVisableInImmediateSurroundingsAt(this.atCoords)) {
+                if (!this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords)) {
                     const result = new results_1.TakeScreenshotOfResults.InvalidCoords(thing);
                     this.resolve(result);
                     return;

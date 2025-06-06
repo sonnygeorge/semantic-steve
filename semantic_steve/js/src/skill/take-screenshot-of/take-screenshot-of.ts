@@ -13,7 +13,7 @@ const {
   WorldView,
   getBufferFromStream,
 } = require("prismarine-viewer/viewer");
-import { SUPPORTED_THING_TYPES, Thing } from "../../thing";
+import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
 import { InvalidThingError } from "../../types";
 import { TakeScreenshotOfResults } from "./results";
 import { asyncSleep } from "../../utils/generic";
@@ -56,7 +56,7 @@ export class TakeScreenshotOf extends Skill {
   };
 
   public screenshotDir: string;
-  private thing?: Thing;
+  private thing?: ThingType;
   private atCoords?: Vec3;
 
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
@@ -270,7 +270,7 @@ export class TakeScreenshotOf extends Skill {
   ): Promise<void> {
     // Validate thing
     try {
-      this.thing = this.bot.thingFactory.createThing(thing);
+      this.thing = this.bot.thingTypeFactory.createThingType(thing);
     } catch (err) {
       if (err instanceof InvalidThingError) {
         const result = new TakeScreenshotOfResults.InvalidThing(
@@ -290,7 +290,7 @@ export class TakeScreenshotOf extends Skill {
         atCoordinates[1],
         atCoordinates[2]
       );
-      if (!this.thing.oneIsVisableInImmediateSurroundingsAt(this.atCoords)) {
+      if (!this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords)) {
         const result = new TakeScreenshotOfResults.InvalidCoords(thing);
         this.resolve(result);
         return;

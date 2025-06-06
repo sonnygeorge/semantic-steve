@@ -1,4 +1,8 @@
 "use strict";
+/**
+ * Main code/abstraction for program flow of SemanticSteve.
+ * NOTE: See README.md of src/js for a diagrams of the program flow.
+ */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);

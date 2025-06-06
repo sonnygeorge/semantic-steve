@@ -1,4 +1,8 @@
 "use strict";
+/**
+ * NOT YET IMPLEMENTED
+ * (will likely be a directory with multiple files when implemented)
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -11,9 +15,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SelfPreserver = void 0;
 /**
- * SelfPreserver monitors the bot's environment and health to trigger self-preservation actions when needed.
- * It periodically checks for threats and dangerous conditions and can interrupt normal operation
- * to execute survival behaviors.
+ * SelfPreserver monitors the bot's environment and health to trigger self-preservation actions
+ * when needed. It periodically checks for threats and dangerous conditions and can interrupt
+ * normal operation to execute survival behaviors.
  */
 class SelfPreserver {
     /**
@@ -27,7 +31,8 @@ class SelfPreserver {
     }
     /**
      * Checks if the bot should self-preserve based on its current environment and health.
-     * This method should be called periodically to determine if self-preservation actions are needed.
+     * This method should be called periodically to determine if self-preservation actions are
+     * needed.
      * @returns {boolean} - True if self-preservation is needed, false otherwise.
      */
     shouldSelfPreserve() {

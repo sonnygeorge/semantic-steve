@@ -19,7 +19,7 @@ const types_1 = require("../../env-state/surroundings/types");
 const results_1 = require("./results");
 const skill_1 = require("../skill");
 const types_2 = require("../../types");
-const thing_1 = require("../../thing");
+const thing_type_1 = require("../../thing-type");
 const results_2 = require("../pathfind-to-coordinates/results");
 const constants_1 = require("../../constants");
 const generic_1 = require("../../utils/generic");
@@ -48,7 +48,7 @@ class Approach extends skill_1.Skill {
             // Otherwise, check to see if the approach was successful & handle
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
             if (vicinityOfOriginalTargetCoords == types_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
-                if (this.thing instanceof thing_1.ItemEntity) {
+                if (this.thing instanceof thing_type_1.ItemType) {
                     (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
                     // Wait for a bit to make sure the item is picked up
                     yield (0, generic_1.asyncSleep)(constants_1.ITEM_PICKUP_WAIT_MS);
@@ -76,11 +76,11 @@ class Approach extends skill_1.Skill {
             var _a;
             if (typeof thing === "string") {
                 try {
-                    this.thing = this.bot.thingFactory.createThing(thing);
+                    this.thing = this.bot.thingTypeFactory.createThingType(thing);
                 }
                 catch (err) {
                     if (err instanceof types_2.InvalidThingError) {
-                        const result = new results_1.ApproachResults.InvalidThing(thing, thing_1.SUPPORTED_THING_TYPES.toString());
+                        const result = new results_1.ApproachResults.InvalidThing(thing, thing_type_1.SUPPORTED_THING_TYPES.toString());
                         this.resolve(result);
                         return;
                     }
@@ -107,7 +107,7 @@ class Approach extends skill_1.Skill {
                 return;
             }
             // If the thing is an ItemEntity, record how many the bot has at the start of pathfinding
-            if (this.thing instanceof thing_1.ItemEntity) {
+            if (this.thing instanceof thing_type_1.ItemType) {
                 this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
             }
             // Invoke pathfinding to the coordinates of the thing

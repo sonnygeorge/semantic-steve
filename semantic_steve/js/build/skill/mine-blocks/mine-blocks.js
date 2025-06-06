@@ -17,11 +17,10 @@ const assert_1 = __importDefault(require("assert"));
 const skill_1 = require("../skill");
 const constants_1 = require("../../constants");
 const results_1 = require("./results");
-const thing_1 = require("../../thing");
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
 const pickup_item_1 = require("../pickup-item/pickup-item");
 const generic_1 = require("../../utils/generic");
-const item_entity_1 = require("../../thing/item-entity");
+const thing_type_1 = require("../../thing-type");
 const constants_2 = require("../../constants");
 // TODO: Add optional 'with' (tool) argument
 // TODO (someday): Add handling for silk touch
@@ -88,7 +87,7 @@ class MineBlocks extends skill_1.Skill {
         return {
             minCount: minCount,
             maxCount: maxCount,
-            itemEntity: new item_entity_1.ItemEntity(this.bot, undefined, itemID),
+            itemEntity: new thing_type_1.ItemType(this.bot, undefined, itemID),
         };
     }
     didAcquireExpectedMinDropCount() {
@@ -128,7 +127,7 @@ class MineBlocks extends skill_1.Skill {
     assessMineabilityandEquipBestTool() {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.blockTypeToMine);
-            const [canMine, bestToolID] = this.blockTypeToMine.assessCurrentMineability();
+            const [canMine, bestToolID] = this.blockTypeToMine.assessMineabilityWithCurrentTools();
             if (!canMine) {
                 // NOTE: Reason = 'tool consumed' since we started w/ a viable tool
                 this.resolveAfterSomeMining(results_1.MineBlocksPartialSuccessReason.TOOL_CONSUMED);
@@ -271,7 +270,7 @@ class MineBlocks extends skill_1.Skill {
             var _a;
             this.status = skill_1.SkillStatus.ACTIVE_RUNNING;
             try {
-                this.blockTypeToMine = new thing_1.Block(this.bot, block);
+                this.blockTypeToMine = new thing_type_1.BlockType(this.bot, block);
             }
             catch (err) {
                 return this.resolve(new results_1.MineBlocksResults.InvalidBlock(block));
@@ -279,7 +278,7 @@ class MineBlocks extends skill_1.Skill {
             if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
                 return this.resolve(new results_1.MineBlocksResults.BlockNotInImmediateSurroundings(block));
             }
-            const [canMine, _] = this.blockTypeToMine.assessCurrentMineability();
+            const [canMine, _] = this.blockTypeToMine.assessMineabilityWithCurrentTools();
             if (!canMine) {
                 return this.resolve(new results_1.MineBlocksResults.MissingNecessaryTool(block));
             }

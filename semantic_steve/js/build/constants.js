@@ -21,7 +21,7 @@ exports.MAX_PLACEMENT_REACH = 4;
 exports.MAX_MINING_REACH = 4.5;
 // Bot eye height in meters
 exports.BOT_EYE_HEIGHT = 1.62;
-// Six sides of a cubed meter in minecraft
+// Six sides of a cubed meter (block space) in minecraft
 exports.ADJACENT_OFFSETS = {
     [types_1.ConnectingSide.WEST]: new vec3_1.Vec3(-1, 0, 0),
     [types_1.ConnectingSide.EAST]: new vec3_1.Vec3(1, 0, 0),

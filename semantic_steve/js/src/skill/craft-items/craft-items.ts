@@ -4,8 +4,7 @@ import type { Recipe } from "prismarine-recipe";
 import { Block as PBlock } from "prismarine-block";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { CraftItemsResults } from "./results";
-import { ItemEntity } from "../../thing/item-entity";
-import { Block } from "../../thing/block";
+import { ItemType, BlockType } from "../../thing-type";
 import { InvalidThingError, SkillResult } from "../../types";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PlaceBlock } from "../place-block/place-block";
@@ -40,7 +39,7 @@ export class CraftItems extends Skill {
   private activeSubskill?: PathfindToCoordinates | PlaceBlock | MineBlocks;
   private shouldBeDoingStuff: boolean = false;
   private shouldTerminateSubskillWaiting: boolean = false;
-  private itemToCraft?: ItemEntity;
+  private itemToCraft?: ItemType;
   private quantityToCraft?: number;
   private selectedRecipe?: Recipe;
   private quantityInInventoryBeforeCrafting?: number;
@@ -101,7 +100,7 @@ export class CraftItems extends Skill {
       this.shouldBeDoingStuff = false;
       const result = new CraftItemsResults.Success(
         this.itemToCraft.name,
-        this.quantityToCraft,
+        this.quantityToCraft
       );
       this.resolve(result);
       return;
@@ -115,7 +114,7 @@ export class CraftItems extends Skill {
       }
       const result = new CraftItemsResults.Success(
         this.itemToCraft.name,
-        this.quantityToCraft,
+        this.quantityToCraft
       );
       this.resolve(result);
       return;
@@ -123,8 +122,8 @@ export class CraftItems extends Skill {
 
     // Crafting table case
     assert(this.useCraftingTable);
-    const craftingTableBlockType = new Block(this.bot, "crafting_table");
-    const craftingTableItemType = new ItemEntity(this.bot, "crafting_table");
+    const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
+    const craftingTableItemType = new ItemType(this.bot, "crafting_table");
     const craftingTableIsInInventory =
       craftingTableItemType.getTotalCountInInventory() > 0;
     let nearestImmediateSurroundingsTableCoords =
@@ -138,7 +137,7 @@ export class CraftItems extends Skill {
       // from the crafting table that this skill placed (removing it from the inventory)
       this.shouldBeDoingStuff = false;
       this.resolve(
-        new CraftItemsResults.TableNoLongerInImmediateSurroundings(),
+        new CraftItemsResults.TableNoLongerInImmediateSurroundings()
       );
       return;
     }
@@ -156,7 +155,7 @@ export class CraftItems extends Skill {
 
       this.activeSubskill = new PlaceBlock(
         this.bot,
-        handlePlaceCraftingTableResolution.bind(this),
+        handlePlaceCraftingTableResolution.bind(this)
       );
       await this.activeSubskill.invoke(craftingTableBlockType);
       while (
@@ -172,7 +171,7 @@ export class CraftItems extends Skill {
       if (!wasSuccess) {
         this.shouldBeDoingStuff = false;
         const result = new CraftItemsResults.CraftingTablePlacementFailed(
-          placeCraftingTableResult,
+          placeCraftingTableResult
         );
         this.resolve(result);
         return;
@@ -194,7 +193,7 @@ export class CraftItems extends Skill {
         craftingTableBlockType.locateNearestInImmediateSurroundings();
       assert(nearestImmediateSurroundingsTableCoords);
       const distanceToCraftingTable = eyePosition.distanceTo(
-        nearestImmediateSurroundingsTableCoords,
+        nearestImmediateSurroundingsTableCoords
       );
       return distanceToCraftingTable <= MAX_PLACEMENT_REACH;
     };
@@ -210,7 +209,7 @@ export class CraftItems extends Skill {
 
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
-        handlePathfindingResolution.bind(this),
+        handlePathfindingResolution.bind(this)
       );
       await this.activeSubskill.invoke(nearestImmediateSurroundingsTableCoords);
       while (
@@ -222,7 +221,7 @@ export class CraftItems extends Skill {
       if (!tableIsInRangeAfterPathfinding) {
         this.shouldBeDoingStuff = false;
         const result = new CraftItemsResults.FailedToGetCloseEnoughToTable(
-          nearestImmediateSurroundingsTableCoords,
+          nearestImmediateSurroundingsTableCoords
         );
         this.resolve(result);
         return;
@@ -249,14 +248,14 @@ export class CraftItems extends Skill {
       this.shouldBeDoingStuff = false;
       let craftItemsResult = new CraftItemsResults.Success(
         this.itemToCraft.name,
-        this.quantityToCraft,
+        this.quantityToCraft
       );
       if (!(mineBlocksResult instanceof MineBlocksResults.Success)) {
         craftItemsResult =
           new CraftItemsResults.SuccessProblemCollectingCraftingTable(
             this.itemToCraft.name,
             this.quantityToCraft,
-            mineBlocksResult,
+            mineBlocksResult
           );
       }
       this.resolve(craftItemsResult);
@@ -264,7 +263,7 @@ export class CraftItems extends Skill {
 
     this.activeSubskill = new MineBlocks(
       this.bot,
-      handleMineBlocksResolution.bind(this),
+      handleMineBlocksResolution.bind(this)
     );
     await this.activeSubskill.invoke(craftingTableBlockType.name);
 
@@ -274,7 +273,7 @@ export class CraftItems extends Skill {
         const result =
           new CraftItemsResults.SuccessProblemCollectingCraftingTable(
             this.itemToCraft.name,
-            this.quantityToCraft,
+            this.quantityToCraft
           );
         this.resolve(result);
         return;
@@ -287,13 +286,13 @@ export class CraftItems extends Skill {
   // ============================
 
   public async doInvoke(
-    item: string | ItemEntity,
-    quantity: number = 1,
+    item: string | ItemType,
+    quantity: number = 1
   ): Promise<void> {
     if (typeof item === "string") {
       // Validate the item string
       try {
-        this.itemToCraft = new ItemEntity(this.bot, item);
+        this.itemToCraft = new ItemType(this.bot, item);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new CraftItemsResults.InvalidItem(item);
@@ -312,22 +311,22 @@ export class CraftItems extends Skill {
     const nonTableRecipes = this.bot.recipesAll(
       this.itemToCraft.id,
       null,
-      false,
+      false
     );
     const allRecipes = tableRecipes.concat(nonTableRecipes);
 
     // Check if the item is craftable generally (any recipes exist)
     if (allRecipes.length === 0) {
       this.resolve(
-        new CraftItemsResults.NonCraftableItem(this.itemToCraft.name),
+        new CraftItemsResults.NonCraftableItem(this.itemToCraft.name)
       );
       return;
     }
 
     // Check if the item requires a crafting table but none are available
     const craftingTableIsAvailable = () => {
-      const craftingTableItemType = new ItemEntity(this.bot, "crafting_table");
-      const craftingTableBlockType = new Block(this.bot, "crafting_table");
+      const craftingTableItemType = new ItemType(this.bot, "crafting_table");
+      const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
       return (
         craftingTableBlockType.isVisibleInImmediateSurroundings() ||
         craftingTableItemType.getTotalCountInInventory() > 0
@@ -337,7 +336,7 @@ export class CraftItems extends Skill {
     const requiresCraftingTable = nonTableRecipes.length === 0;
     if (requiresCraftingTable && !craftingTableIsAvailable()) {
       this.resolve(
-        new CraftItemsResults.NoCraftingTable(this.itemToCraft.name),
+        new CraftItemsResults.NoCraftingTable(this.itemToCraft.name)
       );
       return;
     }
@@ -347,7 +346,7 @@ export class CraftItems extends Skill {
       this.itemToCraft.id,
       null,
       quantity, // Minimum resulting quantity
-      true, // Set of non-table recipes is a subset of the set of table recipes
+      true // Set of non-table recipes is a subset of the set of table recipes
     );
 
     let lastFeasibleNonTableRecipe: undefined | Recipe = undefined;
@@ -383,8 +382,8 @@ export class CraftItems extends Skill {
       this.resolve(
         new CraftItemsResults.InsufficientRecipeIngredients(
           this.itemToCraft.name,
-          quantity,
-        ),
+          quantity
+        )
       );
       return;
     }

@@ -122,7 +122,7 @@ class ItemEntity {
     }
     return closestCoords;
   }
-  oneIsVisableInImmediateSurroundingsAt(coords) {
+  isVisibleInImmediateSurroundingsAt(coords) {
     const immediate =
       this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
         this.name

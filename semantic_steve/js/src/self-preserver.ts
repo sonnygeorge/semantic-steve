@@ -1,12 +1,16 @@
+/**
+ * NOT YET IMPLEMENTED
+ * (will likely be a directory with multiple files when implemented)
+ */
+
 import { Bot } from "mineflayer";
 
 /**
- * SelfPreserver monitors the bot's environment and health to trigger self-preservation actions when needed.
- * It periodically checks for threats and dangerous conditions and can interrupt normal operation
- * to execute survival behaviors.
+ * SelfPreserver monitors the bot's environment and health to trigger self-preservation actions
+ * when needed. It periodically checks for threats and dangerous conditions and can interrupt
+ * normal operation to execute survival behaviors.
  */
 export class SelfPreserver {
-  // NOTE: Not yet implemented
   private bot: Bot;
   private checkThrottleMS: number;
 
@@ -22,7 +26,8 @@ export class SelfPreserver {
 
   /**
    * Checks if the bot should self-preserve based on its current environment and health.
-   * This method should be called periodically to determine if self-preservation actions are needed.
+   * This method should be called periodically to determine if self-preservation actions are
+   * needed.
    * @returns {boolean} - True if self-preservation is needed, false otherwise.
    */
   public shouldSelfPreserve(): boolean {

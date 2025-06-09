@@ -85,7 +85,6 @@ sequenceDiagram
     Note over SS,Skill: (once the skill resolves)
     Skill->>SS: handleSkillResolution(result)
     Note over SS: currentSkill = undefined
-    SS->>SS: bot.envState.hydrate()
     SS->>Python: Send result and environment state
 ```
 

@@ -16,7 +16,7 @@ export interface ThingType {
   locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined>;
 
   locateNearestInDistantSurroundings(
-    direction?: Direction
+    direction?: Direction,
   ): MaybePromise<Vec3 | undefined>;
 
   isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean;

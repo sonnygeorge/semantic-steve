@@ -21,14 +21,26 @@ class BiomeType {
         }
         (0, assert_1.default)(this.id !== -1, `This should be impossible. We should have thrown an error above.`);
     }
-    // =======================
-    // Biome-specific methods
-    // =======================
+    // ================================
+    // Implementation of ThingType API
+    // ================================
     isVisibleInImmediateSurroundings() {
-        return this.bot.envState.surroundings.immediate.biomes.has(this.id);
+        for (const biomeName of this.bot.envState.surroundings.immediate.getDistinctBiomeNames()) {
+            if (biomeName === this.name) {
+                return true;
+            }
+        }
+        return false;
     }
     isVisibleInDistantSurroundings() {
-        return [...this.bot.envState.surroundings.distant.values()].some((dir) => dir.biomesToClosestCoords.has(this.id));
+        for (const dir of this.bot.envState.surroundings.distant.values()) {
+            for (const biomeName of dir.getDistinctBiomeNames()) {
+                if (biomeName === this.name) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     locateNearest() {
         // Try immediate surroundings first
@@ -40,40 +52,42 @@ class BiomeType {
         return this.locateNearestInDistantSurroundings();
     }
     locateNearestInImmediateSurroundings() {
-        if (this.isVisibleInImmediateSurroundings()) {
-            return this.bot.entity.position.clone(); // assume we are in it
+        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getBiomeNamesToClosestCoords()) {
+            if (name === this.name) {
+                return closestCoords.clone();
+            }
         }
     }
     locateNearestInDistantSurroundings(direction) {
-        var _a;
         // If a specific direction is provided, check only that direction
         if (direction) {
-            const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);
-            if (surroundingsInDirection) {
-                return (_a = surroundingsInDirection.biomesToClosestCoords
-                    .get(this.id)) === null || _a === void 0 ? void 0 : _a.clone();
+            const vicinity = this.bot.envState.surroundings.distant.get(direction);
+            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
+                if (name === this.name) {
+                    return closestCoords.clone();
+                }
             }
-            return undefined; // No blocks found in the specified direction
+            return undefined; // Not found in the specified direction
         }
         // If no direction specified, check all directions
         const directions = Array.from(this.bot.envState.surroundings.distant.keys());
         // Find the closest coordinates across all directions
-        let closestCoords = undefined;
-        let minDistance = Infinity;
+        let closestOfClosestCoords = undefined;
+        let smallestDistance = Infinity;
         for (const dir of directions) {
-            const distant = this.bot.envState.surroundings.distant.get(dir);
-            if (distant) {
-                const coords = distant.biomesToClosestCoords.get(this.id);
-                if (coords) {
-                    const distance = coords.distanceTo(this.bot.entity.position);
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestCoords = coords.clone();
+            const vicinity = this.bot.envState.surroundings.distant.get(dir);
+            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
+                if (name === this.name) {
+                    const distance = closestCoords.distanceTo(this.bot.entity.position);
+                    if (distance < smallestDistance) {
+                        smallestDistance = distance;
+                        closestOfClosestCoords = closestCoords.clone();
                     }
+                    break;
                 }
             }
         }
-        return closestCoords;
+        return closestOfClosestCoords;
     }
     isVisibleInImmediateSurroundingsAt(coords) {
         throw new Error("Method not implemented. This method is yet not usable for biomes.");

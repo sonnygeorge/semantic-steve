@@ -1,3 +1,6 @@
+import { Entity as PEntity } from "prismarine-entity";
+import type { Item as PItem } from "prismarine-item";
+
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;
   immediateSurroundingsRadius?: number;
@@ -66,3 +69,8 @@ export interface InventoryChangesDTO {
 }
 
 export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;
+
+export interface ItemEntityWithData {
+  entity: PEntity;
+  itemData: PItem;
+}

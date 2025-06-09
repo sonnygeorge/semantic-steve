@@ -30,7 +30,7 @@ export class SemanticSteve {
 
   constructor(
     bot: Bot,
-    config: SemanticSteveConfig = new SemanticSteveConfig()
+    config: SemanticSteveConfig = new SemanticSteveConfig(),
   ) {
     console.log("Javascript: Initializing SemanticSteve...");
     this.bot = bot;
@@ -40,12 +40,12 @@ export class SemanticSteve {
 
     this.selfPreserver = new SelfPreserver(
       this.bot,
-      config.selfPreservationCheckThrottleMS
+      config.selfPreservationCheckThrottleMS,
     );
 
     this.skills = buildSkillsRegistry(
       this.bot,
-      this.handleSkillResolution.bind(this)
+      this.handleSkillResolution.bind(this),
     );
   }
 
@@ -79,7 +79,7 @@ export class SemanticSteve {
     setTimeout(async () => {
       if (!this.skills[skillInvocation.skillName]) {
         const result = new GenericSkillResults.SkillNotFound(
-          skillInvocation.skillName
+          skillInvocation.skillName,
         );
         // NOTE: Faux skill-resolution w/out ever ever having an active skill
         this.handleSkillResolution(result);
@@ -89,7 +89,7 @@ export class SemanticSteve {
       // Set fields that are to be set while skills are running
       this.activeSkill = this.skills[skillInvocation.skillName] ?? undefined;
       console.log(
-        `Invoking skill ${skillInvocation.skillName} w/ args: ${skillInvocation.args}`
+        `Invoking skill ${skillInvocation.skillName} w/ args: ${skillInvocation.args}`,
       );
       this.timeOfLastSkillInvocation = Date.now();
       try {
@@ -102,7 +102,7 @@ export class SemanticSteve {
               `thrown. Presumably, ${skillInvocation.skillName} called ` +
               `Skill.onResolution (which should = SemanticSteve.handleSkillResolution,` +
               ` the only place where SemanticSteve.activeSkill is supposed to set to ` +
-              `undefined). This is the error that was thrown by Skill.invoke()...`
+              `undefined). This is the error that was thrown by Skill.invoke()...`,
           );
           console.error(error);
           return;
@@ -111,7 +111,7 @@ export class SemanticSteve {
         console.error(error);
         const result = new GenericSkillResults.UnhandledInvocationError(
           skillInvocation.skillName,
-          error as Error
+          error as Error,
         );
         this.activeSkill.stop();
         this.activeSkill.resolve(result);
@@ -119,23 +119,13 @@ export class SemanticSteve {
     }, 0);
   }
 
-  private handleSkillResolution(
-    result: SkillResult,
-    // NOTE: Although worrying about this isn't their responsability, `Skill`s can
-    // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated?: boolean
-  ): void {
+  private handleSkillResolution(result: SkillResult): void {
     // Unset fields that are only to be set while skills are running
     console.log(
-      `Skill ${this.activeSkill?.constructor.name} resolved with result: ${result.message}`
+      `Skill ${this.activeSkill?.constructor.name} resolved with result: ${result.message}`,
     );
     this.activeSkill = undefined;
     this.timeOfLastSkillInvocation = undefined;
-
-    // Hydrate the envState if it wasn't just hydrated by a skill
-    if (!envStateIsHydrated) {
-      this.bot.envState.hydrate();
-    }
 
     // Get Inventory changes since the skill was invoked
     const invChanges = this.getInventoryChanges();
@@ -158,7 +148,7 @@ export class SemanticSteve {
     console.log("Getting inventory changes...");
     if (!this.itemTotalsAtTimeOfLastMsgToPython) {
       throw new Error(
-        "This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set"
+        "This should never be called if `invAtTimeOfLastOutoingPythonMsg` is not set",
       );
     }
 
@@ -190,16 +180,16 @@ export class SemanticSteve {
     if (!this.activeSkill) {
       assert(
         !this.timeOfLastSkillInvocation,
-        "No skill running, but time of last invocation is set"
+        "No skill running, but time of last invocation is set",
       );
     } else {
       assert(
         this.timeOfLastSkillInvocation,
-        "A skill is running, but time of last invocation is not set"
+        "A skill is running, but time of last invocation is not set",
       );
       assert(
         this.itemTotalsAtTimeOfLastMsgToPython,
-        "A skill is running, but item totals at time of last outgoing python msg is not set"
+        "A skill is running, but item totals at time of last outgoing python msg is not set",
       );
       const curSkillClass = this.activeSkill.constructor as typeof Skill;
       if (
@@ -209,7 +199,7 @@ export class SemanticSteve {
         const skillClass = this.activeSkill.constructor as typeof Skill;
         const result = new GenericSkillResults.SkillTimeout(
           skillClass.METADATA.name,
-          curSkillClass.TIMEOUT_MS / 1000
+          curSkillClass.TIMEOUT_MS / 1000,
         );
         this.activeSkill.stop();
         this.activeSkill.resolve(result);
@@ -236,7 +226,6 @@ export class SemanticSteve {
   }
 
   private async getAndSendInitialState(): Promise<void> {
-    this.bot.envState.surroundings.hydrate();
     let toSendToPython: DataFromMinecraft = {
       envState: this.bot.envState.getDTO(),
       // NOTE: No skill invocation results yet
@@ -266,7 +255,7 @@ export class SemanticSteve {
         if (this.hasDiedWhileAwaitingInvocation) {
           this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
           const result = new GenericSkillResults.DeathWhileAwaitingInvocation(
-            skillInvocation.skillName
+            skillInvocation.skillName,
           );
           // NOTE: Faux skill-resolution w/out ever ever having an active skill
           this.handleSkillResolution(result);

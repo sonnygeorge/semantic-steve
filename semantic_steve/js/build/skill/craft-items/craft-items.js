@@ -246,8 +246,7 @@ class CraftItems extends skill_1.Skill {
             }
             // Get feasible recipes for out desired minimum quantity
             const recipes = this.bot.recipesFor(this.itemToCraft.id, null, quantity, // Minimum resulting quantity
-            true // Set of non-table recipes is a subset of the set of table recipes
-            );
+            true);
             let lastFeasibleNonTableRecipe = undefined;
             let lastFeasibleTableRecipe = undefined;
             for (const recipe of recipes) {

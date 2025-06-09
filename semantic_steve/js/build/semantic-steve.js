@@ -129,19 +129,12 @@ class SemanticSteve {
             }
         }), 0);
     }
-    handleSkillResolution(result, 
-    // NOTE: Although worrying about this isn't their responsability, `Skill`s can
-    // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated) {
+    handleSkillResolution(result) {
         var _a;
         // Unset fields that are only to be set while skills are running
         console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
         this.activeSkill = undefined;
         this.timeOfLastSkillInvocation = undefined;
-        // Hydrate the envState if it wasn't just hydrated by a skill
-        if (!envStateIsHydrated) {
-            this.bot.envState.hydrate();
-        }
         // Get Inventory changes since the skill was invoked
         const invChanges = this.getInventoryChanges();
         // Prepare the data to send to Python
@@ -219,7 +212,6 @@ class SemanticSteve {
     }
     getAndSendInitialState() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.bot.envState.surroundings.hydrate();
             let toSendToPython = {
                 envState: this.bot.envState.getDTO(),
                 // NOTE: No skill invocation results yet

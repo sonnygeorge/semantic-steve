@@ -21,7 +21,7 @@ const thing_type_1 = require("../../thing-type");
 const types_1 = require("../../types");
 const skill_1 = require("../skill");
 const utils_1 = require("./utils");
-const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
+const misc_1 = require("../../utils/misc");
 class PathfindToCoordinates extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
@@ -99,22 +99,16 @@ class PathfindToCoordinates extends skill_1.Skill {
         console.log("Resolving pathfinding as success");
         (0, assert_1.default)(this.targetCoords);
         this.cleanupListeners();
-        // NOTE: No throttle since, since we know we always want to hydrate here.
-        // (We need to for `getResultIfAnyStopIfFoundThingInSurroundings` and, even if there are
-        // no stopIfFound things, we save `onResolution` from having to hydrate it by propagating
-        // the optional envStateIsHydrated flag as true.)
-        this.bot.envState.hydrate();
         // NOTE: We prefer telling the LLM/user that they stopped early because they found
         // something from stopIfFound, even if they reached their pathfinding goal as well.
         const result = (_a = this.getResultIfAnyStopIfFoundThingInSurroundings()) !== null && _a !== void 0 ? _a : new results_1.PathfindToCoordinatesResults.Success(this.targetCoords);
         this.unsetPathfindingParams();
-        this.resolve(result, true); // NOTE: true = envStateIsHydrated
+        this.resolve(result);
     }
     checkForStopIfFoundThingsAndHandle(lastMove) {
         if (this.stopIfFound.length === 0) {
             return;
         }
-        this.bot.envState.hydrate(STOP_IF_FOUND_CHECK_THROTTLE_MS);
         const result = this.getResultIfAnyStopIfFoundThingInSurroundings();
         if (result) {
             this.resolveThingFound(result);
@@ -163,11 +157,11 @@ class PathfindToCoordinates extends skill_1.Skill {
             if (Array.isArray(coords)) {
                 coords = new vec3_1.Vec3(coords[0], coords[1], coords[2]);
             }
+            const { minY: dimensionBottom, maxY: dimensionTop } = (0, misc_1.getCurrentDimensionYLimits)(this.bot);
             if (coords.x < -30000000 ||
                 coords.x > 30000000 ||
-                // TODO: Change these dynamically if bot in nether or end
-                coords.y < -64 ||
-                coords.y > 320 ||
+                coords.y < dimensionBottom ||
+                coords.y > dimensionTop ||
                 coords.z < -30000000 ||
                 coords.z > 30000000) {
                 this.resolveInvalidCoords([coords.x, coords.y, coords.z]);

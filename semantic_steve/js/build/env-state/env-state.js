@@ -44,11 +44,6 @@ class EnvState {
         }
         return equipped;
     }
-    hydrate(throttleMS) {
-        // For now, we just pass the throttleMS through to the surroundings
-        // since there's nothing computationally expensive to retrieve here.
-        this.surroundings.hydrate(throttleMS);
-    }
     getDTO() {
         return {
             playerCoordinates: [

@@ -600,6 +600,11 @@ asn1@0.2.3:
   resolved "https://registry.yarnpkg.com/asn1/-/asn1-0.2.3.tgz#dac8787713c9966849fc8180777ebe9c1ddf3b86"
   integrity sha512-6i37w/+EhlWlGUJff3T/Q8u1RGmP5wgbiwYnOnbOqvtrPxT63/sYFyP9RcpxtxGymtfA075IvmOnL7ycNOWl3w==
 
+avl@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/avl/-/avl-1.6.0.tgz#c0c3b89df869dd717ebd0e05866eae8aabc3f5b8"
+  integrity sha512-sXZcG/wbnIWbJJnH0wQrZl0iyzorHUQaL1BX9+8byrhIp2iPaXnloQ3bFkXTBEHKrshK6wcWe6iGblgMNXarUA==
+
 axios@^0.21.1:
   version "0.21.4"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"

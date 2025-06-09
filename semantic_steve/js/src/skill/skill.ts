@@ -9,10 +9,7 @@ export enum SkillStatus {
   STOPPED = "STOPPED",
 }
 
-export type SkillResolutionHandler = (
-  result: SkillResult,
-  envStateIsHydrated?: boolean,
-) => void;
+export type SkillResolutionHandler = (result: SkillResult) => void;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.
@@ -39,7 +36,7 @@ export abstract class Skill {
     this.status = SkillStatus.PENDING_INVOCATION;
   }
 
-  public resolve(result: SkillResult, envStateIsHydrated?: boolean): void {
+  public resolve(result: SkillResult): void {
     assert(
       this.status === SkillStatus.ACTIVE_RUNNING ||
         this.status === SkillStatus.STOPPED,
@@ -47,7 +44,7 @@ export abstract class Skill {
     );
     this.status = SkillStatus.PENDING_INVOCATION;
     setTimeout(() => {
-      this.onResolution(result, envStateIsHydrated);
+      this.onResolution(result);
     }, 0);
   }
 

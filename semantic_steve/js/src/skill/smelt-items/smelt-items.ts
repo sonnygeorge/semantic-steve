@@ -116,7 +116,7 @@ export class SmeltItems extends Skill {
     if (!this.hasAcquiredExpectedResult()) {
       assert(this.fuelItem.getTotalCountInInventory() == 0);
       result = new SmeltItemsResults.RanOutOfFuelBeforeFullCompletion(
-        this.fuelItem.name
+        this.fuelItem.name,
       );
     }
     if (
@@ -202,7 +202,7 @@ export class SmeltItems extends Skill {
 
     this.activeSubskill = new PathfindToCoordinates(
       this.bot,
-      handlePathfindingResolution.bind(this)
+      handlePathfindingResolution.bind(this),
     );
     await this.activeSubskill.invoke(furnaceCoords);
 
@@ -217,7 +217,7 @@ export class SmeltItems extends Skill {
     if (!furnaceIsInRangeAfterPathfinding) {
       this.shouldBeDoingStuff = false;
       const result = new SmeltItemsResults.FailedToGetCloseEnoughToFurnace(
-        furnaceCoords
+        furnaceCoords,
       );
       this.resolve(result);
       return;
@@ -234,7 +234,7 @@ export class SmeltItems extends Skill {
 
     this.activeSubskill = new PlaceBlock(
       this.bot,
-      handlePlaceFurnaceResolution.bind(this)
+      handlePlaceFurnaceResolution.bind(this),
     );
     await this.activeSubskill.invoke("furnace");
 
@@ -251,7 +251,7 @@ export class SmeltItems extends Skill {
     if (!wasSuccess) {
       this.shouldBeDoingStuff = false;
       const result = new SmeltItemsResults.FurnacePlacementFailed(
-        placeFurnaceResult
+        placeFurnaceResult,
       );
       this.resolve(result);
       return;
@@ -266,7 +266,7 @@ export class SmeltItems extends Skill {
 
     this.activeSubskill = new MineBlocks(
       this.bot,
-      handleMineBlocksResolution.bind(this)
+      handleMineBlocksResolution.bind(this),
     );
     await this.activeSubskill.invoke("furnace", 1);
 
@@ -307,7 +307,7 @@ export class SmeltItems extends Skill {
         // No furnace available
         this.shouldBeDoingStuff = false;
         this.resolve(
-          new SmeltItemsResults.FurnaceNoLongerInImmediateSurroundings()
+          new SmeltItemsResults.FurnaceNoLongerInImmediateSurroundings(),
         );
         return;
       }
@@ -325,7 +325,7 @@ export class SmeltItems extends Skill {
 
       // Pathfind to the furnace if not reachable
       await this.pathfindToFurnaceIfNeeded(
-        nearestImmediateSurroundingsFurnaceCoords
+        nearestImmediateSurroundingsFurnaceCoords,
       );
       if (!this.shouldBeDoingStuff) {
         return; // Exit on pause or stop
@@ -333,7 +333,7 @@ export class SmeltItems extends Skill {
 
       // Input items into the furnace
       const furnace = this.bot.blockAt(
-        nearestImmediateSurroundingsFurnaceCoords
+        nearestImmediateSurroundingsFurnaceCoords,
       );
       assert(furnace);
 
@@ -375,7 +375,7 @@ export class SmeltItems extends Skill {
   public async doInvoke(
     item: string | ItemType,
     withFuelItem: string | ItemType,
-    quantityToSmelt: number = 1
+    quantityToSmelt: number = 1,
   ): Promise<void> {
     if (typeof item === "string") {
       // Validate the item string
@@ -415,11 +415,11 @@ export class SmeltItems extends Skill {
 
     // Check if the item is smeltable
     const expectedResultItemName = getSmeltingProductName(
-      this.itemToSmelt.name
+      this.itemToSmelt.name,
     );
     if (!expectedResultItemName) {
       this.resolve(
-        new SmeltItemsResults.NonSmeltableItem(this.itemToSmelt.name)
+        new SmeltItemsResults.NonSmeltableItem(this.itemToSmelt.name),
       );
       return;
     }
@@ -429,7 +429,7 @@ export class SmeltItems extends Skill {
     // Check if the fuel item is usable as fuel
     if (!isFuel(this.fuelItem.name)) {
       this.resolve(
-        new SmeltItemsResults.FuelItemNotUsableAsFuel(this.fuelItem.name)
+        new SmeltItemsResults.FuelItemNotUsableAsFuel(this.fuelItem.name),
       );
       return;
     }
@@ -451,7 +451,7 @@ export class SmeltItems extends Skill {
 
     if (!furnaceIsAvailable()) {
       this.resolve(
-        new SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name)
+        new SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name),
       );
       return;
     }
@@ -462,8 +462,8 @@ export class SmeltItems extends Skill {
       this.resolve(
         new SmeltItemsResults.InsufficientToSmeltItems(
           quantityToSmelt,
-          this.itemToSmelt.name
-        )
+          this.itemToSmelt.name,
+        ),
       );
       return;
     }
@@ -473,8 +473,8 @@ export class SmeltItems extends Skill {
       this.resolve(
         new SmeltItemsResults.FuelItemNotInventory(
           this.fuelItem,
-          this.itemToSmelt.name
-        )
+          this.itemToSmelt.name,
+        ),
       );
       return;
     }

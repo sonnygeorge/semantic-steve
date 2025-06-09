@@ -5,8 +5,8 @@ import zmq
 
 from semantic_steve.py.constants import (
     DEFAULT_PATH_TO_SCREENSHOT_DIR,
-    SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
     SCREENSHORT_DIR_ENV_VAR_NAME,
+    SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
 )
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager

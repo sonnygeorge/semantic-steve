@@ -16,7 +16,7 @@ export class ThingTypeFactory {
 
   public createThingType(name: string): ThingType {
     const attemptCreate = (
-      Type: new (bot: Bot, name: string) => ThingType
+      Type: new (bot: Bot, name: string) => ThingType,
     ): ThingType | null => {
       try {
         return new Type(this.bot, name);
@@ -35,7 +35,7 @@ export class ThingTypeFactory {
 
     // If we reach here, it means the name is not valid for any supported type
     throw new InvalidThingError(
-      `Invalid thing name: ${name}. Supported types are: ${SUPPORTED_THING_TYPES}`
+      `Invalid thing name: ${name}. Supported types are: ${SUPPORTED_THING_TYPES}`,
     );
   }
 }

@@ -55,12 +55,12 @@ export class PlaceBlock extends Skill {
     const referenceBlockAndFaceVector =
       getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
         this.bot,
-        this.targetPosition
+        this.targetPosition,
       );
 
     if (!referenceBlockAndFaceVector) {
       const result = new PlaceBlockResults.UnplaceableCoords(
-        `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
+        `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
       );
       this.resolvePlacing(result);
       return;
@@ -75,14 +75,14 @@ export class PlaceBlock extends Skill {
         this.bot.setControlState("sneak", true);
         await this.bot.placeBlock(
           referenceBlockAndFaceVector[0],
-          referenceBlockAndFaceVector[1]
+          referenceBlockAndFaceVector[1],
         );
         this.bot.setControlState("sneak", false);
       } catch (err) {
         if (err instanceof Error) {
           const result = new PlaceBlockResults.PlacingFailure(
             this.blockToPlace.name,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
           );
           this.resolvePlacing(result);
           return;
@@ -106,15 +106,15 @@ export class PlaceBlock extends Skill {
         this.resolvePlacing(
           new PlaceBlockResults.PlacingFailure(
             this.blockToPlace.name,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-          )
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          ),
         );
       } else {
         this.resolvePlacing(
           new PlaceBlockResults.Success(
             this.blockToPlace.name,
-            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`
-          )
+            `${this.targetPosition.x}, ${this.targetPosition.y}, ${this.targetPosition.z}`,
+          ),
         );
       }
     }
@@ -126,7 +126,7 @@ export class PlaceBlock extends Skill {
 
   public async doInvoke(
     block: string | BlockType,
-    atCoordinates?: [number, number, number]
+    atCoordinates?: [number, number, number],
   ): Promise<void> {
     if (typeof block === "string") {
       try {
@@ -149,7 +149,7 @@ export class PlaceBlock extends Skill {
 
     if (!this.itemToPlace) {
       this.resolvePlacing(
-        new PlaceBlockResults.BlockNotInInventory(this.blockToPlace.name)
+        new PlaceBlockResults.BlockNotInInventory(this.blockToPlace.name),
       );
       return;
     }
@@ -158,7 +158,7 @@ export class PlaceBlock extends Skill {
       this.targetPosition = getPlaceableCoords(this.bot);
       if (!this.targetPosition) {
         this.resolvePlacing(
-          new GetPlaceableCoordinatesResults.NoPlaceableCoords()
+          new GetPlaceableCoordinatesResults.NoPlaceableCoords(),
         );
         return;
       }
@@ -166,7 +166,7 @@ export class PlaceBlock extends Skill {
       this.targetPosition = new Vec3(
         atCoordinates[0],
         atCoordinates[1],
-        atCoordinates[2]
+        atCoordinates[2],
       );
     }
 

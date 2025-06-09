@@ -71,10 +71,22 @@ class BlockType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(this.name);
+        for (const blockName of this.bot.envState.surroundings.immediate.getDistinctBlockNames()) {
+            if (blockName === this.name) {
+                return true;
+            }
+        }
+        return false;
     }
     isVisibleInDistantSurroundings() {
-        return [...this.bot.envState.surroundings.distant.values()].some((dir) => dir.blocksToCounts.has(this.name));
+        for (const dir of this.bot.envState.surroundings.distant.values()) {
+            for (const blockName of dir.getDistinctBlockNames()) {
+                if (blockName === this.name) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     locateNearest() {
         // Try immediate surroundings first
@@ -86,57 +98,52 @@ class BlockType {
         return this.locateNearestInDistantSurroundings();
     }
     locateNearestInImmediateSurroundings() {
-        const immediate = this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
-        if (immediate && immediate.length > 0) {
-            // Sort the coordinates by distance to the bot's position
-            immediate.sort((a, b) => {
-                const distanceA = a.distanceTo(this.bot.entity.position);
-                const distanceB = b.distanceTo(this.bot.entity.position);
-                return distanceA - distanceB;
-            });
-            // Return the closest coordinate
-            return immediate[0];
+        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getBlockNamesToClosestCoords()) {
+            if (name === this.name) {
+                return closestCoords.clone();
+            }
         }
     }
     locateNearestInDistantSurroundings(direction) {
         // If a specific direction is provided, check only that direction
         if (direction) {
-            const surroundingsInDirection = this.bot.envState.surroundings.distant.get(direction);
-            if (surroundingsInDirection) {
-                const count = surroundingsInDirection.blocksToCounts.get(this.name);
-                if (count && count > 0) {
-                    return surroundingsInDirection.blocksToClosestCoords.get(this.name);
+            const vicinity = this.bot.envState.surroundings.distant.get(direction);
+            for (const [name, closestCoords,] of vicinity.getBlockNamesToClosestCoords()) {
+                if (name === this.name) {
+                    return closestCoords.clone();
                 }
             }
-            return undefined; // No blocks found in the specified direction
+            return undefined; // Not found in the specified direction
         }
         // If no direction specified, check all directions
         const directions = Array.from(this.bot.envState.surroundings.distant.keys());
         // Find the closest coordinates across all directions
-        let closestCoords = undefined;
-        let minDistance = Infinity;
+        let closestOfClosestCoords = undefined;
+        let smallestDistance = Infinity;
         for (const dir of directions) {
-            const surroundingsInDir = this.bot.envState.surroundings.distant.get(dir);
-            if (surroundingsInDir) {
-                const count = surroundingsInDir.blocksToCounts.get(this.name);
-                if (count && count > 0) {
-                    const coords = surroundingsInDir.blocksToClosestCoords.get(this.name);
-                    if (coords) {
-                        const distance = coords.distanceTo(this.bot.entity.position);
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestCoords = coords.clone();
-                        }
+            const vicinity = this.bot.envState.surroundings.distant.get(dir);
+            for (const [name, closestCoords,] of vicinity.getBlockNamesToClosestCoords()) {
+                if (name === this.name) {
+                    const distance = closestCoords.distanceTo(this.bot.entity.position);
+                    if (distance < smallestDistance) {
+                        smallestDistance = distance;
+                        closestOfClosestCoords = closestCoords.clone();
                     }
+                    break;
                 }
             }
         }
-        return closestCoords;
+        return closestOfClosestCoords;
     }
     isVisibleInImmediateSurroundingsAt(coords) {
-        const immediate = this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
-        if (immediate) {
-            return immediate.some((coord) => coord.equals(coords));
+        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.getBlockNamesToAllCoords()) {
+            if (name === this.name) {
+                for (const blockCoords of coordsIterable) {
+                    if (blockCoords.equals(coords)) {
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }

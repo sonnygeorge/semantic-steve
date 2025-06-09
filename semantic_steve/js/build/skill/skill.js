@@ -30,12 +30,12 @@ class Skill {
         this.onResolution = onResolution;
         this.status = SkillStatus.PENDING_INVOCATION;
     }
-    resolve(result, envStateIsHydrated) {
+    resolve(result) {
         (0, assert_1.default)(this.status === SkillStatus.ACTIVE_RUNNING ||
             this.status === SkillStatus.STOPPED, `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`);
         this.status = SkillStatus.PENDING_INVOCATION;
         setTimeout(() => {
-            this.onResolution(result, envStateIsHydrated);
+            this.onResolution(result);
         }, 0);
     }
     /**

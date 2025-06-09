@@ -16,6 +16,7 @@
     "@nut-tree-fork/nut-js": "^4.2.6",
     "@nxg-org/mineflayer-util-plugin": "^1.8.3",
     "@types/three": "^0.175.0",
+    "avl": "^1.6.0",
     "canvas": "^3.1.0",
     "mineflayer": "^4.26.0",
     "mineflayer-pathfinder": "^2.4.5",

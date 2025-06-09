@@ -7,8 +7,7 @@ import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
 import { InvalidThingError } from "../../types";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { getGoodPathfindingTarget } from "./utils";
-
-const STOP_IF_FOUND_CHECK_THROTTLE_MS = 1800;
+import { getCurrentDimensionYLimits } from "../../utils/misc";
 
 export class PathfindToCoordinates extends Skill {
   public static readonly TIMEOUT_MS: number = 25000; // 25 seconds
@@ -57,7 +56,7 @@ export class PathfindToCoordinates extends Skill {
     const goal: goals.GoalBlock = new goals.GoalBlock(
       this.targetCoords.x,
       this.targetCoords.y,
-      this.targetCoords.z
+      this.targetCoords.z,
     );
     this.bot.pathfinder.setGoal(goal);
     console.log("Goal set. Beginning pathfinding...");
@@ -92,12 +91,12 @@ export class PathfindToCoordinates extends Skill {
       if (thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
           this.targetCoords,
-          thing.name
+          thing.name,
         );
       } else if (thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
           this.targetCoords,
-          thing.name
+          thing.name,
         );
       }
     }
@@ -116,7 +115,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as invalid thing");
     const result = new PathfindToCoordinatesResults.InvalidThing(
       thingName,
-      SUPPORTED_THING_TYPES.toString()
+      SUPPORTED_THING_TYPES.toString(),
     );
     this.resolve(result);
   }
@@ -124,7 +123,7 @@ export class PathfindToCoordinates extends Skill {
   private resolveThingFound(
     result:
       | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
-      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
+      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings,
   ): void {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
@@ -140,7 +139,7 @@ export class PathfindToCoordinates extends Skill {
     this.cleanupListeners();
     const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
-      this.targetCoords
+      this.targetCoords,
     );
     this.unsetPathfindingParams();
     this.resolve(result);
@@ -150,25 +149,19 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as success");
     assert(this.targetCoords);
     this.cleanupListeners();
-    // NOTE: No throttle since, since we know we always want to hydrate here.
-    // (We need to for `getResultIfAnyStopIfFoundThingInSurroundings` and, even if there are
-    // no stopIfFound things, we save `onResolution` from having to hydrate it by propagating
-    // the optional envStateIsHydrated flag as true.)
-    this.bot.envState.hydrate();
     // NOTE: We prefer telling the LLM/user that they stopped early because they found
     // something from stopIfFound, even if they reached their pathfinding goal as well.
     const result =
       this.getResultIfAnyStopIfFoundThingInSurroundings() ??
       new PathfindToCoordinatesResults.Success(this.targetCoords);
     this.unsetPathfindingParams();
-    this.resolve(result, true); // NOTE: true = envStateIsHydrated
+    this.resolve(result);
   }
 
   private checkForStopIfFoundThingsAndHandle(lastMove: Vec3): void {
     if (this.stopIfFound.length === 0) {
       return;
     }
-    this.bot.envState.hydrate(STOP_IF_FOUND_CHECK_THROTTLE_MS);
     const result = this.getResultIfAnyStopIfFoundThingInSurroundings();
     if (result) {
       this.resolveThingFound(result);
@@ -195,7 +188,7 @@ export class PathfindToCoordinates extends Skill {
 
   private setupListener(
     event: keyof BotEvents,
-    listener: (...args: any[]) => void
+    listener: (...args: any[]) => void,
   ): void {
     this.bot.on(event, listener);
     this.activeListeners.push({ event, listener });
@@ -205,23 +198,23 @@ export class PathfindToCoordinates extends Skill {
     console.log("Setting up pathfinding listeners");
     this.setupListener(
       "goal_reached",
-      this.resolvePathfindingSuccess.bind(this)
+      this.resolvePathfindingSuccess.bind(this),
     );
     this.setupListener(
       "move",
-      this.checkForStopIfFoundThingsAndHandle.bind(this)
+      this.checkForStopIfFoundThingsAndHandle.bind(this),
     );
     this.setupListener(
       "path_update",
-      this.checkForNoPathStatusAndHandle.bind(this)
+      this.checkForNoPathStatusAndHandle.bind(this),
     );
     this.setupListener(
       "path_update",
-      this.checkForTimeoutStatusAndHandle.bind(this)
+      this.checkForTimeoutStatusAndHandle.bind(this),
     );
     this.setupListener(
       "path_stop",
-      this.resolvePathfindingPartialSuccess.bind(this)
+      this.resolvePathfindingPartialSuccess.bind(this),
     );
   }
 
@@ -239,18 +232,19 @@ export class PathfindToCoordinates extends Skill {
 
   public async doInvoke(
     coords: [number, number, number] | Vec3,
-    stopIfFound?: string[]
+    stopIfFound?: string[],
   ): Promise<void> {
     // Pre-process coordinates
     if (Array.isArray(coords)) {
       coords = new Vec3(coords[0], coords[1], coords[2]);
     }
+    const { minY: dimensionBottom, maxY: dimensionTop } =
+      getCurrentDimensionYLimits(this.bot);
     if (
       coords.x < -30000000 ||
       coords.x > 30000000 ||
-      // TODO: Change these dynamically if bot in nether or end
-      coords.y < -64 ||
-      coords.y > 320 ||
+      coords.y < dimensionBottom ||
+      coords.y > dimensionTop ||
       coords.z < -30000000 ||
       coords.z > 30000000
     ) {

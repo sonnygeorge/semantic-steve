@@ -36,8 +36,7 @@ class SelfPreserver {
      * @returns {boolean} - True if self-preservation is needed, false otherwise.
      */
     shouldSelfPreserve() {
-        // this.bot.envState.hydrate(this.CheckThrottleMS);
-        // TODO: Check hydrated envState for threatening mobs, low hunger, drowning, etc.
+        // TODO: Check bot.envState for threatening mobs, low hunger, drowning, etc.
         return false; // FIXME
     }
     invoke() {

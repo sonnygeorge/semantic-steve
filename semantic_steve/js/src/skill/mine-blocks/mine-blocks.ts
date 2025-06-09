@@ -92,8 +92,8 @@ export class MineBlocks extends Skill {
         } else {
           throw new Error(
             `Unexpected Pblock.drops format: ${JSON.stringify(
-              blockToMineDrops
-            )}`
+              blockToMineDrops,
+            )}`,
           );
         }
         minCount = firstDrop.minCount ?? 1; // Set to one if undefined
@@ -107,12 +107,12 @@ export class MineBlocks extends Skill {
       return null;
     } else {
       throw new Error(
-        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`
+        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`,
       );
     }
     if (itemID === -1) {
       throw new Error(
-        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`
+        `Unexpected Pblock.drops format: ${JSON.stringify(blockToMineDrops)}`,
       );
     }
     return {
@@ -136,7 +136,7 @@ export class MineBlocks extends Skill {
   }
 
   private resolveAfterSomeMining(
-    partialSuccessReason?: PartialSuccessReason
+    partialSuccessReason?: PartialSuccessReason,
   ): void {
     assert(this.blockTypeToMine);
     assert(this.numBlocksToMine);
@@ -152,8 +152,8 @@ export class MineBlocks extends Skill {
             this.numBlocksToMine,
             undefined,
             0,
-            partialSuccessReason
-          )
+            partialSuccessReason,
+          ),
         );
       } else {
         return this.resolve(
@@ -162,8 +162,8 @@ export class MineBlocks extends Skill {
             this.numBlocksBroken,
             this.numBlocksToMine,
             undefined,
-            0
-          )
+            0,
+          ),
         );
       }
     }
@@ -178,8 +178,8 @@ export class MineBlocks extends Skill {
           this.numBlocksBroken,
           this.numBlocksToMine,
           this.blockToMineDrop.itemEntity.name,
-          numAcquired
-        )
+          numAcquired,
+        ),
       );
     } else {
       return this.resolve(
@@ -189,8 +189,8 @@ export class MineBlocks extends Skill {
           this.numBlocksToMine,
           this.blockToMineDrop.itemEntity.name,
           numAcquired,
-          partialSuccessReason
-        )
+          partialSuccessReason,
+        ),
       );
     }
   }
@@ -243,7 +243,7 @@ export class MineBlocks extends Skill {
       // Callback that sets the pathfindingToBlockWasSuccess variable to reflect
       // whether the pathfinding to block was successful
       const onPathfindToBlockResolution = async (
-        _: SkillResult
+        _: SkillResult,
       ): Promise<void> => {
         assert(this.activeSubskill);
         this.activeSubskill = undefined;
@@ -262,7 +262,7 @@ export class MineBlocks extends Skill {
       // Invoke pathfinding skill
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
-        onPathfindToBlockResolution
+        onPathfindToBlockResolution,
       );
       await this.activeSubskill.invoke([
         nearestPosOfBlockType.x,
@@ -302,7 +302,7 @@ export class MineBlocks extends Skill {
       let pickupAttemptComplete: boolean = false;
 
       const onPickupItemResolution = async (
-        result: SkillResult
+        result: SkillResult,
       ): Promise<void> => {
         assert(this.activeSubskill);
         this.activeSubskill = undefined;
@@ -374,7 +374,7 @@ export class MineBlocks extends Skill {
 
     if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
       return this.resolve(
-        new MineBlocksResults.BlockNotInImmediateSurroundings(block)
+        new MineBlocksResults.BlockNotInImmediateSurroundings(block),
       );
     }
 

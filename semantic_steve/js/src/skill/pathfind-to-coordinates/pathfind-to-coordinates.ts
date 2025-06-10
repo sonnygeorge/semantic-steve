@@ -17,7 +17,7 @@ export class PathfindToCoordinates extends Skill {
       "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
     docstring: `
       /**
-       * Attempt to pathfind to or near a set of in-dimension coordinates (digging and
+       * Attempts to pathfind to or near a set of in-dimension coordinates (digging and
        * bridging as needed), stopping early if something from the stopIfFound list
        * becomes visible in the bot's surroundings.
        *
@@ -56,7 +56,7 @@ export class PathfindToCoordinates extends Skill {
     const goal: goals.GoalBlock = new goals.GoalBlock(
       this.targetCoords.x,
       this.targetCoords.y,
-      this.targetCoords.z,
+      this.targetCoords.z
     );
     this.bot.pathfinder.setGoal(goal);
     console.log("Goal set. Beginning pathfinding...");
@@ -91,12 +91,12 @@ export class PathfindToCoordinates extends Skill {
       if (thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
           this.targetCoords,
-          thing.name,
+          thing.name
         );
       } else if (thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
           this.targetCoords,
-          thing.name,
+          thing.name
         );
       }
     }
@@ -115,7 +115,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as invalid thing");
     const result = new PathfindToCoordinatesResults.InvalidThing(
       thingName,
-      SUPPORTED_THING_TYPES.toString(),
+      SUPPORTED_THING_TYPES.toString()
     );
     this.resolve(result);
   }
@@ -123,7 +123,7 @@ export class PathfindToCoordinates extends Skill {
   private resolveThingFound(
     result:
       | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
-      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings,
+      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
   ): void {
     console.log("Resolving pathfinding as thing found");
     assert(this.targetCoords);
@@ -139,7 +139,7 @@ export class PathfindToCoordinates extends Skill {
     this.cleanupListeners();
     const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
-      this.targetCoords,
+      this.targetCoords
     );
     this.unsetPathfindingParams();
     this.resolve(result);
@@ -188,7 +188,7 @@ export class PathfindToCoordinates extends Skill {
 
   private setupListener(
     event: keyof BotEvents,
-    listener: (...args: any[]) => void,
+    listener: (...args: any[]) => void
   ): void {
     this.bot.on(event, listener);
     this.activeListeners.push({ event, listener });
@@ -198,23 +198,23 @@ export class PathfindToCoordinates extends Skill {
     console.log("Setting up pathfinding listeners");
     this.setupListener(
       "goal_reached",
-      this.resolvePathfindingSuccess.bind(this),
+      this.resolvePathfindingSuccess.bind(this)
     );
     this.setupListener(
       "move",
-      this.checkForStopIfFoundThingsAndHandle.bind(this),
+      this.checkForStopIfFoundThingsAndHandle.bind(this)
     );
     this.setupListener(
       "path_update",
-      this.checkForNoPathStatusAndHandle.bind(this),
+      this.checkForNoPathStatusAndHandle.bind(this)
     );
     this.setupListener(
       "path_update",
-      this.checkForTimeoutStatusAndHandle.bind(this),
+      this.checkForTimeoutStatusAndHandle.bind(this)
     );
     this.setupListener(
       "path_stop",
-      this.resolvePathfindingPartialSuccess.bind(this),
+      this.resolvePathfindingPartialSuccess.bind(this)
     );
   }
 
@@ -232,7 +232,7 @@ export class PathfindToCoordinates extends Skill {
 
   public async doInvoke(
     coords: [number, number, number] | Vec3,
-    stopIfFound?: string[],
+    stopIfFound?: string[]
   ): Promise<void> {
     // Pre-process coordinates
     if (Array.isArray(coords)) {

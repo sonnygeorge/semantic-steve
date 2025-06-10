@@ -30,6 +30,7 @@ export class CraftItems extends Skill {
         /**
          * Crafts one or more of an item, assuming a crafting table (if necessary for the
          * recipe) is either in inventory or in the immediate surroundings.
+         *
          * @param item - The item to craft.
          * @param quantity - Optional quantity to craft. Defaults to 1.
          */

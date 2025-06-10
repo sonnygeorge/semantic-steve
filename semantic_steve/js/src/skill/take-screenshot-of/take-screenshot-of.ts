@@ -48,6 +48,7 @@ export class TakeScreenshotOf extends Skill {
       /**
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
+       * 
        * @param thing - The thing to take a screenshot of.
        * @param atCoordinates - Optional coordinates to disambiguate where the
        * thing is located.

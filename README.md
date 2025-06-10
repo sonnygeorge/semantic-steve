@@ -38,15 +38,15 @@ See `examples.py` for minimal code to:
 
 To run `examples.py`, you must:
 
-- ⚠️ Have Node.js 22 installed such that `node --version` outputs `v22.x.x`.
+1. ⚠️ Have Node.js 22 installed such that `node --version` outputs `v22.x.x`.
 
   (`semantic-steve` runs JavaScript code that only works with this version)
 
-- ⚠️ Have `yarn` installed.
+2. ⚠️ Have `yarn` installed.
 
   (so `semantic-steve` can automatically verify/install a few JS dependencies at runtime; see `semantic_steve/js/yarn.lock`)
 
-- ⚠️ Have a Minecraft Java Edition world (versions `1.19.1` - `1.21.1`) running locally and open to LAN on port `25565`
+3. ⚠️ Have a Minecraft Java Edition world (versions `1.19.1` - `1.21.1`) running locally and open to LAN on port `25565`
 
 ## Contributing
 

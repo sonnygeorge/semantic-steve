@@ -7,6 +7,8 @@
 	<a href="https://github.com/sonnygeorge/semantic-steve/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue"/></a>
     <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code_style-black-000000.svg"/></a>
     <a href="https://github.com/prettier/prettier"><img src="https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square"/></a>
+    <a href="https://discord.gg/qQXsntuP"><img src="https://img.shields.io/badge/Discord-Join%20Chat-7289DA?logo=discord&logoColor=white"/></a>
+
 </div>
 
 A semantic wrapper for controlling Minecraft 'Steve'
@@ -40,11 +42,11 @@ To run `examples.py`, you must:
 
 1. ⚠️ Have Node.js 22 installed such that `node --version` outputs `v22.x.x`.
 
-  (`semantic-steve` runs JavaScript code that only works with this version)
+(`semantic-steve` runs JavaScript code that only works with this version)
 
 2. ⚠️ Have `yarn` installed.
 
-  (so `semantic-steve` can automatically verify/install a few JS dependencies at runtime; see `semantic_steve/js/yarn.lock`)
+(so `semantic-steve` can automatically verify/install a few JS dependencies at runtime; see `semantic_steve/js/yarn.lock`)
 
 3. ⚠️ Have a Minecraft Java Edition world (versions `1.19.1` - `1.21.1`) running locally and open to LAN on port `25565`
 
@@ -52,7 +54,7 @@ To run `examples.py`, you must:
 
 PRs with small, narrowly-scoped changes/fixes are welcome.
 
-However, please [ping me on discord](www.discord.com) or elsewhere if you would like to work on an actual enhancement/feature so that we can keep efforts synced and productive.
+However, please [ping Sonny on Discord](https://discord.gg/qQXsntuP) or elsewhere if you would like to work on an actual enhancement/feature so that we can keep efforts synced and productive.
 
 Please also feel free to raise GitHub issues.
 

@@ -1,4 +1,4 @@
-"""Minimal code examples for using Semantic Steve."""
+"""Minimal code examples for using SemanticSteve."""
 
 import asyncio
 import os

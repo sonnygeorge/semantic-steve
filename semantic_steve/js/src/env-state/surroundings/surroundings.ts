@@ -48,14 +48,14 @@ export class ImmediateSurroundings extends VisibleVicinityContents {
     const visibleBlocks: { [key: string]: [number, number, number][] } = {};
     for (const [blockName, coordsIterable] of this.getBlockNamesToAllCoords()) {
       visibleBlocks[blockName] = Array.from(coordsIterable).map(
-        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number],
+        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number]
       );
     }
 
     const visibleItems: { [key: string]: [number, number, number][] } = {};
     for (const [itemName, coordsIterable] of this.getItemNamesToAllCoords()) {
       visibleItems[itemName] = Array.from(coordsIterable).map(
-        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number],
+        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number]
       );
     }
 
@@ -174,7 +174,7 @@ export class Surroundings {
       this,
       bot,
       radii.immediateSurroundingsRadius,
-      radii.distantSurroundingsRadius,
+      radii.distantSurroundingsRadius
     );
     // Public
     this.radii = radii;
@@ -183,7 +183,7 @@ export class Surroundings {
       Object.values(Direction).map((dir) => [
         dir,
         new DistantSurroundingsInADirection(bot),
-      ]),
+      ])
     );
 
     this.setupEventListeners();
@@ -197,7 +197,7 @@ export class Surroundings {
     return {
       immediateSurroundings: this.immediate.getDTO(),
       distantSurroundings: Object.fromEntries(
-        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()]),
+        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()])
       ),
     };
   }
@@ -259,7 +259,7 @@ export class Surroundings {
     // 1. Add to cache of all loaded blocks
     this.allLoadedBlocks.set(
       AllLoadedBlocksCache.getKeyFromVec3(block.position),
-      block,
+      block
     );
     // 2. If in a vicinity and visible, add to that vicinity
     this.classifyAndAddBlockToVicinityIfIsVisibleInOne(block);
@@ -267,7 +267,7 @@ export class Surroundings {
 
   private processRemovalOfOldBlock(block: PBlock | Vec3): void {
     const posKey = AllLoadedBlocksCache.getKeyFromVec3(
-      block instanceof Vec3 ? block : block?.position,
+      block instanceof Vec3 ? block : block?.position
     );
     const storedBlock = this.allLoadedBlocks.get(posKey);
     if (!storedBlock) {
@@ -283,12 +283,12 @@ export class Surroundings {
   // ==============
 
   private classifyAndAddItemToVicinityIfIsVisibleInOne(
-    itemEntityWithData: ItemEntityWithData,
+    itemEntityWithData: ItemEntityWithData
   ): void {
     assert(itemEntityWithData.entity.name === "item");
     assert(itemEntityWithData.entity.uuid);
     const vicinity = this.getVicinityForPosition(
-      itemEntityWithData.entity.position,
+      itemEntityWithData.entity.position
     );
     if (
       !vicinity ||
@@ -304,7 +304,7 @@ export class Surroundings {
   }
 
   private removeItemFromVicinityIfWasVisibleInOne(
-    itemEntityWithData: ItemEntityWithData,
+    itemEntityWithData: ItemEntityWithData
   ): void {
     assert(itemEntityWithData.entity.name === "item");
     assert(itemEntityWithData.entity.uuid);
@@ -322,18 +322,18 @@ export class Surroundings {
   }
 
   private async processNewlySpawnedItemEntity(
-    itemEntityWithData: ItemEntityWithData,
+    itemEntityWithData: ItemEntityWithData
   ): Promise<void> {
     assert(PEntity.name === "item");
     this.allSpawnedItemEntities.set(
       itemEntityWithData.entity.uuid!,
-      itemEntityWithData,
+      itemEntityWithData
     );
     this.classifyAndAddItemToVicinityIfIsVisibleInOne(itemEntityWithData);
   }
 
   private async processRemovalOfGoneItemEntity(
-    itemEntityWithData: ItemEntityWithData,
+    itemEntityWithData: ItemEntityWithData
   ): Promise<void> {
     assert(PEntity.name === "item");
     assert(itemEntityWithData.entity.uuid);
@@ -349,7 +349,7 @@ export class Surroundings {
     applyFuncToCoordsInChunk(
       this.bot,
       this.processNewlyLoadedBlock.bind(this),
-      chunkPos,
+      chunkPos
     );
   }
 
@@ -357,13 +357,13 @@ export class Surroundings {
     applyFuncToCoordsInChunk(
       this.bot,
       this.processRemovalOfOldBlock.bind(this),
-      chunkPos,
+      chunkPos
     );
   }
 
   private handleBlockUpdate(
     oldBlock: PBlock | null,
-    newBlock: PBlock | null,
+    newBlock: PBlock | null
   ): void {
     if (oldBlock) {
       this.processRemovalOfOldBlock(oldBlock);
@@ -390,7 +390,7 @@ export class Surroundings {
     if (entity.name === "item") {
       // Ensure the loading of its uuid and PItem data
       const itemEntityWithData = await ensureItemData(this.bot, entity);
-      // Defensive programming: If this entityGone somehow happened before processing the spawn event...
+      // Defensive programming: If entityGone somehow happened before processing the spawn event...
       if (!this.allSpawnedItemEntities.has(itemEntityWithData.entity.uuid!)) {
         // Any spawned item entity with a UUID should have already been added to this cache...
         // HOWEVER, on the off chance the event loop gets here before adding the entity...
@@ -442,7 +442,7 @@ export class Surroundings {
       Object.values(Direction).map((dir) => [
         dir,
         new DistantSurroundingsInADirection(this.bot),
-      ]),
+      ])
     );
 
     // For blocks, we only need to look at:
@@ -450,10 +450,10 @@ export class Surroundings {
     // 2. What's loaded (and not in BLOCKS_TO_IGNORE), i.e., what's in the cache.
     for (const coords of getAllCoordsWithinRadiusToBot(
       this.bot,
-      this.radii.distantSurroundingsRadius,
+      this.radii.distantSurroundingsRadius
     )) {
       const block = this.allLoadedBlocks.get(
-        AllLoadedBlocksCache.getKeyFromVec3(coords),
+        AllLoadedBlocksCache.getKeyFromVec3(coords)
       );
       if (!block) continue; // Skip if not meeting above criteria #2
       this.classifyAndAddBlockToVicinityIfIsVisibleInOne(block);

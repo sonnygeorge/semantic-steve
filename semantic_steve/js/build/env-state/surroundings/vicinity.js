@@ -219,7 +219,8 @@ class VisibleVicinityContents {
             const distB = blockB.position.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true);
+        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        );
     }
     getEmptyItemsAVLTree() {
         const customComparator = (a, b) => {
@@ -230,7 +231,8 @@ class VisibleVicinityContents {
             const distB = itemB.entity.position.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true);
+        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        );
     }
     getEmptyBiomeCoordsAVLTree() {
         const customComparator = (a, b) => {
@@ -240,7 +242,8 @@ class VisibleVicinityContents {
             const distB = posB.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true);
+        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        );
     }
     // ==========================
     // Add/remove to this object
@@ -270,7 +273,8 @@ class VisibleVicinityContents {
         avlTree.insert(key, block);
         // Increment the count for the block's type.
         this.blockNamesToCounts.set(blockName, (this.blockNamesToCounts.get(blockName) || 0) + 1);
-        const biomeName = block.biome.name;
+        // NOTE: `block.biome.name` exists but for some reason is an empty string on chunk load.
+        const biomeName = this.bot.registry.biomes[block.biome.id].name;
         // Add to the Map<{biome name}, Map<{key}, PBlock>> map
         if (!this.biomeNamesToBlocks.has(biomeName)) {
             this.biomeNamesToBlocks.set(biomeName, new Map());

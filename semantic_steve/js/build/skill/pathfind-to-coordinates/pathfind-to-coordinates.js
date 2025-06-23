@@ -216,7 +216,7 @@ PathfindToCoordinates.METADATA = {
     signature: "pathfindToCoordinates(coordinates: [number, number, number], stopIfFound?: string[])",
     docstring: `
       /**
-       * Attempt to pathfind to or near a set of in-dimension coordinates (digging and
+       * Attempts to pathfind to or near a set of in-dimension coordinates (digging and
        * bridging as needed), stopping early if something from the stopIfFound list
        * becomes visible in the bot's surroundings.
        *

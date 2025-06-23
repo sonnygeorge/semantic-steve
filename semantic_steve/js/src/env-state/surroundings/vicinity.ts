@@ -127,7 +127,7 @@ export function classifyVicinityOfPosition(
   bot: Bot,
   immediateSurroundingsRadius: number,
   distantSurroundingsRadius: number,
-  pos: Vec3,
+  pos: Vec3
 ): Vicinity | undefined {
   const botPos = bot.entity.position;
   const distanceToPos = botPos.distanceTo(pos);
@@ -144,7 +144,7 @@ export function classifyVicinityOfPosition(
     // circle in the apple-slicer analogy.
 
     const horizontalDist = Math.sqrt(
-      Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2),
+      Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2)
     );
     if (horizontalDist <= immediateSurroundingsRadius) {
       // If the point's horizontal distance to the bot (on the xz plane) is less than the
@@ -230,7 +230,7 @@ export class VisibleVicinityContents {
     };
     return new AVLTree<string, PBlock>(
       customComparator,
-      true, // (true here = no duplicates)
+      true // (true here = no duplicates)
     );
   }
 
@@ -245,7 +245,7 @@ export class VisibleVicinityContents {
     };
     return new AVLTree<string, ItemEntityWithData>(
       customComparator,
-      true, // (true here = no duplicates)
+      true // (true here = no duplicates)
     );
   }
 
@@ -259,7 +259,7 @@ export class VisibleVicinityContents {
     };
     return new AVLTree<string, Vec3>(
       customComparator,
-      true, // (true here = no duplicates)
+      true // (true here = no duplicates)
     );
   }
 
@@ -286,7 +286,7 @@ export class VisibleVicinityContents {
     if (!this.blockNamesToDistanceSortedAVLTreeOfBlocks.has(blockName)) {
       this.blockNamesToDistanceSortedAVLTreeOfBlocks.set(
         blockName,
-        this.getEmptyBlocksAVLTree(),
+        this.getEmptyBlocksAVLTree()
       );
     }
     // Insert the block into the associated AVL tree.
@@ -298,10 +298,11 @@ export class VisibleVicinityContents {
     // Increment the count for the block's type.
     this.blockNamesToCounts.set(
       blockName,
-      (this.blockNamesToCounts.get(blockName) || 0) + 1,
+      (this.blockNamesToCounts.get(blockName) || 0) + 1
     );
 
-    const biomeName = block.biome.name;
+    // NOTE: `block.biome.name` exists but for some reason is an empty string on chunk load.
+    const biomeName = this.bot.registry.biomes[block.biome.id].name;
     // Add to the Map<{biome name}, Map<{key}, PBlock>> map
     if (!this.biomeNamesToBlocks.has(biomeName)) {
       this.biomeNamesToBlocks.set(biomeName, new Map());
@@ -314,7 +315,7 @@ export class VisibleVicinityContents {
     if (!this.biomeNamesToDistanceSortedAVLTreeOfCoords.has(biomeName)) {
       this.biomeNamesToDistanceSortedAVLTreeOfCoords.set(
         biomeName,
-        this.getEmptyBiomeCoordsAVLTree(),
+        this.getEmptyBiomeCoordsAVLTree()
       );
     }
     // Insert the block coords into the associated biome AVL tree.
@@ -326,7 +327,7 @@ export class VisibleVicinityContents {
     // Increment the count for the biome type.
     this.biomeNamesToCounts.set(
       biomeName,
-      (this.biomeNamesToCounts.get(biomeName) || 0) + 1,
+      (this.biomeNamesToCounts.get(biomeName) || 0) + 1
     );
   }
 
@@ -394,7 +395,7 @@ export class VisibleVicinityContents {
     if (!this.itemsNamesToDistanceSortedAVLTreeOfItems.has(itemName)) {
       this.itemsNamesToDistanceSortedAVLTreeOfItems.set(
         itemName,
-        this.getEmptyItemsAVLTree(),
+        this.getEmptyItemsAVLTree()
       );
     }
     // Insert the item entity into the associated AVL tree.
@@ -404,7 +405,7 @@ export class VisibleVicinityContents {
     // Increment the count for the item type.
     this.itemEntityNamesToCounts.set(
       itemName,
-      (this.itemEntityNamesToCounts.get(itemName) || 0) + 1,
+      (this.itemEntityNamesToCounts.get(itemName) || 0) + 1
     );
   }
 

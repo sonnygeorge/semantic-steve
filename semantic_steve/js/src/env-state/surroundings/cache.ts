@@ -4,12 +4,9 @@ import { Block as PBlock } from "prismarine-block";
 import { ItemEntityWithData } from "../../types";
 
 /**
- * Cache for all spawned item entities indexed by their UUIDs.
+ * Cache for item entities indexed by their UUIDs.
  */
-export class AllSpawnedItemEntitiesCache extends Map<
-  string,
-  ItemEntityWithData
-> {
+export class ItemEntitiesCache extends Map<string, ItemEntityWithData> {
   private bot: Bot;
 
   constructor(bot: Bot) {
@@ -21,9 +18,9 @@ export class AllSpawnedItemEntitiesCache extends Map<
 }
 
 /**
- * Cache for all loaded blocks indexed by stringified Vec3 positions.
+ * Cache for blocks indexed by stringified Vec3 positions.
  */
-export class AllLoadedBlocksCache extends Map<string, PBlock> {
+export class BlocksCache extends Map<string, PBlock> {
   private bot: Bot;
 
   constructor(bot: Bot) {

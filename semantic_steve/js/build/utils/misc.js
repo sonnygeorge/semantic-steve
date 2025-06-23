@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrentDimensionYLimits = getCurrentDimensionYLimits;
-exports.getAllCoordsWithinRadiusToBot = getAllCoordsWithinRadiusToBot;
+exports.getAllCoordsWithinRadiusToPos = getAllCoordsWithinRadiusToPos;
 const vec3_1 = require("vec3");
 function getCurrentDimensionYLimits(bot) {
     if (bot.version < "1.18")
@@ -13,9 +13,9 @@ function getCurrentDimensionYLimits(bot) {
     };
     return limits[bot.game.dimension] || limits.overworld;
 }
-function* getAllCoordsWithinRadiusToBot(bot, radius) {
+function* getAllCoordsWithinRadiusToPos(bot, pos, radius) {
     const { minY: dimensionBottom, maxY: dimensionTop } = getCurrentDimensionYLimits(bot);
-    const botPos = bot.entity.position.floored();
+    pos = pos.floored();
     const radiusSquared = radius * radius;
     // Iterate through a square and filter by circular bounds
     for (let x = -radius; x <= radius; x++) {
@@ -28,10 +28,10 @@ function* getAllCoordsWithinRadiusToBot(bot, radius) {
             const remainingRadiusSquared = radiusSquared - xSquared - zSquared;
             const maxYOffset = Math.floor(Math.sqrt(remainingRadiusSquared));
             // Clip to dimension limits
-            const minY = Math.max(dimensionBottom, botPos.y - maxYOffset);
-            const maxY = Math.min(dimensionTop, botPos.y + maxYOffset);
+            const minY = Math.max(dimensionBottom, pos.y - maxYOffset);
+            const maxY = Math.min(dimensionTop, pos.y + maxYOffset);
             for (let y = minY; y <= maxY; y++) {
-                yield new vec3_1.Vec3(botPos.x + x, y, botPos.z + z);
+                yield new vec3_1.Vec3(pos.x + x, y, pos.z + z);
             }
         }
     }

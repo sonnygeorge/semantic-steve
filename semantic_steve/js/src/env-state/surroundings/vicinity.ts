@@ -2,7 +2,7 @@ import assert from "assert";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { Block as PBlock } from "prismarine-block";
-import { AllLoadedBlocksCache } from "./cache";
+import { BlocksCache } from "./cache";
 import { AVLTree } from "avl";
 import { ItemEntityWithData } from "../../types";
 
@@ -220,22 +220,28 @@ export class VisibleVicinityContents {
   // =========================
 
   private getEmptyBlocksAVLTree(): AVLTree<string, PBlock> {
-    const customComparator = (a: string, b: string) => {
+    const customBlocksComparator = (a: string, b: string) => {
       const blockA = this.blocksLookup.get(a);
       const blockB = this.blocksLookup.get(b);
+      if (!blockA) {
+        console.log(`Block with key ${a} not found in blocksLookup.`);
+      }
+      if (!blockB) {
+        console.log(`Block with key ${b} not found in blocksLookup.`);
+      }
       assert(blockA && blockB);
       const distA = blockA.position.distanceTo(this.bot.entity.position);
       const distB = blockB.position.distanceTo(this.bot.entity.position);
       return distA - distB || a.localeCompare(b);
     };
     return new AVLTree<string, PBlock>(
-      customComparator,
+      customBlocksComparator,
       true // (true here = no duplicates)
     );
   }
 
   private getEmptyItemsAVLTree(): AVLTree<string, ItemEntityWithData> {
-    const customComparator = (a: string, b: string) => {
+    const customItemsComparator = (a: string, b: string) => {
       const itemA = this.itemsLookup.get(a);
       const itemB = this.itemsLookup.get(b);
       assert(itemA && itemB);
@@ -244,21 +250,21 @@ export class VisibleVicinityContents {
       return distA - distB || a.localeCompare(b);
     };
     return new AVLTree<string, ItemEntityWithData>(
-      customComparator,
+      customItemsComparator,
       true // (true here = no duplicates)
     );
   }
 
   private getEmptyBiomeCoordsAVLTree(): AVLTree<string, Vec3> {
-    const customComparator = (a: string, b: string) => {
-      const posA = AllLoadedBlocksCache.getVec3FromKey(a);
-      const posB = AllLoadedBlocksCache.getVec3FromKey(b);
+    const customBiomeCoordsComparator = (a: string, b: string) => {
+      const posA = BlocksCache.getVec3FromKey(a);
+      const posB = BlocksCache.getVec3FromKey(b);
       const distA = posA.distanceTo(this.bot.entity.position);
       const distB = posB.distanceTo(this.bot.entity.position);
       return distA - distB || a.localeCompare(b);
     };
     return new AVLTree<string, Vec3>(
-      customComparator,
+      customBiomeCoordsComparator,
       true // (true here = no duplicates)
     );
   }
@@ -268,7 +274,7 @@ export class VisibleVicinityContents {
   // ==========================
 
   public addBlock(block: PBlock): void {
-    const blockKey = AllLoadedBlocksCache.getKeyFromVec3(block.position);
+    const blockKey = BlocksCache.getKeyFromVec3(block.position);
     assert(!this.blocksLookup.has(blockKey));
     // Add to the Map<{key}, PBlock> map
     this.blocksLookup.set(blockKey, block);
@@ -293,7 +299,7 @@ export class VisibleVicinityContents {
     const avlTree =
       this.blockNamesToDistanceSortedAVLTreeOfBlocks.get(blockName);
     assert(avlTree);
-    const key = AllLoadedBlocksCache.getKeyFromVec3(block.position);
+    const key = BlocksCache.getKeyFromVec3(block.position);
     avlTree.insert(key, block);
     // Increment the count for the block's type.
     this.blockNamesToCounts.set(
@@ -322,7 +328,7 @@ export class VisibleVicinityContents {
     const biomeAVLTree =
       this.biomeNamesToDistanceSortedAVLTreeOfCoords.get(biomeName);
     assert(biomeAVLTree);
-    const biomeKey = AllLoadedBlocksCache.getKeyFromVec3(block.position);
+    const biomeKey = BlocksCache.getKeyFromVec3(block.position);
     biomeAVLTree.insert(biomeKey, block.position);
     // Increment the count for the biome type.
     this.biomeNamesToCounts.set(
@@ -332,7 +338,7 @@ export class VisibleVicinityContents {
   }
 
   public removeBlock(block: PBlock): void {
-    const blockKey = AllLoadedBlocksCache.getKeyFromVec3(block.position);
+    const blockKey = BlocksCache.getKeyFromVec3(block.position);
     assert(this.blocksLookup.has(blockKey));
     // Remove from the Map<{key}, PBlock> map
     this.blocksLookup.delete(blockKey);
@@ -366,7 +372,7 @@ export class VisibleVicinityContents {
       this.biomeNamesToDistanceSortedAVLTreeOfCoords.get(biomeName);
     assert(biomeAVLTree);
     // Remove the block's position from the biome AVL tree.
-    const biomeKey = AllLoadedBlocksCache.getKeyFromVec3(block.position);
+    const biomeKey = BlocksCache.getKeyFromVec3(block.position);
     const removedBiomeKey = biomeAVLTree.remove(biomeKey);
     assert(removedBiomeKey);
     // If block's position was removed, decrement the count for the biome type.
@@ -481,8 +487,7 @@ export class VisibleVicinityContents {
       .biomeNamesToDistanceSortedAVLTreeOfCoords) {
       const closestBiomeKey = avlTree.min();
       assert(closestBiomeKey);
-      const closestBiomePos =
-        AllLoadedBlocksCache.getVec3FromKey(closestBiomeKey);
+      const closestBiomePos = BlocksCache.getVec3FromKey(closestBiomeKey);
       yield [name, closestBiomePos];
     }
   }
@@ -493,7 +498,7 @@ export class VisibleVicinityContents {
       const self = this; // Capture `this` for the generator function
       function* coordsGenerator() {
         for (const biomeKey of avlTree.keys()) {
-          const pos = AllLoadedBlocksCache.getVec3FromKey(biomeKey);
+          const pos = BlocksCache.getVec3FromKey(biomeKey);
           yield pos;
         }
       }

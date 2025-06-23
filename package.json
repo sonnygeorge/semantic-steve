@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "immutable": "^5.1.3"
+  }
+}

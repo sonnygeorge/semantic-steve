@@ -16,13 +16,14 @@ export function getCurrentDimensionYLimits(bot: Bot): {
   return limits[bot.game.dimension] || limits.overworld;
 }
 
-export function* getAllCoordsWithinRadiusToBot(
+export function* getAllCoordsWithinRadiusToPos(
   bot: Bot,
-  radius: number,
+  pos: Vec3,
+  radius: number
 ): IterableIterator<Vec3> {
   const { minY: dimensionBottom, maxY: dimensionTop } =
     getCurrentDimensionYLimits(bot);
-  const botPos = bot.entity.position.floored();
+  pos = pos.floored();
   const radiusSquared = radius * radius;
 
   // Iterate through a square and filter by circular bounds
@@ -40,11 +41,11 @@ export function* getAllCoordsWithinRadiusToBot(
       const maxYOffset = Math.floor(Math.sqrt(remainingRadiusSquared));
 
       // Clip to dimension limits
-      const minY = Math.max(dimensionBottom, botPos.y - maxYOffset);
-      const maxY = Math.min(dimensionTop, botPos.y + maxYOffset);
+      const minY = Math.max(dimensionBottom, pos.y - maxYOffset);
+      const maxY = Math.min(dimensionTop, pos.y + maxYOffset);
 
       for (let y = minY; y <= maxY; y++) {
-        yield new Vec3(botPos.x + x, y, botPos.z + z);
+        yield new Vec3(pos.x + x, y, pos.z + z);
       }
     }
   }

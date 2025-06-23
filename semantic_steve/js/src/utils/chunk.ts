@@ -7,7 +7,7 @@ import { Vec3 } from "vec3";
 export function applyFuncToCoordsInChunk(
   bot: Bot,
   fn: (vec: Vec3) => void,
-  chunkPoint: { x: number; z: number },
+  chunkPoint: { x: number; z: number }
 ): void {
   const chunkX = chunkPoint.x >> 4;
   const chunkZ = chunkPoint.z >> 4;
@@ -23,4 +23,24 @@ export function applyFuncToCoordsInChunk(
       }
     }
   }
+}
+
+export function isChunkAtLeastPartiallyWithinRadius(
+  bot: Bot,
+  chunkPoint: { x: number; z: number },
+  radius: number
+): boolean {
+  const closestX = Math.max(
+    chunkPoint.x,
+    Math.min(bot.entity.position.x, chunkPoint.x + 15)
+  );
+  const closestZ = Math.max(
+    chunkPoint.z,
+    Math.min(bot.entity.position.z, chunkPoint.z + 15)
+  );
+  const horizontalDistance = Math.sqrt(
+    Math.pow(closestX - bot.entity.position.x, 2) +
+      Math.pow(closestZ - bot.entity.position.z, 2)
+  );
+  return horizontalDistance <= radius;
 }

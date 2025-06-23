@@ -211,19 +211,25 @@ class VisibleVicinityContents {
     // AVL tree factory methods
     // =========================
     getEmptyBlocksAVLTree() {
-        const customComparator = (a, b) => {
+        const customBlocksComparator = (a, b) => {
             const blockA = this.blocksLookup.get(a);
             const blockB = this.blocksLookup.get(b);
+            if (!blockA) {
+                console.log(`Block with key ${a} not found in blocksLookup.`);
+            }
+            if (!blockB) {
+                console.log(`Block with key ${b} not found in blocksLookup.`);
+            }
             (0, assert_1.default)(blockA && blockB);
             const distA = blockA.position.distanceTo(this.bot.entity.position);
             const distB = blockB.position.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        return new avl_1.AVLTree(customBlocksComparator, true // (true here = no duplicates)
         );
     }
     getEmptyItemsAVLTree() {
-        const customComparator = (a, b) => {
+        const customItemsComparator = (a, b) => {
             const itemA = this.itemsLookup.get(a);
             const itemB = this.itemsLookup.get(b);
             (0, assert_1.default)(itemA && itemB);
@@ -231,25 +237,25 @@ class VisibleVicinityContents {
             const distB = itemB.entity.position.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        return new avl_1.AVLTree(customItemsComparator, true // (true here = no duplicates)
         );
     }
     getEmptyBiomeCoordsAVLTree() {
-        const customComparator = (a, b) => {
-            const posA = cache_1.AllLoadedBlocksCache.getVec3FromKey(a);
-            const posB = cache_1.AllLoadedBlocksCache.getVec3FromKey(b);
+        const customBiomeCoordsComparator = (a, b) => {
+            const posA = cache_1.BlocksCache.getVec3FromKey(a);
+            const posB = cache_1.BlocksCache.getVec3FromKey(b);
             const distA = posA.distanceTo(this.bot.entity.position);
             const distB = posB.distanceTo(this.bot.entity.position);
             return distA - distB || a.localeCompare(b);
         };
-        return new avl_1.AVLTree(customComparator, true // (true here = no duplicates)
+        return new avl_1.AVLTree(customBiomeCoordsComparator, true // (true here = no duplicates)
         );
     }
     // ==========================
     // Add/remove to this object
     // ==========================
     addBlock(block) {
-        const blockKey = cache_1.AllLoadedBlocksCache.getKeyFromVec3(block.position);
+        const blockKey = cache_1.BlocksCache.getKeyFromVec3(block.position);
         (0, assert_1.default)(!this.blocksLookup.has(blockKey));
         // Add to the Map<{key}, PBlock> map
         this.blocksLookup.set(blockKey, block);
@@ -269,7 +275,7 @@ class VisibleVicinityContents {
         // Insert the block into the associated AVL tree.
         const avlTree = this.blockNamesToDistanceSortedAVLTreeOfBlocks.get(blockName);
         (0, assert_1.default)(avlTree);
-        const key = cache_1.AllLoadedBlocksCache.getKeyFromVec3(block.position);
+        const key = cache_1.BlocksCache.getKeyFromVec3(block.position);
         avlTree.insert(key, block);
         // Increment the count for the block's type.
         this.blockNamesToCounts.set(blockName, (this.blockNamesToCounts.get(blockName) || 0) + 1);
@@ -290,13 +296,13 @@ class VisibleVicinityContents {
         // Insert the block coords into the associated biome AVL tree.
         const biomeAVLTree = this.biomeNamesToDistanceSortedAVLTreeOfCoords.get(biomeName);
         (0, assert_1.default)(biomeAVLTree);
-        const biomeKey = cache_1.AllLoadedBlocksCache.getKeyFromVec3(block.position);
+        const biomeKey = cache_1.BlocksCache.getKeyFromVec3(block.position);
         biomeAVLTree.insert(biomeKey, block.position);
         // Increment the count for the biome type.
         this.biomeNamesToCounts.set(biomeName, (this.biomeNamesToCounts.get(biomeName) || 0) + 1);
     }
     removeBlock(block) {
-        const blockKey = cache_1.AllLoadedBlocksCache.getKeyFromVec3(block.position);
+        const blockKey = cache_1.BlocksCache.getKeyFromVec3(block.position);
         (0, assert_1.default)(this.blocksLookup.has(blockKey));
         // Remove from the Map<{key}, PBlock> map
         this.blocksLookup.delete(blockKey);
@@ -326,7 +332,7 @@ class VisibleVicinityContents {
         const biomeAVLTree = this.biomeNamesToDistanceSortedAVLTreeOfCoords.get(biomeName);
         (0, assert_1.default)(biomeAVLTree);
         // Remove the block's position from the biome AVL tree.
-        const biomeKey = cache_1.AllLoadedBlocksCache.getKeyFromVec3(block.position);
+        const biomeKey = cache_1.BlocksCache.getKeyFromVec3(block.position);
         const removedBiomeKey = biomeAVLTree.remove(biomeKey);
         (0, assert_1.default)(removedBiomeKey);
         // If block's position was removed, decrement the count for the biome type.
@@ -427,7 +433,7 @@ class VisibleVicinityContents {
             .biomeNamesToDistanceSortedAVLTreeOfCoords) {
             const closestBiomeKey = avlTree.min();
             (0, assert_1.default)(closestBiomeKey);
-            const closestBiomePos = cache_1.AllLoadedBlocksCache.getVec3FromKey(closestBiomeKey);
+            const closestBiomePos = cache_1.BlocksCache.getVec3FromKey(closestBiomeKey);
             yield [name, closestBiomePos];
         }
     }
@@ -437,7 +443,7 @@ class VisibleVicinityContents {
             const self = this; // Capture `this` for the generator function
             function* coordsGenerator() {
                 for (const biomeKey of avlTree.keys()) {
-                    const pos = cache_1.AllLoadedBlocksCache.getVec3FromKey(biomeKey);
+                    const pos = cache_1.BlocksCache.getVec3FromKey(biomeKey);
                     yield pos;
                 }
             }

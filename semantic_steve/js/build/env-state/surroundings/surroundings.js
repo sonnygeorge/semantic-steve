@@ -197,7 +197,7 @@ class Surroundings {
     }
     processNewlySpawnedItemEntity(itemEntityWithData) {
         return __awaiter(this, void 0, void 0, function* () {
-            (0, assert_1.default)(prismarine_entity_1.Entity.name === "item");
+            (0, assert_1.default)(itemEntityWithData.entity.name === "item");
             this.allSpawnedItemEntities.set(itemEntityWithData.entity.uuid, itemEntityWithData);
             this.classifyAndAddItemToVicinityIfIsVisibleInOne(itemEntityWithData);
         });
@@ -214,6 +214,15 @@ class Surroundings {
     // Event handlers
     // ===============
     handleChunkLoad(chunkPos) {
+        // console log chunk's horizontal distance from bot
+        const botPos = this.bot.entity.position;
+        const xyDistanceToBot = Math.sqrt(Math.pow(chunkPos.x - botPos.x, 2) + Math.pow(chunkPos.z - botPos.z, 2));
+        // console.log(
+        //   `Chunk at ${chunkPos} is ${xyDistanceToBot.toFixed(
+        //     2
+        //   )} blocks away from the bot.`
+        // );
+        console.log(`Size of allLoadedBlocks: ${this.allLoadedBlocks.size}`);
         (0, chunk_1.applyFuncToCoordsInChunk)(this.bot, this.processNewlyLoadedBlock.bind(this), chunkPos);
     }
     handleChunkUnload(chunkPos) {
@@ -288,7 +297,7 @@ class Surroundings {
         // Do nothing if magnitude of bot movement is negligible
         if (newPosition.equals(this.lastBotPosition))
             return;
-        if (newPosition.distanceTo(this.lastBotPosition) < 0.05)
+        if (newPosition.distanceTo(this.lastBotPosition) < 0.2)
             return;
         // Update last position
         this.lastBotPosition = newPosition.clone();

@@ -324,7 +324,7 @@ export class Surroundings {
   private async processNewlySpawnedItemEntity(
     itemEntityWithData: ItemEntityWithData
   ): Promise<void> {
-    assert(PEntity.name === "item");
+    assert(itemEntityWithData.entity.name === "item");
     this.allSpawnedItemEntities.set(
       itemEntityWithData.entity.uuid!,
       itemEntityWithData
@@ -346,6 +346,17 @@ export class Surroundings {
   // ===============
 
   private handleChunkLoad(chunkPos: Vec3): void {
+    // console log chunk's horizontal distance from bot
+    const botPos = this.bot.entity.position;
+    const xyDistanceToBot = Math.sqrt(
+      Math.pow(chunkPos.x - botPos.x, 2) + Math.pow(chunkPos.z - botPos.z, 2)
+    );
+    // console.log(
+    //   `Chunk at ${chunkPos} is ${xyDistanceToBot.toFixed(
+    //     2
+    //   )} blocks away from the bot.`
+    // );
+    console.log(`Size of allLoadedBlocks: ${this.allLoadedBlocks.size}`);
     applyFuncToCoordsInChunk(
       this.bot,
       this.processNewlyLoadedBlock.bind(this),
@@ -427,7 +438,7 @@ export class Surroundings {
     const newPosition = this.bot.entity.position;
     // Do nothing if magnitude of bot movement is negligible
     if (newPosition.equals(this.lastBotPosition)) return;
-    if (newPosition.distanceTo(this.lastBotPosition) < 0.05) return;
+    if (newPosition.distanceTo(this.lastBotPosition) < 0.2) return;
     // Update last position
     this.lastBotPosition = newPosition.clone();
 

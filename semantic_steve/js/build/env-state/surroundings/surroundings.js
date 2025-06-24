@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Surroundings = exports.DistantSurroundingsInADirection = exports.ImmediateSurroundings = exports.BLOCKS_TO_IGNORE = void 0;
 const assert_1 = __importDefault(require("assert"));
-const immutable_1 = require("immutable");
 const vec3_1 = require("vec3");
 const vicinity_1 = require("./vicinity");
 const cache_1 = require("./cache");
@@ -68,7 +67,7 @@ class Surroundings {
         this.entitesGoneBeforeCacheAdd = new Set(); // Defensive programming (probably not needed)
         // Private
         this.bot = bot;
-        this.allEagerlyRetrievedBlocks = new cache_1.BlocksCache(bot);
+        this.eagerlyProcessedBlocks = new cache_1.BlocksCache(bot);
         this.allSpawnedItemEntities = new cache_1.ItemEntitiesCache(bot);
         this.lastBotPosition = bot.entity.position.clone();
         this.getVicinityForPosition = vicinity_1.classifyVicinityOfPosition.bind(this, bot, radii.immediateSurroundingsRadius, radii.distantSurroundingsRadius);
@@ -137,7 +136,7 @@ class Surroundings {
             }
         }
     }
-    processNewlyLoadedBlock(block) {
+    doEagerBlockProcessing(block) {
         if (block instanceof vec3_1.Vec3) {
             block = this.bot.blockAt(block);
         }
@@ -145,11 +144,11 @@ class Surroundings {
         if (!block || exports.BLOCKS_TO_IGNORE.includes(block.name))
             return;
         // 1. Add to cache
-        this.allEagerlyRetrievedBlocks.set(cache_1.BlocksCache.getKeyFromVec3(block.position), block);
+        this.eagerlyProcessedBlocks.set(cache_1.BlocksCache.getKeyFromVec3(block.position), block);
         // 2. If in a vicinity and visible, add to that vicinity
         this.classifyAndAddBlockToVicinityIfIsVisibleInOne(block);
     }
-    processRemovalOfOldBlock(block) {
+    removeBlockFromEagerlyProcessed(block) {
         // Reduce to a key string representing the block's position
         if (typeof block === "string") {
             // Already a key string
@@ -160,12 +159,12 @@ class Surroundings {
         else {
             block = cache_1.BlocksCache.getKeyFromVec3(block.position);
         }
-        const storedBlock = this.allEagerlyRetrievedBlocks.get(block);
+        const storedBlock = this.eagerlyProcessedBlocks.get(block);
         if (!storedBlock) {
             // Block never stored in the first place, e.g., was in BLOCKS_TO_IGNORE
             return;
         }
-        this.allEagerlyRetrievedBlocks.delete(block);
+        this.eagerlyProcessedBlocks.delete(block);
         this.removeBlockFromVicinityIfWasVisibleInOne(storedBlock);
     }
     // ==============
@@ -226,17 +225,17 @@ class Surroundings {
         if (!(0, chunk_1.isChunkAtLeastPartiallyWithinRadius)(this.bot, chunkPos, this.radii.distantSurroundingsRadius)) {
             return;
         }
-        (0, chunk_1.applyFuncToCoordsInChunk)(this.bot, this.processNewlyLoadedBlock.bind(this), chunkPos);
+        (0, chunk_1.applyFuncToCoordsInChunk)(this.bot, this.doEagerBlockProcessing.bind(this), chunkPos);
     }
     handleChunkUnload(chunkPos) {
-        (0, chunk_1.applyFuncToCoordsInChunk)(this.bot, this.processRemovalOfOldBlock.bind(this), chunkPos);
+        (0, chunk_1.applyFuncToCoordsInChunk)(this.bot, this.removeBlockFromEagerlyProcessed.bind(this), chunkPos);
     }
     handleBlockUpdate(oldBlock, newBlock) {
         if (oldBlock) {
-            this.processRemovalOfOldBlock(oldBlock);
+            this.removeBlockFromEagerlyProcessed(oldBlock);
         }
         if (newBlock) {
-            this.processNewlyLoadedBlock(newBlock);
+            this.doEagerBlockProcessing(newBlock);
         }
     }
     handleEntitySpawn(entity) {
@@ -306,64 +305,69 @@ class Surroundings {
         console.log(`Bot moved from ${prevBotPosition} to ${curBotPosition}`);
         // Update last position
         this.lastBotPosition = curBotPosition.clone();
-        // ==============================================================================
-        // First, we need to eagerly load data for new blocks that have become in-radius
-        // and unload data for blocks that have gone out-of-radius.
-        // ==============================================================================
-        let start = Date.now();
-        let prevInRadiusCoords = (0, immutable_1.Set)();
-        for (const coord of (0, misc_1.getAllCoordsWithinRadiusToPos)(this.bot, prevBotPosition, this.radii.distantSurroundingsRadius)) {
-            prevInRadiusCoords = prevInRadiusCoords.add(cache_1.BlocksCache.getKeyFromVec3(coord));
+        // Process any new blocks in the current radius
+        const curInRadiusCoords = new Set();
+        const alreadyCheckedVisibility = new Set();
+        for (const coord of (0, misc_1.getAllCoordsWithinRadiusToPos)(curBotPosition, this.radii.distantSurroundingsRadius, this.bot)) {
+            const key = cache_1.BlocksCache.getKeyFromVec3(coord);
+            curInRadiusCoords.add(key);
+            if (!this.eagerlyProcessedBlocks.has(key)) {
+                this.doEagerBlockProcessing(coord);
+                alreadyCheckedVisibility.add(key);
+            }
         }
-        let curInRadiusCoords = (0, immutable_1.Set)();
-        for (const coord of (0, misc_1.getAllCoordsWithinRadiusToPos)(this.bot, curBotPosition, this.radii.distantSurroundingsRadius)) {
-            curInRadiusCoords = curInRadiusCoords.add(cache_1.BlocksCache.getKeyFromVec3(coord));
+        // Remove any blocks no longer in the current radius
+        for (const coord of (0, misc_1.getAllCoordsWithinRadiusToPos)(prevBotPosition, this.radii.distantSurroundingsRadius, this.bot)) {
+            const key = cache_1.BlocksCache.getKeyFromVec3(coord);
+            if (!curInRadiusCoords.has(key)) {
+                this.removeBlockFromEagerlyProcessed(key);
+            }
         }
-        console.log(`Time to compute in-radius coords: ${Date.now() - start}ms`);
-        start = Date.now();
-        // Remove from cache blocks that were in radius before but are not currently
-        const noLongerInRadius = prevInRadiusCoords.subtract(curInRadiusCoords);
-        for (const blockKey of noLongerInRadius) {
-            this.allEagerlyRetrievedBlocks.delete(blockKey);
+        const reaccountForVisibilities = (visibleVicinityContents) => {
+            for (const [key, block] of visibleVicinityContents.blocksLookup) {
+                if (alreadyCheckedVisibility.has(key))
+                    continue;
+                const blockIsVisible = (0, visibility_1.isBlockVisible)(this.bot, block, cache_1.BlocksCache.getVec3FromKey(key));
+                if (blockIsVisible) {
+                    // Still visible, do nothing
+                }
+                else {
+                    visibleVicinityContents.removeBlock(block);
+                }
+            }
+        };
+        reaccountForVisibilities(this.immediate);
+        for (const [dir, visibleContentsOfVicinity] of this.distant.entries()) {
+            reaccountForVisibilities(visibleContentsOfVicinity);
         }
-        console.log(`Time to remove no longer in-radius blocks: ${Date.now() - start}ms`);
-        start = Date.now();
-        // Add to cache blocks that are now in radius but were not before
-        const newlyInRadius = curInRadiusCoords.subtract(prevInRadiusCoords);
-        for (const blockKey of newlyInRadius) {
-            const blockPos = cache_1.BlocksCache.getVec3FromKey(blockKey);
-            const block = this.bot.blockAt(blockPos);
-            if (!block || exports.BLOCKS_TO_IGNORE.includes(block.name))
-                continue;
-            this.allEagerlyRetrievedBlocks.set(cache_1.BlocksCache.getKeyFromVec3(block.position), block);
-        }
-        console.log(`Time to add newly in-radius blocks: ${Date.now() - start}ms`);
         // =====================================================================================
         // Now, we need reclassify the vicinity/visiblity of everything that could potentially
         // now be visible in the surroundings.
         // To do this, let's recreate new vicinity objects from scratch (allowing the AVL trees
         // to be rebuilt based on new distances to the bot).
         // =====================================================================================
-        this.immediate = new ImmediateSurroundings(this.bot);
-        this.distant = new Map(Object.values(vicinity_1.Direction).map((dir) => [
-            dir,
-            new DistantSurroundingsInADirection(this.bot),
-        ]));
-        start = Date.now();
-        // For blocks, we reconsider all blocks that are now in radius
-        for (const coords of curInRadiusCoords) {
-            const block = this.allEagerlyRetrievedBlocks.get(coords);
-            if (!block)
-                continue;
-            this.classifyAndAddBlockToVicinityIfIsVisibleInOne(block);
-        }
-        console.log(`Time to reclassify blocks: ${Date.now() - start}ms`);
-        start = Date.now();
-        // For entities, we reconsider all spawned entities (theory being, it should not be too many)
-        for (const itemEntityWithData of this.allSpawnedItemEntities.values()) {
-            this.classifyAndAddItemToVicinityIfIsVisibleInOne(itemEntityWithData);
-        }
-        console.log(`Time to reclassify item entities: ${Date.now() - start}ms`);
+        //   this.immediate = new ImmediateSurroundings(this.bot);
+        //   this.distant = new Map(
+        //     Object.values(Direction).map((dir) => [
+        //       dir,
+        //       new DistantSurroundingsInADirection(this.bot),
+        //     ])
+        //   );
+        //   let start = Date.now();
+        //   // For blocks, we reconsider all blocks that are now in radius
+        //   for (const coords of curInRadiusCoords) {
+        //     const block = this.eagerlyProcessedBlocks.get(coords);
+        //     if (!block) continue;
+        //     this.classifyAndAddBlockToVicinityIfIsVisibleInOne(block);
+        //   }
+        //   console.log(`Time to reclassify blocks: ${Date.now() - start}ms`);
+        //   start = Date.now();
+        //   // For entities, we reconsider all spawned entities (theory being, it should not be too many)
+        //   for (const itemEntityWithData of this.allSpawnedItemEntities.values()) {
+        //     this.classifyAndAddItemToVicinityIfIsVisibleInOne(itemEntityWithData);
+        //   }
+        //   console.log(`Time to reclassify item entities: ${Date.now() - start}ms`);
+        // }
     }
 }
 exports.Surroundings = Surroundings;

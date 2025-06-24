@@ -27,7 +27,7 @@ export function bilinearInterpolate(
   c1: Vec3,
   c2: Vec3,
   c3: Vec3,
-  c4: Vec3,
+  c4: Vec3
 ): Vec3 {
   function interpolateComponent(component: "x" | "y" | "z"): number {
     // Term 1: (1-u)(1-v)P₁ - Bottom-left corner contribution
@@ -45,6 +45,15 @@ export function bilinearInterpolate(
   return new Vec3(
     interpolateComponent("x"),
     interpolateComponent("y"),
-    interpolateComponent("z"),
+    interpolateComponent("z")
   );
+}
+
+export function serializeVec3(vec: Vec3): string {
+  return `${vec.x},${vec.y},${vec.z}`;
+}
+
+export function deserializeVec3(str: string): Vec3 {
+  const [x, y, z] = str.split(",").map(Number);
+  return new Vec3(x, y, z);
 }

@@ -161,10 +161,9 @@ export function classifyVicinityOfPosition(
     }
 
     // Knowing that the point is in the distant surroundings, but not in the up or down
-    // vicinities, we can simply determine which of the leftover
-    // cardinal-direction-associated distant-surroundings vicinities (i.e., which slice of
-    // the apple in the apple-slicer analogy) using the point's horizontal angle from the
-    // bot (on the xz plane).
+    // vicinities, we can simply determine which of the leftover cardinal-direction
+    // vicinities (i.e., which slice of the apple in the apple-slicer analogy)
+    // using the point's horizontal angle from the bot (on the xz plane).
     const angle =
       ((Math.atan2(pos.x - botPos.x, botPos.z - pos.z) * 180) / Math.PI + 360) %
       360;

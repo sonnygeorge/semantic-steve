@@ -13,7 +13,7 @@ function getCurrentDimensionYLimits(bot) {
     };
     return limits[bot.game.dimension] || limits.overworld;
 }
-function* getAllCoordsWithinRadiusToPos(bot, pos, radius) {
+function* getAllCoordsWithinRadiusToPos(pos, radius, bot) {
     const { minY: dimensionBottom, maxY: dimensionTop } = getCurrentDimensionYLimits(bot);
     pos = pos.floored();
     const radiusSquared = radius * radius;

@@ -17,9 +17,9 @@ export function getCurrentDimensionYLimits(bot: Bot): {
 }
 
 export function* getAllCoordsWithinRadiusToPos(
-  bot: Bot,
   pos: Vec3,
-  radius: number
+  radius: number,
+  bot: Bot
 ): IterableIterator<Vec3> {
   const { minY: dimensionBottom, maxY: dimensionTop } =
     getCurrentDimensionYLimits(bot);

@@ -23,7 +23,7 @@ import { ADJACENT_OFFSETS } from "../constants";
 export function areContentsOfCoordsVisible(
   bot: Bot,
   coords: Vec3,
-  strategy: "cheap" | "expensive" = "cheap",
+  strategy: "cheap" | "expensive" = "cheap"
 ): boolean {
   // Get bot position with eye height
   const cubedMeter = new CubedMeter(bot, coords);
@@ -42,7 +42,7 @@ export function isBlockVisible(
   bot: Bot,
   block: PBlock,
   blockCoords: Vec3,
-  strategy: "cheap" | "expensive" = "cheap",
+  strategy: "cheap" | "expensive" = "cheap"
 ): boolean {
   const cubedMeter = new CubedMeter(bot, blockCoords);
   let isExposed = false;
@@ -100,7 +100,7 @@ export function isBlockVisible(
 export function canRaycastToOrBeyondCubedMeterFace(
   bot: any,
   face: CubedMeterFace,
-  nRaycastPoints: number = 24,
+  nRaycastPoints: number = 24
 ): boolean {
   const [c1, c2, c3, c4] = face.corners;
   const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));

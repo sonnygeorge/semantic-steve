@@ -47,6 +47,7 @@ bot.once("login", () => {
 // Initialize and run SemanticSteve once the bot has spawned and chunks have loaded
 bot.once("spawn", async () => {
   await bot.waitForChunksToLoad();
+  bot.envState.surroundings.beginObservation();
   mfViewer(bot, { port: config.mfViewerPort, firstPerson: true });
   const semanticSteve = new SemanticSteve(bot, config);
   semanticSteve.run();

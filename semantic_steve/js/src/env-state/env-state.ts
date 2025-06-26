@@ -90,7 +90,7 @@ export class EnvState {
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ]),
+        ])
       ) as Map<EquipmentDestination, string | undefined>,
       surroundings: this.surroundings.getDTO(),
     };

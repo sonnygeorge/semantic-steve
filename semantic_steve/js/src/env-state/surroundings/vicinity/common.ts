@@ -6,7 +6,7 @@ export type SurroundingsRadii = {
   distantSurroundingsRadius: number;
 };
 
-// TODO: Change these to types
+// TODO: Change these to types?
 
 /**
  * Keys identifying the 10 "directions" that slice the *distant* surroundings.

@@ -24,11 +24,24 @@ export class VoxelSpaceAroundBotEyes<T> {
     this.voxelSpace = new Symmetrical3DArray(this.dimension, defaultValue);
   }
 
+  public *iterOffsets(): Generator<Vec3> {
+    // Iterate over all offsets in the voxel space
+    for (let x = -this.radiusOfInterest; x <= this.radiusOfInterest; x++) {
+      for (let y = -this.radiusOfInterest; y <= this.radiusOfInterest; y++) {
+        for (let z = -this.radiusOfInterest; z <= this.radiusOfInterest; z++) {
+          yield new Vec3(x, y, z);
+        }
+      }
+    }
+  }
+
   private offsetToIndices(offset: Vec3): [number, number, number] {
-    const x = Math.floor(offset.x) + this.radiusOfInterest;
-    const y = Math.floor(offset.y) + this.radiusOfInterest;
-    const z = Math.floor(offset.z) + this.radiusOfInterest;
-    return [x, y, z];
+    const voxelOfOffset = getVoxelOfPosition(offset);
+    return [
+      voxelOfOffset.x + this.radiusOfInterest,
+      voxelOfOffset.y + this.radiusOfInterest,
+      voxelOfOffset.z + this.radiusOfInterest,
+    ];
   }
 
   private eyesHaveMovedToNewVoxelSinceLastUpdate(): boolean {

@@ -5,22 +5,39 @@ import { SurroundingsRadii, VicinityName, DirectionName } from "./common";
 import { Block as PBlock } from "prismarine-block";
 import { VisibilityRaycastManager } from "./visibility-raycast-manager";
 import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
+import { getVicinityMasks } from "./get-vicinity-masks";
 
 // The Main Idea(s):
 // 1. Store stuff (blocks) in voxel space (3d arrays) which has implicit "distance" from bot & quick lookup with indices
-// 2. Query/store blocks AFTER raycasting indicates visibility
-// 3. Only do/manage N ongoing raycasts evenly distibuted over the possible eyeball orientations
+// 2. Only do/manage N ongoing raycasts evenly distibuted over the possible eyeball orientations
 //    => Allowing us to update only certain raycasts when we don't want to re-evaluate every raycast
+// 3. Query/store blocks ONLY AFTER these managed raycasts confirm visibility
 
-// TODO: numpy-like arrays for voxel space arrays
+// Next TODO:
+// - Set up listeners to actually do the eager management of everything
+// - Implement the getters, DTOs, and test like crazy!
 
 export class Vicinity {
-  private static readonly bot: Bot;
-  private static readonly manager: VicinitiesManager;
-  public static readonly mask: VoxelSpaceArray<boolean>;
+  private bot: Bot;
+  private manager: VicinitiesManager;
+  public mask: VoxelSpaceAroundBotEyes<boolean>;
   public visible: VisibleContentsOfVicinity;
   public name: VicinityName;
 
+  constructor(
+    bot: Bot,
+    manager: VicinitiesManager,
+    name: VicinityName,
+    mask: VoxelSpaceAroundBotEyes<boolean>
+  ) {
+    this.bot = bot;
+    this.manager = manager;
+    this.name = name;
+    this.mask = mask;
+    this.visible = new VisibleContentsOfVicinity(bot, this, manager);
+  }
+
+  // TODO: Can having a bunch of "open" generators effectively cause a memory leak?
   public *iterCoords(
     how: "closest-to-furthest" | "furthest-to-closest" = "closest-to-furthest"
   ): Generator<Vec3> {
@@ -30,14 +47,12 @@ export class Vicinity {
 
 export class VicinitiesManager {
   private bot: Bot;
+  private lastBotPosition: Vec3 | null = null;
   public raycastManager: VisibilityRaycastManager;
   public immediate: ImmediateSurroundings;
-  public distant: DistantSurroundingsInADirection;
+  public distant: Map<DirectionName, DistantSurroundingsInADirection>;
   public radii: SurroundingsRadii;
-
-  private lastBotPosition: Vec3 | null = null;
-
-  blocks: VoxelSpaceAroundBotEyes<PBlock | null>;
+  public blocks: VoxelSpaceAroundBotEyes<PBlock | null>;
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
     this.bot = bot;
@@ -46,7 +61,40 @@ export class VicinitiesManager {
       bot,
       radii.distantSurroundingsRadius
     );
-    // TODO
+
+    const vicinityMasks = getVicinityMasks(
+      bot,
+      radii.immediateSurroundingsRadius,
+      radii.distantSurroundingsRadius
+    );
+
+    this.immediate = new ImmediateSurroundings(
+      bot,
+      this,
+      VicinityName.IMMEDIATE_SURROUNDINGS,
+      vicinityMasks.get(VicinityName.IMMEDIATE_SURROUNDINGS)!
+    );
+
+    this.distant = new Map<DirectionName, DistantSurroundingsInADirection>();
+    for (const directionName of Object.values(DirectionName)) {
+      // (DirectionName is a subset of VicinityName)
+      const vicinityName = directionName as any as VicinityName;
+      this.distant.set(
+        directionName,
+        new DistantSurroundingsInADirection(
+          bot,
+          this,
+          vicinityName,
+          vicinityMasks.get(vicinityName)!
+        )
+      );
+    }
+
+    this.blocks = new VoxelSpaceAroundBotEyes<PBlock | null>(
+      bot,
+      radii.immediateSurroundingsRadius,
+      null // Default value for empty block spaces
+    );
   }
 
   public handleBotMove(newBotPosition: Vec3): void {
@@ -68,8 +116,19 @@ export class VicinitiesManager {
 }
 
 export class VisibleContentsOfVicinity {
-  private static readonly bot: Bot;
-  private static readonly vicinity: Vicinity;
+  private bot: Bot;
+  private vicinity: Vicinity;
+  private vicinityManager: VicinitiesManager;
+
+  constructor(
+    bot: Bot,
+    vicinity: Vicinity,
+    vicinityManager: VicinitiesManager
+  ) {
+    this.bot = bot;
+    this.vicinity = vicinity;
+    this.vicinityManager = vicinityManager;
+  }
 
   // TODO: getters
 
@@ -114,7 +173,7 @@ export class Surroundings {
   private bot: Bot;
   private vicinitiesManager: VicinitiesManager;
   public immediate: ImmediateSurroundings;
-  public distant: DistantSurroundingsInADirection;
+  public distant: Map<DirectionName, DistantSurroundingsInADirection>;
   public radii: SurroundingsRadii;
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
@@ -137,7 +196,7 @@ export class Surroundings {
   > {
     yield this.immediate;
     for (const direction of Object.values(DirectionName)) {
-      yield this.distant[direction];
+      yield this.distant.get(direction)!;
     }
   }
 }

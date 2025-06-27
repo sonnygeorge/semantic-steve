@@ -167,7 +167,7 @@ export function getVicinityMasks(
     );
     if (vicinityNameOfOffset) {
       // If the vicinity is defined, set the respective mask to true for this offset
-      vicinityMasks.get(vicinityNameOfOffset)!.setFromBotOffset(offset, true);
+      vicinityMasks.get(vicinityNameOfOffset)!.setFromOffset(offset, true);
     }
   }
   return vicinityMasks;

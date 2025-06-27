@@ -17,8 +17,8 @@ import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
 import { InvalidThingError } from "../../types";
 import { TakeScreenshotOfResults } from "./results";
 import { asyncSleep } from "../../utils/generic";
-import { BOT_EYE_HEIGHT } from "../../constants";
 import { MC_COMMAND_WAIT_MS, SCREENSHOT_WAIT_MS } from "../../constants";
+import { getCurEyePos } from "../../utils/misc";
 
 // TODO: Currently this skill isn't pausable/resumable like it should be.
 
@@ -97,7 +97,7 @@ export class TakeScreenshotOf extends Skill {
       );
     }
 
-    const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+    const eyePosition = getCurEyePos(this.bot);
 
     // Create world view
     const worldView = new WorldView(

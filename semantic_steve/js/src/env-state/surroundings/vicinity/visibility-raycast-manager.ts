@@ -53,21 +53,21 @@ export class VisibilityRaycastManager {
     string[] // (keys of cast orientations)
   >;
 
-  // =======================================================
-  // The constantly updated data structures of raycast hits
-  // =======================================================
+  // ========================================================
+  // The continually updated data structures of raycast hits
+  // ========================================================
 
   // Mapping raycast orientations to lidar hits (Vec3 positions)
   public readonly raycastsToHits: Map<string, Vec3 | null>;
   // The hits within respective voxels
   public readonly hitsOrganizedIntoVoxelSpace: VoxelSpaceAroundBotEyes<Vec3[]>;
   // Voxel space of booleans indicating whether a contains at least one hit
-  public readonly hasVisibleThingVoxelSpaceMask: VoxelSpaceAroundBotEyes<boolean>;
+  public readonly visibilityMask: VoxelSpaceAroundBotEyes<boolean>;
 
   constructor(
     bot: Bot,
     radiusOfInterest: number,
-    numRaycastOrientations: number = 20000
+    numRaycastOrientations: number = 130000
   ) {
     assertMinimumRaycastDensity(radiusOfInterest, numRaycastOrientations);
     this.bot = bot;
@@ -103,9 +103,9 @@ export class VisibilityRaycastManager {
       }
     }
 
-    // --------------------------------------------------
-    // Initialize the constantly updated data structures
-    // --------------------------------------------------
+    // ---------------------------------------------------
+    // Initialize the continually updated data structures
+    // ---------------------------------------------------
 
     this.raycastsToHits = new Map();
     this.hitsOrganizedIntoVoxelSpace = new VoxelSpaceAroundBotEyes<Vec3[]>(
@@ -113,7 +113,7 @@ export class VisibilityRaycastManager {
       radiusOfInterest,
       () => [] // Default factory to initialize empty arrays for hits arrays
     );
-    this.hasVisibleThingVoxelSpaceMask = new VoxelSpaceAroundBotEyes<boolean>(
+    this.visibilityMask = new VoxelSpaceAroundBotEyes<boolean>(
       bot,
       radiusOfInterest,
       false
@@ -163,7 +163,7 @@ export class VisibilityRaycastManager {
       arrayOfHitsForVoxel.splice(arrayOfHitsForVoxelIndex, 1);
       // If that array is now empty, unset the voxel in the mask
       if (arrayOfHitsForVoxel.length === 0) {
-        this.hasVisibleThingVoxelSpaceMask.unsetFromWorldPosition(previousHit);
+        this.visibilityMask.unsetFromWorldPosition(previousHit);
       }
     }
 
@@ -182,10 +182,7 @@ export class VisibilityRaycastManager {
         this.hitsOrganizedIntoVoxelSpace.getFromWorldPosition(hit.intersection);
       arrayOfHitsForVoxel.push(hit.intersection);
       // Set the voxel in the mask to true if it wasn't already
-      this.hasVisibleThingVoxelSpaceMask.setFromWorldPosition(
-        hit.intersection,
-        true
-      );
+      this.visibilityMask.setFromWorldPosition(hit.intersection, true);
     }
   }
 
@@ -194,7 +191,7 @@ export class VisibilityRaycastManager {
       | "everywhere"
       | {
           forWorldVoxel: Vec3;
-          numSuroundingVoxelsRadius: number | undefined;
+          numSuroundingVoxelsRadius?: number | undefined;
         } = "everywhere"
   ): void {
     if (strategy === "everywhere") {

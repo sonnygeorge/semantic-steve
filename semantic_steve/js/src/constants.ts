@@ -25,9 +25,6 @@ export const MAX_PLACEMENT_REACH = 4;
 // The maximum distance from the bot at which a block can be reached for mining
 export const MAX_MINING_REACH = 4.5;
 
-// Bot eye height in meters
-export const BOT_EYE_HEIGHT = 1.62;
-
 // Six sides of a cubed meter (block space) in minecraft
 export const ADJACENT_OFFSETS = {
   [ConnectingSide.WEST]: new Vec3(-1, 0, 0),

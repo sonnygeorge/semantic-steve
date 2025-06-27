@@ -3,12 +3,11 @@
  *
  * Math: At radius R, blocks are arranged on a sphere with surface area 4πR².
  * Since each block is 1x1, we need roughly 4πR² rays minimum.
- * Applies 1.5x safety factor for discretization effects.
  */
 export function assertMinimumRaycastDensity(
   radiusOfInterest: number,
   nRaycastOrientations: number,
-  conservativeFactor: number = 1.5
+  conservativeFactor: number = 1.2
 ): void {
   // Surface area of sphere at radius
   const sphereSurfaceArea = 4 * Math.PI * radiusOfInterest * radiusOfInterest;

@@ -2,11 +2,11 @@ import { Bot } from "mineflayer";
 import { Block as PBlock } from "prismarine-block";
 import { Vec3 } from "vec3";
 import { AABB } from "@nxg-org/mineflayer-util-plugin";
-import { BOT_EYE_HEIGHT } from "../constants";
 import { bilinearInterpolate } from "./generic";
 import { blockExistsAt } from "./block";
 import { CubedMeter, CubedMeterFace } from "./cubed-meter";
 import { ADJACENT_OFFSETS } from "../constants";
+import { getCurEyePos } from "./misc";
 
 /**
  * Checks if the bot can see the contents of any given coordinates, i.e., its line of
@@ -72,7 +72,7 @@ export function isBlockVisible(
   }
   if (!isExposed) return false;
   // Try raycasting to all vertices of the block's shapes
-  const eyePosition = bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+  const eyePosition = getCurEyePos(bot);
   for (const shape of block.shapes) {
     const bb = AABB.fromShape(shape, blockCoords); // TODO: Remove dependency on AABB
     const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
@@ -105,7 +105,7 @@ export function canRaycastToOrBeyondCubedMeterFace(
   const [c1, c2, c3, c4] = face.corners;
   const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));
   const heightPoints = widthPoints; // Should always be a square
-  const eyePosition = bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+  const eyePosition = getCurEyePos(bot);
   // Relative padding that adapts to the grid size prevents points from being flush
   const padding = 1 / (widthPoints * 2);
   // Generate points uniformly distributed on the face with padding

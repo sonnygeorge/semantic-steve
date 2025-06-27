@@ -12,7 +12,7 @@ export class VoxelSpaceAroundBotEyes<T> {
   private bot: Bot;
   private botEyePosAtLastUpdate: Vec3;
   private radiusOfInterest: number;
-  private voxelSpace: Symmetrical3DArray<T>; // 3D array representing the voxel space
+  public voxelSpace: Symmetrical3DArray<T>; // 3D array representing the voxel space
   public dimension: number;
 
   constructor(bot: Bot, radiusOfInterest: number, defaultValue: T | (() => T)) {
@@ -35,7 +35,15 @@ export class VoxelSpaceAroundBotEyes<T> {
     }
   }
 
-  private offsetToIndices(offset: Vec3): [number, number, number] {
+  public indicesToOffset(indices: [number, number, number]): Vec3 {
+    return new Vec3(
+      indices[0] - this.radiusOfInterest,
+      indices[1] - this.radiusOfInterest,
+      indices[2] - this.radiusOfInterest
+    );
+  }
+
+  public offsetToIndices(offset: Vec3): [number, number, number] {
     const voxelOfOffset = getVoxelOfPosition(offset);
     return [
       voxelOfOffset.x + this.radiusOfInterest,
@@ -50,19 +58,19 @@ export class VoxelSpaceAroundBotEyes<T> {
     );
   }
 
-  public getFromBotOffset(offset: Vec3): T {
+  public getFromOffset(offset: Vec3): T {
     assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
     const [x, y, z] = this.offsetToIndices(offset);
     return this.voxelSpace.get(x, y, z);
   }
 
-  public setFromBotOffset(offset: Vec3, value: T): void {
+  public setFromOffset(offset: Vec3, value: T): void {
     assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
     const [x, y, z] = this.offsetToIndices(offset);
     this.voxelSpace.set(x, y, z, value);
   }
 
-  public unsetFromBotOffset(offset: Vec3): void {
+  public unsetFromOffset(offset: Vec3): void {
     assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
     const [x, y, z] = this.offsetToIndices(offset);
     this.voxelSpace.unset(x, y, z);
@@ -73,7 +81,7 @@ export class VoxelSpaceAroundBotEyes<T> {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
     const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
-    return this.getFromBotOffset(offset);
+    return this.getFromOffset(offset);
   }
 
   public setFromWorldPosition(worldPos: Vec3, value: T): void {
@@ -81,7 +89,7 @@ export class VoxelSpaceAroundBotEyes<T> {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
     const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
-    this.setFromBotOffset(offset, value);
+    this.setFromOffset(offset, value);
   }
 
   public unsetFromWorldPosition(worldPos: Vec3): void {
@@ -89,10 +97,10 @@ export class VoxelSpaceAroundBotEyes<T> {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
     const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
-    this.unsetFromBotOffset(offset);
+    this.unsetFromOffset(offset);
   }
 
-  public updateBotEyePos(): void {
+  public updateBotEyePosAndShiftAsNeeded(): Vec3 | undefined {
     const prevEyePos = this.botEyePosAtLastUpdate;
     const curEyePos = getCurEyePos(this.bot);
     const shouldShiftVoxelSpace = this.eyesHaveMovedToNewVoxelSinceLastUpdate();
@@ -173,5 +181,7 @@ export class VoxelSpaceAroundBotEyes<T> {
         this.voxelSpace.unset(originXIdx, originYIdx, originZIdx);
       }
     }
+
+    return shiftOffset; // Return the shift offset for further use if needed
   }
 }

@@ -4,11 +4,11 @@ exports.areContentsOfCoordsVisible = areContentsOfCoordsVisible;
 exports.isBlockVisible = isBlockVisible;
 exports.canRaycastToOrBeyondCubedMeterFace = canRaycastToOrBeyondCubedMeterFace;
 const mineflayer_util_plugin_1 = require("@nxg-org/mineflayer-util-plugin");
-const constants_1 = require("../constants");
 const generic_1 = require("./generic");
 const block_1 = require("./block");
 const cubed_meter_1 = require("./cubed-meter");
-const constants_2 = require("../constants");
+const constants_1 = require("../constants");
+const misc_1 = require("./misc");
 /**
  * Checks if the bot can see the contents of any given coordinates, i.e., its line of
  * sight can reach or penetrate the 3 closest faces of the cubed meter.
@@ -44,7 +44,7 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
             // NOTE: We will still attempt to raycast to the block if the faces are fully
             // covered by non-full blocks—e.g., slabs, stairs, etc.—leading to false positives
             // if the raycast reaches the corner the block (despite being covered)
-            const offset = constants_2.ADJACENT_OFFSETS[side];
+            const offset = constants_1.ADJACENT_OFFSETS[side];
             const adjacentCoords = blockCoords.offset(offset.x, offset.y, offset.z);
             const allowedBoundingBoxes = ["block"];
             if (!(0, block_1.blockExistsAt)(bot, adjacentCoords, allowedBoundingBoxes)) {
@@ -66,7 +66,7 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
     if (!isExposed)
         return false;
     // Try raycasting to all vertices of the block's shapes
-    const eyePosition = bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+    const eyePosition = (0, misc_1.getCurEyePos)(bot);
     for (const shape of block.shapes) {
         const bb = mineflayer_util_plugin_1.AABB.fromShape(shape, blockCoords); // TODO: Remove dependency on AABB
         const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
@@ -95,7 +95,7 @@ function canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints = 24) {
     const [c1, c2, c3, c4] = face.corners;
     const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));
     const heightPoints = widthPoints; // Should always be a square
-    const eyePosition = bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+    const eyePosition = (0, misc_1.getCurEyePos)(bot);
     // Relative padding that adapts to the grid size prevents points from being flush
     const padding = 1 / (widthPoints * 2);
     // Generate points uniformly distributed on the face with padding

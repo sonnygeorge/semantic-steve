@@ -71,7 +71,7 @@ class BlockType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        for (const blockName of this.bot.envState.surroundings.immediate.getDistinctBlockNames()) {
+        for (const blockName of this.bot.envState.surroundings.immediate.visible.getDistinctBlockNames()) {
             if (blockName === this.name) {
                 return true;
             }
@@ -80,7 +80,7 @@ class BlockType {
     }
     isVisibleInDistantSurroundings() {
         for (const dir of this.bot.envState.surroundings.distant.values()) {
-            for (const blockName of dir.getDistinctBlockNames()) {
+            for (const blockName of dir.visible.getDistinctBlockNames()) {
                 if (blockName === this.name) {
                     return true;
                 }
@@ -98,7 +98,7 @@ class BlockType {
         return this.locateNearestInDistantSurroundings();
     }
     locateNearestInImmediateSurroundings() {
-        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getBlockNamesToClosestCoords()) {
+        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getBlockNamesToClosestCoords()) {
             if (name === this.name) {
                 return closestCoords.clone();
             }
@@ -108,7 +108,7 @@ class BlockType {
         // If a specific direction is provided, check only that direction
         if (direction) {
             const vicinity = this.bot.envState.surroundings.distant.get(direction);
-            for (const [name, closestCoords,] of vicinity.getBlockNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getBlockNamesToClosestCoords()) {
                 if (name === this.name) {
                     return closestCoords.clone();
                 }
@@ -122,7 +122,7 @@ class BlockType {
         let smallestDistance = Infinity;
         for (const dir of directions) {
             const vicinity = this.bot.envState.surroundings.distant.get(dir);
-            for (const [name, closestCoords,] of vicinity.getBlockNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getBlockNamesToClosestCoords()) {
                 if (name === this.name) {
                     const distance = closestCoords.distanceTo(this.bot.entity.position);
                     if (distance < smallestDistance) {
@@ -136,7 +136,7 @@ class BlockType {
         return closestOfClosestCoords;
     }
     isVisibleInImmediateSurroundingsAt(coords) {
-        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.getBlockNamesToAllCoords()) {
+        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.visible.getBlockNamesToAllCoords()) {
             if (name === this.name) {
                 for (const blockCoords of coordsIterable) {
                     if (blockCoords.equals(coords)) {

@@ -1,10 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ImmediateSurroundings = exports.VisibleVicinityContents = exports.Vicinity = exports.Direction = exports.Surroundings = void 0;
+exports.Vicinity = exports.VicinitiesManager = exports.DistantSurroundingsInADirection = exports.ImmediateSurroundings = exports.VisibleVicinityContents = exports.Surroundings = exports.VicinityName = exports.DirectionName = void 0;
+const common_1 = require("./common");
+Object.defineProperty(exports, "DirectionName", { enumerable: true, get: function () { return common_1.DirectionName; } });
+Object.defineProperty(exports, "VicinityName", { enumerable: true, get: function () { return common_1.VicinityName; } });
 const surroundings_1 = require("./surroundings");
 Object.defineProperty(exports, "Surroundings", { enumerable: true, get: function () { return surroundings_1.Surroundings; } });
-Object.defineProperty(exports, "ImmediateSurroundings", { enumerable: true, get: function () { return surroundings_1.ImmediateSurroundings; } });
 const vicinity_1 = require("./vicinity");
-Object.defineProperty(exports, "Direction", { enumerable: true, get: function () { return vicinity_1.Direction; } });
-Object.defineProperty(exports, "Vicinity", { enumerable: true, get: function () { return vicinity_1.Vicinity; } });
 Object.defineProperty(exports, "VisibleVicinityContents", { enumerable: true, get: function () { return vicinity_1.VisibleVicinityContents; } });
+Object.defineProperty(exports, "ImmediateSurroundings", { enumerable: true, get: function () { return vicinity_1.ImmediateSurroundings; } });
+Object.defineProperty(exports, "DistantSurroundingsInADirection", { enumerable: true, get: function () { return vicinity_1.DistantSurroundingsInADirection; } });
+Object.defineProperty(exports, "VicinitiesManager", { enumerable: true, get: function () { return vicinity_1.VicinitiesManager; } });
+Object.defineProperty(exports, "Vicinity", { enumerable: true, get: function () { return vicinity_1.Vicinity; } });

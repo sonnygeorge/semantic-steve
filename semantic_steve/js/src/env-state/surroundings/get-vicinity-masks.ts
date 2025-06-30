@@ -1,6 +1,6 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { VicinityName } from "./common";
+import { SurroundingsRadii, VicinityName } from "./common";
 import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
 
 /**
@@ -137,8 +137,7 @@ export function classifyVicinityOfPosition(
 
 export function getVicinityMasks(
   bot: Bot,
-  immediateSurroundingsRadius: number,
-  distantSurroundingsRadius: number
+  radii: SurroundingsRadii
 ): Map<VicinityName, VoxelSpaceAroundBotEyes<boolean>> {
   const vicinityMasks: Map<
     VicinityName,
@@ -149,7 +148,7 @@ export function getVicinityMasks(
       vicinityName,
       new VoxelSpaceAroundBotEyes<boolean>(
         bot,
-        distantSurroundingsRadius,
+        radii.distantSurroundingsRadius,
         false // Default value for the mask
       )
     );
@@ -158,12 +157,12 @@ export function getVicinityMasks(
   const origin = new Vec3(0, 0, 0);
   for (const offset of vicinityMasks
     .get(VicinityName.IMMEDIATE_SURROUNDINGS)!
-    .iterOffsets()) {
+    .iterAllOffsets()) {
     const vicinityNameOfOffset = classifyVicinityOfPosition(
       offset,
       origin,
-      immediateSurroundingsRadius,
-      distantSurroundingsRadius
+      radii.immediateSurroundingsRadius,
+      radii.distantSurroundingsRadius
     );
     if (vicinityNameOfOffset) {
       // If the vicinity is defined, set the respective mask to true for this offset

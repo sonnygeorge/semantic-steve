@@ -21,16 +21,18 @@ class SemanticSteve:
         zmq_port: int = 5555,
         screenshot_dir: str | os.PathLike = DEFAULT_PATH_TO_SCREENSHOT_DIR,
         # Users should never use the following args (only devs):
-        _debug: bool = False,
         _should_rebuild_typescript: bool = False,
+        # Set this to false to run the JS process separately
+        # (e.g., with your debugeer of choice)
+        _should_run_js_process: bool = True,
     ):
         SemanticSteve.ascertain_js_dependencies()
         self.js_process_manager = SemanticSteveJsProcessManager(
-            should_rebuild_typescript=_should_rebuild_typescript, debug=_debug
+            should_rebuild_typescript=_should_rebuild_typescript
         )
+        self._should_run_js_process = _should_run_js_process
         os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
         self.zmq_port = zmq_port
-        self.debug = _debug
         self.socket: zmq.Socket | None = None
         self.context: zmq.Context | None = None
 
@@ -72,7 +74,8 @@ class SemanticSteve:
     ########################
 
     def __enter__(self):
-        self.js_process_manager.__enter__()
+        if self._should_run_js_process:
+            self.js_process_manager.__enter__()
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PAIR)
         self.socket.connect(f"tcp://localhost:{self.zmq_port}")
@@ -109,7 +112,8 @@ class SemanticSteve:
             try:
                 data_from_minecraft_dict = self.socket.recv_json()
             except zmq.Again:
-                self.js_process_manager.check_and_propogate_errors()
+                if self._should_run_js_process:
+                    self.js_process_manager.check_and_propogate_errors()
                 await asyncio.sleep(0.1)  # Sleep for a short time to avoid busy waiting
         return DataFromMinecraft(**data_from_minecraft_dict)
 

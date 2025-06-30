@@ -43,7 +43,7 @@ class PickupItem extends skill_1.Skill {
             (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
             (0, assert_1.default)(this.targetItemCoords);
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetItemCoords);
-            if (vicinityOfOriginalTargetCoords !== surroundings_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
+            if (vicinityOfOriginalTargetCoords !== surroundings_1.VicinityName.IMMEDIATE_SURROUNDINGS) {
                 const result = new results_2.PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(this.itemEntity.name);
                 this.resolve(result);
                 return;

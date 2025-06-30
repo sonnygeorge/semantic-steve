@@ -25,6 +25,7 @@ const generic_1 = require("../../utils/generic");
 const constants_1 = require("../../constants");
 const results_2 = require("../place-block/results");
 const results_3 = require("../mine-blocks/results");
+const misc_1 = require("../../utils/misc");
 // TODO: Resolve w/ a failure result if there is no space in the inventory for the crafted
 // items to be received in the inventory.
 class CraftItems extends skill_1.Skill {
@@ -138,7 +139,7 @@ class CraftItems extends skill_1.Skill {
             }
             (0, assert_1.default)(nearestImmediateSurroundingsTableCoords); // Should always be set by now
             const tableIsReachable = () => {
-                const eyePosition = this.bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+                const eyePosition = (0, misc_1.getCurEyePos)(this.bot);
                 nearestImmediateSurroundingsTableCoords =
                     craftingTableBlockType.locateNearestInImmediateSurroundings();
                 (0, assert_1.default)(nearestImmediateSurroundingsTableCoords);
@@ -246,7 +247,8 @@ class CraftItems extends skill_1.Skill {
             }
             // Get feasible recipes for out desired minimum quantity
             const recipes = this.bot.recipesFor(this.itemToCraft.id, null, quantity, // Minimum resulting quantity
-            true);
+            true // Set of non-table recipes is a subset of the set of table recipes
+            );
             let lastFeasibleNonTableRecipe = undefined;
             let lastFeasibleTableRecipe = undefined;
             for (const recipe of recipes) {

@@ -5,8 +5,8 @@ import {
   ThreeDimensionalOrientation,
   generateUniformlyDistributed3DOrientations,
   serializeVec3,
-} from "../../../utils/generic";
-import { getCurEyePos, getVoxelOfPosition } from "../../../utils/misc";
+} from "../../utils/generic";
+import { getVoxelOfPosition } from "../../utils/misc";
 import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
 import { assertMinimumRaycastDensity } from "./asserts";
 
@@ -67,7 +67,7 @@ export class VisibilityRaycastManager {
   constructor(
     bot: Bot,
     radiusOfInterest: number,
-    numRaycastOrientations: number = 130000
+    numRaycastOrientations: number = 12000
   ) {
     assertMinimumRaycastDensity(radiusOfInterest, numRaycastOrientations);
     this.bot = bot;
@@ -108,6 +108,9 @@ export class VisibilityRaycastManager {
     // ---------------------------------------------------
 
     this.raycastsToHits = new Map();
+    // console.log(
+    //   `Initializing ${this.raycasts.size} managed raycasts with radius of interest ${radiusOfInterest}`
+    // );
     this.hitsOrganizedIntoVoxelSpace = new VoxelSpaceAroundBotEyes<Vec3[]>(
       bot,
       radiusOfInterest,
@@ -146,47 +149,85 @@ export class VisibilityRaycastManager {
     return raycasts;
   }
 
-  private updateRaycast(raycastKey: string): void {
-    const orientation = this.raycasts.get(raycastKey);
-    assert(orientation);
-
+  private removePreviousRaycastData(raycastKey: string): void {
     // Remove previous hit data
-    const previousHit = this.raycastsToHits.get(raycastKey) || null;
+    const previousHit = this.raycastsToHits.get(raycastKey);
     if (previousHit) {
       // Remove the hit from the raycastsToHits map
-      this.raycastsToHits.set(raycastKey, null);
+      this.raycastsToHits.delete(raycastKey);
       // Remove the hit from voxel-associated array in hitsOrganizedIntoVoxelSpace
       const arrayOfHitsForVoxel =
-        this.hitsOrganizedIntoVoxelSpace.getFromWorldPosition(previousHit);
-      const arrayOfHitsForVoxelIndex = arrayOfHitsForVoxel.indexOf(previousHit);
-      assert(arrayOfHitsForVoxelIndex !== -1);
-      arrayOfHitsForVoxel.splice(arrayOfHitsForVoxelIndex, 1);
-      // If that array is now empty, unset the voxel in the mask
-      if (arrayOfHitsForVoxel.length === 0) {
-        this.visibilityMask.unsetFromWorldPosition(previousHit);
+        this.hitsOrganizedIntoVoxelSpace.getFromWorldPosition(
+          previousHit,
+          this.hitsOrganizedIntoVoxelSpace.eyePosAtLastUpdate!
+        );
+      const arrayOfHitsForVoxelIndex =
+        arrayOfHitsForVoxel!.indexOf(previousHit);
+      if (arrayOfHitsForVoxelIndex === -1) {
+        // If the hit was not found in the array, something is wrong
+        const sliced = arrayOfHitsForVoxel!.slice(0, 5);
+        const msg = `Hit ${previousHit} not found in array of hits for voxel: ${sliced}`;
+        // console.log(msg);
+        throw new Error(msg);
+      }
+      arrayOfHitsForVoxel!.splice(arrayOfHitsForVoxelIndex, 1);
+      // If there is no longer anything visible in the voxel, unset the idx in the visibility mask
+      if (arrayOfHitsForVoxel!.length === 0) {
+        assert(
+          this.visibilityMask.getFromWorldPosition(
+            previousHit,
+            this.visibilityMask.eyePosAtLastUpdate!
+          ) === true,
+          "Corrupt state: visibility mask should have been true if the voxel had a hit"
+        );
+        this.visibilityMask.unsetFromWorldPosition(
+          previousHit,
+          this.visibilityMask.eyePosAtLastUpdate!
+        );
       }
     }
+  }
+
+  private doRaycastAndStoreData(raycastKey: string, curEyePos: Vec3): void {
+    const orientation = this.raycasts.get(raycastKey);
+    assert(orientation);
+    // Assert that voxel space arrays are up to date with current eye position
+    assert(
+      curEyePos.equals(this.hitsOrganizedIntoVoxelSpace.eyePosAtLastUpdate!) &&
+        curEyePos.equals(this.visibilityMask.eyePosAtLastUpdate!)
+    );
 
     // Raycast from the bot's eye position in the direction of the orientation
     const hit = this.bot.world.raycast(
-      getCurEyePos(this.bot),
+      curEyePos,
       orientation.directionVector,
       this.radiusOfInterest
     );
 
-    if (hit) {
+    if (hit && hit.intersect) {
       // Add the hit to the raycastsToHits map
-      this.raycastsToHits.set(raycastKey, hit.intersection);
-      // Add the hit to the voxel space organized hits
+      this.raycastsToHits.set(raycastKey, hit.intersect);
+      // Add the hit to the voxel-space-organized hits
       const arrayOfHitsForVoxel =
-        this.hitsOrganizedIntoVoxelSpace.getFromWorldPosition(hit.intersection);
-      arrayOfHitsForVoxel.push(hit.intersection);
+        this.hitsOrganizedIntoVoxelSpace.getFromWorldPosition(
+          hit.intersect,
+          curEyePos
+        );
+      if (!arrayOfHitsForVoxel) {
+        let msg = `Since we pass a max range arg to bot.world.raycast, any hits should always be in the voxel space. `;
+        msg += `Perhaps it was a floating point error that kept a hit just out of bounds? `;
+        const hitDistance = hit.intersect.distanceTo(curEyePos);
+        msg += `Hit distance to bot: ${hitDistance}, distant surroundings radius: ${this.radiusOfInterest}`;
+        throw new Error(msg);
+      }
+      arrayOfHitsForVoxel.push(hit.intersect);
       // Set the voxel in the mask to true if it wasn't already
-      this.visibilityMask.setFromWorldPosition(hit.intersection, true);
+      this.visibilityMask.setFromWorldPosition(hit.intersect, curEyePos, true);
     }
   }
 
   public updateRaycasts(
+    curEyePos: Vec3,
     strategy:
       | "everywhere"
       | {
@@ -194,16 +235,38 @@ export class VisibilityRaycastManager {
           numSuroundingVoxelsRadius?: number | undefined;
         } = "everywhere"
   ): void {
+    // console.log(
+    //   `Updating visibility raycasts -- strategy: ${JSON.stringify(
+    //     strategy
+    //   )}, curEyePos: ${serializeVec3(curEyePos)}`
+    // );
     if (strategy === "everywhere") {
+      assert(
+        this.hitsOrganizedIntoVoxelSpace.eyePosAtLastUpdate!.equals(
+          this.visibilityMask.eyePosAtLastUpdate!
+        )
+      );
       for (const raycastKey of this.raycasts.keys()) {
-        this.updateRaycast(raycastKey);
+        this.removePreviousRaycastData(raycastKey);
+      }
+      // Once we've saved the previous eye position, we can update it
+      this.hitsOrganizedIntoVoxelSpace.updateEyePosAndShiftAsNeeded(curEyePos);
+      this.visibilityMask.updateEyePosAndShiftAsNeeded(curEyePos);
+      for (const raycastKey of this.raycasts.keys()) {
+        this.doRaycastAndStoreData(raycastKey, curEyePos);
       }
     } else {
+      // We don't support partial raycast updates if the eye position has changed
+      assert(
+        curEyePos.equals(this.hitsOrganizedIntoVoxelSpace.eyePosAtLastUpdate!)
+      );
+      assert(curEyePos.equals(this.visibilityMask.eyePosAtLastUpdate!));
       for (const raycastKey of this.getRaycastsAroundVoxel(
         strategy.forWorldVoxel,
         strategy.numSuroundingVoxelsRadius
       )) {
-        this.updateRaycast(raycastKey);
+        this.removePreviousRaycastData(raycastKey);
+        this.doRaycastAndStoreData(raycastKey, curEyePos);
       }
     }
   }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ADJACENT_OFFSETS = exports.BOT_EYE_HEIGHT = exports.MAX_MINING_REACH = exports.MAX_PLACEMENT_REACH = exports.SCREENSHOT_WAIT_MS = exports.MC_COMMAND_WAIT_MS = exports.CRAFTING_WAIT_MS = exports.BLOCK_DROP_WAIT_MS = exports.BLOCK_PLACEMENT_WAIT_MS = exports.ITEM_PICKUP_WAIT_MS = void 0;
+exports.ADJACENT_OFFSETS = exports.MAX_MINING_REACH = exports.MAX_PLACEMENT_REACH = exports.SCREENSHOT_WAIT_MS = exports.MC_COMMAND_WAIT_MS = exports.CRAFTING_WAIT_MS = exports.BLOCK_DROP_WAIT_MS = exports.BLOCK_PLACEMENT_WAIT_MS = exports.ITEM_PICKUP_WAIT_MS = void 0;
 const vec3_1 = require("vec3");
 const types_1 = require("./types");
 // Amount of wait that should lead to an item entity pickup if the bot is in range for pickup
@@ -19,8 +19,6 @@ exports.SCREENSHOT_WAIT_MS = 300;
 exports.MAX_PLACEMENT_REACH = 4;
 // The maximum distance from the bot at which a block can be reached for mining
 exports.MAX_MINING_REACH = 4.5;
-// Bot eye height in meters
-exports.BOT_EYE_HEIGHT = 1.62;
 // Six sides of a cubed meter (block space) in minecraft
 exports.ADJACENT_OFFSETS = {
     [types_1.ConnectingSide.WEST]: new vec3_1.Vec3(-1, 0, 0),

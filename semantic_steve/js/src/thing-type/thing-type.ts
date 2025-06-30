@@ -1,6 +1,6 @@
 import type { Bot } from "mineflayer";
 import type { Vec3 } from "vec3";
-import { Direction } from "../env-state/surroundings";
+import { DirectionName } from "../env-state/surroundings";
 import { MaybePromise } from "../types";
 
 export interface ThingType {
@@ -16,7 +16,7 @@ export interface ThingType {
   locateNearestInImmediateSurroundings(): MaybePromise<Vec3 | undefined>;
 
   locateNearestInDistantSurroundings(
-    direction?: Direction,
+    direction?: DirectionName
   ): MaybePromise<Vec3 | undefined>;
 
   isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean;

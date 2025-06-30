@@ -11,6 +11,8 @@ import { SemanticSteve } from "./semantic-steve";
 import { SemanticSteveConfig, SemanticSteveConfigOptions } from "./types";
 import { isValidEmail } from "./utils/generic";
 
+console.log("Starting SemanticSteve javascript process...");
+
 // Create a config by loading environment variables or using defaults.
 const config = new SemanticSteveConfig({
   botHost: process.env.BOT_HOST || "localhost",
@@ -21,7 +23,7 @@ const config = new SemanticSteveConfig({
     process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "4"
   ),
   distantSurroundingsRadius: parseInt(
-    process.env.DISTANT_SURROUNDINGS_RADIUS || "24"
+    process.env.DISTANT_SURROUNDINGS_RADIUS || "12"
   ),
   username: process.env.MC_USERNAME || "SemanticSteve",
 } as SemanticSteveConfigOptions);

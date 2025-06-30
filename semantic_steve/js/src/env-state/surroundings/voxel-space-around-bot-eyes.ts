@@ -1,31 +1,33 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { Symmetrical3DArray } from "../../../utils/generic";
-import { getCurEyePos } from "../../../utils/misc";
-import { getVoxelOfPosition } from "../../../utils/misc";
+import { Symmetrical3DArray } from "../../utils/generic";
+import { getVoxelOfPosition } from "../../utils/misc";
 
 /**
  * Wrapper around a 3D array that represents a voxel space around the bot's eyes
  */
 export class VoxelSpaceAroundBotEyes<T> {
   private bot: Bot;
-  private botEyePosAtLastUpdate: Vec3;
+  public eyePosAtLastUpdate: Vec3 | undefined;
   private radiusOfInterest: number;
   public voxelSpace: Symmetrical3DArray<T>; // 3D array representing the voxel space
   public dimension: number;
 
   constructor(bot: Bot, radiusOfInterest: number, defaultValue: T | (() => T)) {
     this.bot = bot;
-    this.botEyePosAtLastUpdate = getCurEyePos(bot);
     this.radiusOfInterest = radiusOfInterest;
     // 3D voxel-space array where center-most voxel = block area of the bot's eyes
     this.dimension = radiusOfInterest * 2 + 1;
     this.voxelSpace = new Symmetrical3DArray(this.dimension, defaultValue);
   }
 
-  public *iterOffsets(): Generator<Vec3> {
-    // Iterate over all offsets in the voxel space
+  public setInitialEyePos(curEyePos: Vec3): void {
+    assert(!this.eyePosAtLastUpdate, "Initial eye position already set");
+    this.eyePosAtLastUpdate = curEyePos;
+  }
+
+  public *iterAllOffsets(): Generator<Vec3> {
     for (let x = -this.radiusOfInterest; x <= this.radiusOfInterest; x++) {
       for (let y = -this.radiusOfInterest; y <= this.radiusOfInterest; y++) {
         for (let z = -this.radiusOfInterest; z <= this.radiusOfInterest; z++) {
@@ -35,7 +37,28 @@ export class VoxelSpaceAroundBotEyes<T> {
     }
   }
 
-  public indicesToOffset(indices: [number, number, number]): Vec3 {
+  public *iterOffsetsWithSetValues(): Generator<Vec3> {
+    // NOTE: Copy to avoid mutation during iteration
+    for (const idxs of new Map(this.voxelSpace.idxsWithSetValues).values()) {
+      yield this.indicesToOffset(idxs)!;
+    }
+  }
+
+  private areIndicesWithinBounds(indices: [number, number, number]): boolean {
+    return (
+      indices[0] >= 0 &&
+      indices[0] < this.dimension &&
+      indices[1] >= 0 &&
+      indices[1] < this.dimension &&
+      indices[2] >= 0 &&
+      indices[2] < this.dimension
+    );
+  }
+
+  public indicesToOffset(indices: [number, number, number]): Vec3 | null {
+    if (!this.areIndicesWithinBounds(indices)) {
+      return null;
+    }
     return new Vec3(
       indices[0] - this.radiusOfInterest,
       indices[1] - this.radiusOfInterest,
@@ -43,68 +66,109 @@ export class VoxelSpaceAroundBotEyes<T> {
     );
   }
 
-  public offsetToIndices(offset: Vec3): [number, number, number] {
+  public offsetToIndices(offset: Vec3): [number, number, number] | null {
     const voxelOfOffset = getVoxelOfPosition(offset);
-    return [
+    const idxs: [number, number, number] = [
       voxelOfOffset.x + this.radiusOfInterest,
       voxelOfOffset.y + this.radiusOfInterest,
       voxelOfOffset.z + this.radiusOfInterest,
     ];
+    if (this.areIndicesWithinBounds(idxs)) {
+      return idxs;
+    } else {
+      return null;
+    }
   }
 
-  private eyesHaveMovedToNewVoxelSinceLastUpdate(): boolean {
-    return !getVoxelOfPosition(getCurEyePos(this.bot)).equals(
-      getVoxelOfPosition(this.botEyePosAtLastUpdate)
-    );
+  private eyesHaveMovedToNewVoxel(prevEyePos: Vec3, curEyePos: Vec3): boolean {
+    assert(this.eyePosAtLastUpdate);
+    const prevVoxel = getVoxelOfPosition(prevEyePos);
+    const curVoxel = getVoxelOfPosition(curEyePos);
+    const eyesAreInNewVoxel = !prevVoxel.equals(curVoxel);
+    // if (eyesAreInNewVoxel) {
+    //   console.log(
+    //     `Eyes have moved to a new voxel since last update: ${prevVoxel} -> ${curVoxel}`
+    //   );
+    // }
+    return eyesAreInNewVoxel;
   }
 
-  public getFromOffset(offset: Vec3): T {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
-    const [x, y, z] = this.offsetToIndices(offset);
-    return this.voxelSpace.get(x, y, z);
+  public getFromOffset(offset: Vec3): T | null {
+    const indices = this.offsetToIndices(offset);
+    if (!indices) {
+      return null;
+    }
+    return this.voxelSpace.get(indices[0], indices[1], indices[2]);
   }
 
-  public setFromOffset(offset: Vec3, value: T): void {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
-    const [x, y, z] = this.offsetToIndices(offset);
-    this.voxelSpace.set(x, y, z, value);
+  public setFromOffset(offset: Vec3, value: T): boolean {
+    const indices = this.offsetToIndices(offset);
+    if (!indices) {
+      console.log(
+        `Tried to set value at offset ${offset} but it is out of bounds`
+      );
+      return false;
+    }
+    this.voxelSpace.set(indices[0], indices[1], indices[2], value);
+    return true;
   }
 
-  public unsetFromOffset(offset: Vec3): void {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
-    const [x, y, z] = this.offsetToIndices(offset);
-    this.voxelSpace.unset(x, y, z);
+  public unsetFromOffset(offset: Vec3): boolean {
+    const indices = this.offsetToIndices(offset);
+    if (!indices) {
+      return false;
+    }
+    this.voxelSpace.unset(indices[0], indices[1], indices[2]);
+    return true;
   }
 
-  public getFromWorldPosition(worldPos: Vec3): T {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
+  public getFromWorldPosition(worldPos: Vec3, eyePos: Vec3): T | null {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
-    const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
+    // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
+    if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
+      const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
+      console.log(msg);
+      throw new Error(msg);
+    }
+    const curEyeVoxel = getVoxelOfPosition(eyePos);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
     return this.getFromOffset(offset);
   }
 
-  public setFromWorldPosition(worldPos: Vec3, value: T): void {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
+  public setFromWorldPosition(worldPos: Vec3, eyePos: Vec3, value: T): boolean {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
-    const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
+    // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
+    if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
+      const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
+      console.log(msg);
+      throw new Error(msg);
+    }
+    const curEyeVoxel = getVoxelOfPosition(eyePos);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
-    this.setFromOffset(offset, value);
+    return this.setFromOffset(offset, value);
   }
 
-  public unsetFromWorldPosition(worldPos: Vec3): void {
-    assert(!this.eyesHaveMovedToNewVoxelSinceLastUpdate());
+  public unsetFromWorldPosition(worldPos: Vec3, eyePos: Vec3): boolean {
     const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
-    const curEyeVoxel = getVoxelOfPosition(this.botEyePosAtLastUpdate);
+    // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
+    if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
+      const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
+      console.log(msg);
+      throw new Error(msg);
+    }
+    const curEyeVoxel = getVoxelOfPosition(eyePos);
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
-    this.unsetFromOffset(offset);
+    return this.unsetFromOffset(offset);
   }
 
-  public updateBotEyePosAndShiftAsNeeded(): Vec3 | undefined {
-    const prevEyePos = this.botEyePosAtLastUpdate;
-    const curEyePos = getCurEyePos(this.bot);
-    const shouldShiftVoxelSpace = this.eyesHaveMovedToNewVoxelSinceLastUpdate();
-    this.botEyePosAtLastUpdate = curEyePos; // Note: this can't go before the above check
+  public updateEyePosAndShiftAsNeeded(curEyePos: Vec3): Vec3 | undefined {
+    assert(this.eyePosAtLastUpdate);
+    const prevEyePos = this.eyePosAtLastUpdate.clone();
+    this.eyePosAtLastUpdate = curEyePos;
+    const shouldShiftVoxelSpace = this.eyesHaveMovedToNewVoxel(
+      prevEyePos,
+      curEyePos
+    );
 
     // If the eyes have not moved to a new voxel, no need to shift values
     if (!shouldShiftVoxelSpace) return;

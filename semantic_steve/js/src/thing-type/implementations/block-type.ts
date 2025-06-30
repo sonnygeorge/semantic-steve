@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { Direction } from "../../env-state/surroundings";
+import { DirectionName } from "../../env-state/surroundings";
 import { InvalidThingError } from "../../types";
 import { IndexedBlock } from "minecraft-data";
 import { simplify as nbtSimplify } from "prismarine-nbt";
@@ -69,7 +69,7 @@ export class BlockType implements ThingType {
           this.pblock.id,
           itemID,
           item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
-          this.bot.entity.effects,
+          this.bot.entity.effects
         );
         if (digTime < fastestDigTime) {
           fastestDigTime = digTime;
@@ -91,7 +91,7 @@ export class BlockType implements ThingType {
   // ================================
 
   isVisibleInImmediateSurroundings(): boolean {
-    for (const blockName of this.bot.envState.surroundings.immediate.getDistinctBlockNames()) {
+    for (const blockName of this.bot.envState.surroundings.immediate.visible.getDistinctBlockNames()) {
       if (blockName === this.name) {
         return true;
       }
@@ -101,7 +101,7 @@ export class BlockType implements ThingType {
 
   isVisibleInDistantSurroundings(): boolean {
     for (const dir of this.bot.envState.surroundings.distant.values()) {
-      for (const blockName of dir.getDistinctBlockNames()) {
+      for (const blockName of dir.visible.getDistinctBlockNames()) {
         if (blockName === this.name) {
           return true;
         }
@@ -125,21 +125,23 @@ export class BlockType implements ThingType {
     for (const [
       name,
       closestCoords,
-    ] of this.bot.envState.surroundings.immediate.getBlockNamesToClosestCoords()) {
+    ] of this.bot.envState.surroundings.immediate.visible.getBlockNamesToClosestCoords()) {
       if (name === this.name) {
         return closestCoords.clone();
       }
     }
   }
 
-  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
+  locateNearestInDistantSurroundings(
+    direction?: DirectionName
+  ): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const vicinity = this.bot.envState.surroundings.distant.get(direction)!;
       for (const [
         name,
         closestCoords,
-      ] of vicinity.getBlockNamesToClosestCoords()) {
+      ] of vicinity.visible.getBlockNamesToClosestCoords()) {
         if (name === this.name) {
           return closestCoords.clone();
         }
@@ -149,7 +151,7 @@ export class BlockType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -160,7 +162,7 @@ export class BlockType implements ThingType {
       for (const [
         name,
         closestCoords,
-      ] of vicinity.getBlockNamesToClosestCoords()) {
+      ] of vicinity.visible.getBlockNamesToClosestCoords()) {
         if (name === this.name) {
           const distance = closestCoords.distanceTo(this.bot.entity.position);
           if (distance < smallestDistance) {
@@ -178,7 +180,7 @@ export class BlockType implements ThingType {
     for (const [
       name,
       coordsIterable,
-    ] of this.bot.envState.surroundings.immediate.getBlockNamesToAllCoords()) {
+    ] of this.bot.envState.surroundings.immediate.visible.getBlockNamesToAllCoords()) {
       if (name === this.name) {
         for (const blockCoords of coordsIterable) {
           if (blockCoords.equals(coords)) {

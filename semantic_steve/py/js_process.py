@@ -1,7 +1,6 @@
 import subprocess
 
 from semantic_steve.py.constants import (
-    CMD_TO_DEBUG_START_JS_PROCESS,
     CMD_TO_REBUILD_TYPESCRIPT,
     CMD_TO_START_JS_PROCESS,
     PATH_TO_JS_DIR,

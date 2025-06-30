@@ -35,7 +35,7 @@ class ItemType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        for (const itemName of this.bot.envState.surroundings.immediate.getDistinctItemNames()) {
+        for (const itemName of this.bot.envState.surroundings.immediate.visible.getDistinctItemNames()) {
             if (itemName === this.name) {
                 return true;
             }
@@ -44,7 +44,7 @@ class ItemType {
     }
     isVisibleInDistantSurroundings() {
         for (const dir of this.bot.envState.surroundings.distant.values()) {
-            for (const itemName of dir.getDistinctItemNames()) {
+            for (const itemName of dir.visible.getDistinctItemNames()) {
                 if (itemName === this.name) {
                     return true;
                 }
@@ -62,7 +62,7 @@ class ItemType {
         return this.locateNearestInDistantSurroundings();
     }
     locateNearestInImmediateSurroundings() {
-        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getItemNamesToClosestCoords()) {
+        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getItemNamesToClosestCoords()) {
             if (name === this.name) {
                 return closestCoords.clone();
             }
@@ -72,7 +72,7 @@ class ItemType {
         // If a specific direction is provided, check only that direction
         if (direction) {
             const vicinity = this.bot.envState.surroundings.distant.get(direction);
-            for (const [name, closestCoords,] of vicinity.getItemNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getItemNamesToClosestCoords()) {
                 if (name === this.name) {
                     return closestCoords.clone();
                 }
@@ -86,7 +86,7 @@ class ItemType {
         let smallestDistance = Infinity;
         for (const dir of directions) {
             const vicinity = this.bot.envState.surroundings.distant.get(dir);
-            for (const [name, closestCoords,] of vicinity.getItemNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getItemNamesToClosestCoords()) {
                 if (name === this.name) {
                     const distance = this.bot.entity.position.distanceTo(closestCoords);
                     if (distance < smallestDistance) {
@@ -100,7 +100,7 @@ class ItemType {
         return closestOfClosestCoords;
     }
     isVisibleInImmediateSurroundingsAt(coords) {
-        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.getItemNamesToAllCoords()) {
+        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.visible.getItemNamesToAllCoords()) {
             if (name === this.name) {
                 for (const itemCoords of coordsIterable) {
                     if (itemCoords.equals(coords)) {

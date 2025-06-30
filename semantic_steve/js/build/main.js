@@ -19,6 +19,7 @@ const prismarine_viewer_1 = require("prismarine-viewer");
 const semantic_steve_1 = require("./semantic-steve");
 const types_1 = require("./types");
 const generic_1 = require("./utils/generic");
+console.log("Starting SemanticSteve javascript process...");
 // Create a config by loading environment variables or using defaults.
 const config = new types_1.SemanticSteveConfig({
     botHost: process.env.BOT_HOST || "localhost",
@@ -26,7 +27,7 @@ const config = new types_1.SemanticSteveConfig({
     mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
     zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
     immediateSurroundingsRadius: parseInt(process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "4"),
-    distantSurroundingsRadius: parseInt(process.env.DISTANT_SURROUNDINGS_RADIUS || "24"),
+    distantSurroundingsRadius: parseInt(process.env.DISTANT_SURROUNDINGS_RADIUS || "12"),
     username: process.env.MC_USERNAME || "SemanticSteve",
 });
 // Create a Mineflayer bot instance
@@ -46,6 +47,7 @@ bot.once("login", () => {
 // Initialize and run SemanticSteve once the bot has spawned and chunks have loaded
 bot.once("spawn", () => __awaiter(void 0, void 0, void 0, function* () {
     yield bot.waitForChunksToLoad();
+    bot.envState.surroundings.beginObservation();
     (0, prismarine_viewer_1.mineflayer)(bot, { port: config.mfViewerPort, firstPerson: true });
     const semanticSteve = new semantic_steve_1.SemanticSteve(bot, config);
     semanticSteve.run();

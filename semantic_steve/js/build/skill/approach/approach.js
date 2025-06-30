@@ -47,7 +47,7 @@ class Approach extends skill_1.Skill {
             }
             // Otherwise, check to see if the approach was successful & handle
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
-            if (vicinityOfOriginalTargetCoords == surroundings_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
+            if (vicinityOfOriginalTargetCoords == surroundings_1.VicinityName.IMMEDIATE_SURROUNDINGS) {
                 if (this.thing instanceof thing_type_1.ItemType) {
                     (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
                     // Wait for a bit to make sure the item is picked up
@@ -90,7 +90,7 @@ class Approach extends skill_1.Skill {
                 this.thing = thing;
             }
             (0, assert_1.default)(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
-            if (!Object.values(surroundings_1.Direction).includes(direction)) {
+            if (!Object.values(surroundings_1.DirectionName).includes(direction)) {
                 const result = new results_1.ApproachResults.InvalidDirection(direction);
                 this.resolve(result);
                 return;

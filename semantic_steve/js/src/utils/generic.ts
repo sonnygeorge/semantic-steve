@@ -37,7 +37,12 @@ export class Symmetrical3DArray<T> {
   }
 
   public get(x: number, y: number, z: number): T {
-    return this.array[x][y][z];
+    try {
+      return this.array[x][y][z];
+    } catch {
+      console.log("crap");
+      return this.array[x][y][z];
+    }
   }
 
   public set(x: number, y: number, z: number, value: T): void {

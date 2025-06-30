@@ -61,7 +61,7 @@ const types_1 = require("../../types");
 const results_1 = require("./results");
 const generic_1 = require("../../utils/generic");
 const constants_1 = require("../../constants");
-const constants_2 = require("../../constants");
+const misc_1 = require("../../utils/misc");
 // TODO: Currently this skill isn't pausable/resumable like it should be.
 const CANVAS_WIDTH = 512;
 const CANVAS_HEIGHT = 512;
@@ -74,6 +74,9 @@ class TakeScreenshotOf extends skill_1.Skill {
     constructor(bot, onResolution) {
         super(bot, onResolution);
         this.screenshotDir = process.env.SEMANTIC_STEVE_SCREENSHOT_DIR;
+        if (!this.screenshotDir) {
+            throw new Error("SEMANTIC_STEVE_SCREENSHOT_DIR environment variable is not set.");
+        }
         // Ensure screenshot directory exists
         if (!fs.existsSync(this.screenshotDir)) {
             fs.mkdirSync(this.screenshotDir, { recursive: true });
@@ -102,7 +105,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             if (!viewer.setVersion(this.bot.version)) {
                 throw new Error(`prismarine-viewer does not support version: ${this.bot.version}`);
             }
-            const eyePosition = this.bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+            const eyePosition = (0, misc_1.getCurEyePos)(this.bot);
             // Create world view
             const worldView = new WorldView(this.bot.world, this.viewDistanceToNumber(), eyePosition);
             viewer.listen(worldView);
@@ -153,7 +156,7 @@ class TakeScreenshotOf extends skill_1.Skill {
                 yield nut_js_1.keyboard.type(nut_js_1.Key.T); // Open chat
                 yield nut_js_1.keyboard.type(command);
                 yield nut_js_1.keyboard.type(nut_js_1.Key.Enter);
-                yield (0, generic_1.asyncSleep)(constants_2.MC_COMMAND_WAIT_MS); // Wait for command to process
+                yield (0, generic_1.asyncSleep)(constants_1.MC_COMMAND_WAIT_MS); // Wait for command to process
             });
             // Get the currently focused application
             let previousApp = null;
@@ -180,7 +183,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             // Take screenshot
             const beforeFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
             yield nut_js_1.keyboard.type(nut_js_1.Key.F2); // Take screenshot
-            yield (0, generic_1.asyncSleep)(constants_2.SCREENSHOT_WAIT_MS); // Wait for screenshot to be taken
+            yield (0, generic_1.asyncSleep)(constants_1.SCREENSHOT_WAIT_MS); // Wait for screenshot to be taken
             const afterFiles = fs.readdirSync(MC_SCREENSHOT_DIR_PATH);
             const newFiles = afterFiles.filter((file) => !beforeFiles.includes(file));
             if (newFiles.length === 0) {
@@ -191,7 +194,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             fs.copyFileSync(screenshotPath, destinationPath); // Copy over to destination path
             // Open the chat again (allowing us to restore the previous app)
             yield nut_js_1.keyboard.type(nut_js_1.Key.T); // Open chat
-            yield (0, generic_1.asyncSleep)(constants_2.MC_COMMAND_WAIT_MS); // Wait for chat to open
+            yield (0, generic_1.asyncSleep)(constants_1.MC_COMMAND_WAIT_MS); // Wait for chat to open
             // Restore the previously focused application
             console.log("Restoring focus of previous application:", previousApp);
             if (previousApp) {

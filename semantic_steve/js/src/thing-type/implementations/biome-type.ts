@@ -2,7 +2,7 @@ import assert from "assert";
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { Direction } from "../../env-state/surroundings";
+import { DirectionName } from "../../env-state/surroundings";
 
 export class BiomeType implements ThingType {
   bot: Bot;
@@ -25,7 +25,7 @@ export class BiomeType implements ThingType {
     }
     assert(
       this.id !== -1,
-      `This should be impossible. We should have thrown an error above.`,
+      `This should be impossible. We should have thrown an error above.`
     );
   }
 
@@ -34,7 +34,7 @@ export class BiomeType implements ThingType {
   // ================================
 
   isVisibleInImmediateSurroundings(): boolean {
-    for (const biomeName of this.bot.envState.surroundings.immediate.getDistinctBiomeNames()) {
+    for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
       if (biomeName === this.name) {
         return true;
       }
@@ -44,7 +44,7 @@ export class BiomeType implements ThingType {
 
   isVisibleInDistantSurroundings(): boolean {
     for (const dir of this.bot.envState.surroundings.distant.values()) {
-      for (const biomeName of dir.getDistinctBiomeNames()) {
+      for (const biomeName of dir.visible.getDistinctBiomeNames()) {
         if (biomeName === this.name) {
           return true;
         }
@@ -68,21 +68,23 @@ export class BiomeType implements ThingType {
     for (const [
       name,
       closestCoords,
-    ] of this.bot.envState.surroundings.immediate.getBiomeNamesToClosestCoords()) {
+    ] of this.bot.envState.surroundings.immediate.visible.getBiomeNamesToClosestCoords()) {
       if (name === this.name) {
         return closestCoords.clone();
       }
     }
   }
 
-  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
+  locateNearestInDistantSurroundings(
+    direction?: DirectionName
+  ): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const vicinity = this.bot.envState.surroundings.distant.get(direction)!;
       for (const [
         name,
         closestCoords,
-      ] of vicinity.getBiomeNamesToClosestCoords()) {
+      ] of vicinity.visible.getBiomeNamesToClosestCoords()) {
         if (name === this.name) {
           return closestCoords.clone();
         }
@@ -92,7 +94,7 @@ export class BiomeType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -103,7 +105,7 @@ export class BiomeType implements ThingType {
       for (const [
         name,
         closestCoords,
-      ] of vicinity.getBiomeNamesToClosestCoords()) {
+      ] of vicinity.visible.getBiomeNamesToClosestCoords()) {
         if (name === this.name) {
           const distance = closestCoords.distanceTo(this.bot.entity.position);
           if (distance < smallestDistance) {
@@ -119,7 +121,7 @@ export class BiomeType implements ThingType {
 
   isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean {
     throw new Error(
-      "Method not implemented. This method is yet not usable for biomes.",
+      "Method not implemented. This method is yet not usable for biomes."
     );
   }
 }

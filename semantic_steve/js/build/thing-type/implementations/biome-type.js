@@ -25,7 +25,7 @@ class BiomeType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        for (const biomeName of this.bot.envState.surroundings.immediate.getDistinctBiomeNames()) {
+        for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
             if (biomeName === this.name) {
                 return true;
             }
@@ -34,7 +34,7 @@ class BiomeType {
     }
     isVisibleInDistantSurroundings() {
         for (const dir of this.bot.envState.surroundings.distant.values()) {
-            for (const biomeName of dir.getDistinctBiomeNames()) {
+            for (const biomeName of dir.visible.getDistinctBiomeNames()) {
                 if (biomeName === this.name) {
                     return true;
                 }
@@ -52,7 +52,7 @@ class BiomeType {
         return this.locateNearestInDistantSurroundings();
     }
     locateNearestInImmediateSurroundings() {
-        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getBiomeNamesToClosestCoords()) {
+        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getBiomeNamesToClosestCoords()) {
             if (name === this.name) {
                 return closestCoords.clone();
             }
@@ -62,7 +62,7 @@ class BiomeType {
         // If a specific direction is provided, check only that direction
         if (direction) {
             const vicinity = this.bot.envState.surroundings.distant.get(direction);
-            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
                 if (name === this.name) {
                     return closestCoords.clone();
                 }
@@ -76,7 +76,7 @@ class BiomeType {
         let smallestDistance = Infinity;
         for (const dir of directions) {
             const vicinity = this.bot.envState.surroundings.distant.get(dir);
-            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
                 if (name === this.name) {
                     const distance = closestCoords.distanceTo(this.bot.entity.position);
                     if (distance < smallestDistance) {

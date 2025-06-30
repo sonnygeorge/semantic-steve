@@ -34,7 +34,7 @@ async def llm_example():
 
 
 async def cli_example():
-    semantic_steve = SemanticSteve(_should_rebuild_typescript=True)
+    semantic_steve = SemanticSteve(_should_rebuild_typescript=True, _should_run_js_process=True)
     await run_as_cli(semantic_steve)
 
 

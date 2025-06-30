@@ -11,7 +11,6 @@ SEMANTIC_STEVE_ASCII_ART = r"""  ____                             _   _        _
 
 CMD_TO_REBUILD_TYPESCRIPT = ["npx", "tsc"]
 CMD_TO_START_JS_PROCESS = ["node", "build/main.js"]
-CMD_TO_DEBUG_START_JS_PROCESS = ["npx", "ts-node", "src/main.ts"]
 CMD_TO_GET_NODE_VERSION = ["node", "--version"]
 CMD_TO_INSTALL_NODE_MODULES = ["yarn", "install"]
 _PATH_TO_THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))

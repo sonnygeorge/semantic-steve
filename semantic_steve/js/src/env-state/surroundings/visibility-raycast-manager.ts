@@ -67,7 +67,7 @@ export class VisibilityRaycastManager {
   constructor(
     bot: Bot,
     radiusOfInterest: number,
-    numRaycastOrientations: number = 12000
+    numRaycastOrientations: number = 13572
   ) {
     assertMinimumRaycastDensity(radiusOfInterest, numRaycastOrientations);
     this.bot = bot;

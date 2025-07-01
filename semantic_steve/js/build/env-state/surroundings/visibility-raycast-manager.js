@@ -32,7 +32,7 @@ function getVoxelPenetrationsOfRaycast(direction, maxDistance, step = 0.1 // Adj
  * - We store hit data in structures that enable efficient access of the data.
  */
 class VisibilityRaycastManager {
-    constructor(bot, radiusOfInterest, numRaycastOrientations = 12000) {
+    constructor(bot, radiusOfInterest, numRaycastOrientations = 13572) {
         (0, asserts_1.assertMinimumRaycastDensity)(radiusOfInterest, numRaycastOrientations);
         this.bot = bot;
         this.radiusOfInterest = radiusOfInterest;

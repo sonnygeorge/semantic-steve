@@ -23,7 +23,7 @@ const config = new SemanticSteveConfig({
     process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "4"
   ),
   distantSurroundingsRadius: parseInt(
-    process.env.DISTANT_SURROUNDINGS_RADIUS || "12"
+    process.env.DISTANT_SURROUNDINGS_RADIUS || "30"
   ),
   username: process.env.MC_USERNAME || "SemanticSteve",
 } as SemanticSteveConfigOptions);

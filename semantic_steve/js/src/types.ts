@@ -74,3 +74,6 @@ export interface ItemEntityWithData {
   entity: PEntity;
   itemData: PItem;
 }
+
+export type AbsoluteWorldVoxelString = string; // e.g., "321,-42,523" for voxel at (321, -42, 523)
+export type RelativeVoxelOffsetString = string; // e.g., "1,0,0" for offset voxel at (1, 0, 0)

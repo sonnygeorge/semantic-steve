@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { DirectionName } from "../../env-state/surroundings";
+import { DirectionName } from "../../env-state/surroundings/index-old";
 import { MaybePromise, InvalidThingError } from "../../types";
 
 export class ItemType implements ThingType {

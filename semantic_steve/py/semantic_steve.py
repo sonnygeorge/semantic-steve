@@ -7,12 +7,15 @@ from semantic_steve.py.constants import (
     DEFAULT_PATH_TO_SCREENSHOT_DIR,
     SCREENSHORT_DIR_ENV_VAR_NAME,
     SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
+    HEALPIX_HASH_SAVE_FILE_PATH,
+    HEALPIX_HASH_SAVE_FILE_PATH_ENV_VAR_NAME,
 )
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
 from semantic_steve.py.schema import SemanticSteveDocs, SemanticSteveUsageError
 from semantic_steve.py.skills_docs import generate_skills_docs
 from semantic_steve.py.utils import ascertain_js_dependencies
+from semantic_steve.py.healpix_hash import generate_healpix_data
 
 
 class SemanticSteve:
@@ -20,18 +23,27 @@ class SemanticSteve:
         self,
         zmq_port: int = 5555,
         screenshot_dir: str | os.PathLike = DEFAULT_PATH_TO_SCREENSHOT_DIR,
+
         # Users should never use the following args (only devs):
+        _recompute_healpix_hash: bool = False,
+        _healpix_nside: int = 16,
+        _healpix_hash_save_file_path: str = HEALPIX_HASH_SAVE_FILE_PATH,
         _should_rebuild_typescript: bool = False,
         # Set this to false to run the JS process separately
         # (e.g., with your debugeer of choice)
         _should_run_js_process: bool = True,
     ):
         SemanticSteve.ascertain_js_dependencies()
+        if _recompute_healpix_hash:
+            generate_healpix_data(_healpix_hash_save_file_path, _healpix_nside)
         self.js_process_manager = SemanticSteveJsProcessManager(
             should_rebuild_typescript=_should_rebuild_typescript
         )
         self._should_run_js_process = _should_run_js_process
         os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
+        os.environ[HEALPIX_HASH_SAVE_FILE_PATH_ENV_VAR_NAME] = str(
+            _healpix_hash_save_file_path
+        )
         self.zmq_port = zmq_port
         self.socket: zmq.Socket | None = None
         self.context: zmq.Context | None = None

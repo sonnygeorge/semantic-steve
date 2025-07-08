@@ -6,7 +6,6 @@ import {
   generateUniformlyDistributed3DOrientations,
   serializeVec3,
 } from "../../utils/generic";
-import { getVoxelOfPosition } from "../../utils/misc";
 import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
 import { assertMinimumRaycastDensity } from "./asserts";
 
@@ -19,7 +18,7 @@ function getVoxelPenetrationsOfRaycast(
   const alreadyAdded: Set<string> = new Set();
   for (let distance = 0; distance <= maxDistance; distance += step) {
     const point = direction.scaled(distance);
-    const voxel = getVoxelOfPosition(point);
+    const voxel = point.floor();
     if (!alreadyAdded.has(serializeVec3(voxel))) {
       voxels.push(voxel);
       alreadyAdded.add(serializeVec3(voxel));

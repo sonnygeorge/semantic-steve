@@ -1,6 +1,6 @@
 import type { Bot } from "mineflayer";
 import type { Vec3 } from "vec3";
-import { DirectionName } from "../env-state/surroundings";
+import { DirectionName } from "../env-state/surroundings/index-old";
 import { MaybePromise } from "../types";
 
 export interface ThingType {

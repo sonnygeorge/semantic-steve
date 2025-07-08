@@ -1,12 +1,6 @@
-import assert from "assert";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { SurroundingsRadii, VicinityName, DirectionName } from "./common";
-import { Block as PBlock } from "prismarine-block";
-import { VisibilityRaycastManager } from "./visibility-raycast-manager";
-import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
-import { getVicinityMasks } from "./get-vicinity-masks";
-import { getVoxelOfPosition } from "../../utils/misc";
 import { SurroundingsDTO } from "./dto";
 import {
   ImmediateSurroundings,

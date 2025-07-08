@@ -2,7 +2,10 @@ import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
-import { VicinityName, DirectionName } from "../../env-state/surroundings";
+import {
+  VicinityName,
+  DirectionName,
+} from "../../env-state/surroundings/index-old";
 import { ApproachResults } from "./results";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { InvalidThingError, SkillResult } from "../../types";

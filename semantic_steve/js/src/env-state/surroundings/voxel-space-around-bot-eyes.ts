@@ -2,7 +2,6 @@ import assert from "assert";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { Symmetrical3DArray } from "../../utils/generic";
-import { getVoxelOfPosition } from "../../utils/misc";
 
 /**
  * Wrapper around a 3D array that represents a voxel space around the bot's eyes
@@ -67,7 +66,7 @@ export class VoxelSpaceAroundBotEyes<T> {
   }
 
   public offsetToIndices(offset: Vec3): [number, number, number] | null {
-    const voxelOfOffset = getVoxelOfPosition(offset);
+    const voxelOfOffset = offset.floor();
     const idxs: [number, number, number] = [
       voxelOfOffset.x + this.radiusOfInterest,
       voxelOfOffset.y + this.radiusOfInterest,
@@ -82,8 +81,8 @@ export class VoxelSpaceAroundBotEyes<T> {
 
   private eyesHaveMovedToNewVoxel(prevEyePos: Vec3, curEyePos: Vec3): boolean {
     assert(this.eyePosAtLastUpdate);
-    const prevVoxel = getVoxelOfPosition(prevEyePos);
-    const curVoxel = getVoxelOfPosition(curEyePos);
+    const prevVoxel = prevEyePos.floor();
+    const curVoxel = curEyePos.floor();
     const eyesAreInNewVoxel = !prevVoxel.equals(curVoxel);
     // if (eyesAreInNewVoxel) {
     //   console.log(
@@ -104,9 +103,9 @@ export class VoxelSpaceAroundBotEyes<T> {
   public setFromOffset(offset: Vec3, value: T): boolean {
     const indices = this.offsetToIndices(offset);
     if (!indices) {
-      console.log(
-        `Tried to set value at offset ${offset} but it is out of bounds`
-      );
+      // console.log(
+      //   `Tried to set value at offset ${offset} but it is out of bounds`
+      // );
       return false;
     }
     this.voxelSpace.set(indices[0], indices[1], indices[2], value);
@@ -123,40 +122,40 @@ export class VoxelSpaceAroundBotEyes<T> {
   }
 
   public getFromWorldPosition(worldPos: Vec3, eyePos: Vec3): T | null {
-    const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
+    const absVoxelOfWorldPos = worldPos.floor();
     // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
     if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
       const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
       console.log(msg);
       throw new Error(msg);
     }
-    const curEyeVoxel = getVoxelOfPosition(eyePos);
+    const curEyeVoxel = eyePos.floor();
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
     return this.getFromOffset(offset);
   }
 
   public setFromWorldPosition(worldPos: Vec3, eyePos: Vec3, value: T): boolean {
-    const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
+    const absVoxelOfWorldPos = worldPos.floor();
     // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
     if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
       const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
       console.log(msg);
       throw new Error(msg);
     }
-    const curEyeVoxel = getVoxelOfPosition(eyePos);
+    const curEyeVoxel = eyePos.floor();
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
     return this.setFromOffset(offset, value);
   }
 
   public unsetFromWorldPosition(worldPos: Vec3, eyePos: Vec3): boolean {
-    const absVoxelOfWorldPos = getVoxelOfPosition(worldPos);
+    const absVoxelOfWorldPos = worldPos.floor();
     // assert(this.eyePosAtLastUpdate && eyePos.equals(this.eyePosAtLastUpdate));
     if (!this.eyePosAtLastUpdate || !eyePos.equals(this.eyePosAtLastUpdate)) {
       const msg = `Eye position at last update (${this.eyePosAtLastUpdate}) does not match argument for 'eyePos'; (${eyePos})`;
       console.log(msg);
       throw new Error(msg);
     }
-    const curEyeVoxel = getVoxelOfPosition(eyePos);
+    const curEyeVoxel = eyePos.floor();
     const offset = absVoxelOfWorldPos.minus(curEyeVoxel);
     return this.unsetFromOffset(offset);
   }
@@ -174,8 +173,8 @@ export class VoxelSpaceAroundBotEyes<T> {
     if (!shouldShiftVoxelSpace) return;
 
     // Otherwise, perform the shift of values in voxel space
-    const prevEyeVoxel = getVoxelOfPosition(prevEyePos);
-    const curEyeVoxel = getVoxelOfPosition(curEyePos);
+    const prevEyeVoxel = prevEyePos.floor();
+    const curEyeVoxel = curEyePos.floor();
     const shiftOffset = prevEyeVoxel.minus(curEyeVoxel);
 
     const valsBeforeOverwrites = new Map<string, T>(); // Instead of creating/storing a 2nd full array

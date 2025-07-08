@@ -13,7 +13,7 @@ import { asyncSleep } from "../../utils/generic";
 import { CRAFTING_WAIT_MS, MAX_PLACEMENT_REACH } from "../../constants";
 import { PlaceBlockResults } from "../place-block/results";
 import { MineBlocksResults } from "../mine-blocks/results";
-import { getCurEyePos } from "../../utils/misc";
+import { getEyePos } from "../../utils/misc";
 
 // TODO: Resolve w/ a failure result if there is no space in the inventory for the crafted
 // items to be received in the inventory.
@@ -186,7 +186,7 @@ export class CraftItems extends Skill {
     assert(nearestImmediateSurroundingsTableCoords); // Should always be set by now
 
     const tableIsReachable = () => {
-      const eyePosition = getCurEyePos(this.bot);
+      const eyePosition = getEyePos(this.bot);
       nearestImmediateSurroundingsTableCoords =
         craftingTableBlockType.locateNearestInImmediateSurroundings();
       assert(nearestImmediateSurroundingsTableCoords);

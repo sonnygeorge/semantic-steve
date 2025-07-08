@@ -1,20 +1,12 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 
-export function getCurEyePos(bot: Bot): Vec3 {
-  return bot.entity.position.plus(new Vec3(0, bot.entity.height, 0));
-}
-
-/**
- * In Minecraft, the block (voxel) something is in conventionally defined by its
- * rounded-down down coordinates.
- */
-export function getVoxelOfPosition(position: Vec3): Vec3 {
-  return new Vec3(
-    Math.floor(position.x),
-    Math.floor(position.y),
-    Math.floor(position.z)
-  );
+export function getEyePos(bot: Bot, botPos?: Vec3): Vec3 {
+  if (botPos === undefined) {
+    botPos = bot.entity.position;
+  }
+  return botPos.plus(new Vec3(0, 1.68, 0));
+  // return botPos.plus(new Vec3(0, bot.entity.height, 0));
 }
 
 export function getCurrentDimensionYLimits(bot: Bot): {

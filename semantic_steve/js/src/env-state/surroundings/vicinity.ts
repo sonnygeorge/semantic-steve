@@ -6,7 +6,7 @@ import { Block as PBlock } from "prismarine-block";
 import { VisibilityRaycastManager } from "./visibility-raycast-manager";
 import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
 import { getVicinityMasks } from "./get-vicinity-masks";
-import { getCurEyePos, getVoxelOfPosition } from "../../utils/misc";
+import { getEyePos } from "../../utils/misc";
 import {
   DistantSurroundingsInADirectionDTO,
   ImmediateSurroundingsDTO,
@@ -144,7 +144,7 @@ export class VicinitiesManager {
     for (const offset of this.visibleBlocks.iterAllOffsets()) {
       if (this.raycastManager.visibilityMask.getFromOffset(offset)) {
         const block = this.bot.world.getBlock(
-          getVoxelOfPosition(offset).add(this.bot.entity.position)
+          offset.floor().add(this.bot.entity.position)
         );
         if (block) {
           this.visibleBlocks.setFromOffset(offset, block);
@@ -156,7 +156,7 @@ export class VicinitiesManager {
   }
 
   public beginObservation(): void {
-    const curEyePos = getCurEyePos(this.bot);
+    const curEyePos = getEyePos(this.bot);
     this.raycastManager.visibilityMask.setInitialEyePos(curEyePos);
     this.raycastManager.hitsOrganizedIntoVoxelSpace.setInitialEyePos(curEyePos);
     this.visibleBlocks.setInitialEyePos(curEyePos);
@@ -205,7 +205,7 @@ export class VicinitiesManager {
 
     if (oldBlockWasVisible && !newBlockIsVisible) {
       this.raycastManager.updateRaycasts(eyePos, {
-        forWorldVoxel: getVoxelOfPosition(oldBlock.position),
+        forWorldVoxel: oldBlock.position.floor(),
       });
     }
   }
@@ -223,7 +223,7 @@ export class VicinitiesManager {
     }
     this.botPosAsOfLastMoveHandling = curBotPosition.clone();
 
-    const curEyePos = getCurEyePos(this.bot);
+    const curEyePos = getEyePos(this.bot);
 
     // Re-evaluate all visibility raycasts
     this.raycastManager.updateRaycasts(curEyePos, "everywhere");
@@ -241,9 +241,7 @@ export class VicinitiesManager {
     for (const offset of this.raycastManager.visibilityMask.iterOffsetsWithSetValues()) {
       // Set the blocks that became visible
       if (!this.visibleBlocks.getFromOffset(offset)) {
-        const worldPos = getVoxelOfPosition(offset).add(
-          this.bot.entity.position
-        );
+        const worldPos = offset.floor().add(this.bot.entity.position);
         const block = this.bot.world.getBlock(worldPos);
         if (block) {
           this.visibleBlocks.setFromOffset(offset, block);

@@ -2,7 +2,7 @@ import assert from "assert";
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { DirectionName } from "../../env-state/surroundings";
+import { DirectionName } from "../../env-state/surroundings/index-old";
 
 export class BiomeType implements ThingType {
   bot: Bot;

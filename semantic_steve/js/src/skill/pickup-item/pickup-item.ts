@@ -4,7 +4,7 @@ import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { Approach } from "../approach/approach";
 import { isApproachResult } from "../approach/results";
-import { VicinityName } from "../../env-state/surroundings";
+import { VicinityName } from "../../env-state/surroundings/index-old";
 import { PickupItemResults } from "./results";
 import { ItemType } from "../../thing-type";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";

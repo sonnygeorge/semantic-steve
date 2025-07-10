@@ -1,10 +1,21 @@
+import * as fs from "fs";
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
-import { ThreeDimOrientation, OrientationString } from "./types";
+import {
+  ThreeDimOrientation,
+  OrientationString,
+  PrecomputedRaycastData,
+} from "./types";
 import { serializeVec3 } from "../../../utils/generic";
-import { RelativeVoxelOffsetString } from "../../../types";
+import {
+  AbsoluteWorldVoxelString,
+  RelativeVoxelOffsetString,
+} from "../../../types";
 import { Block as PBlock } from "prismarine-block";
 import { HEALPixSpatialHash } from "./healpix-hash";
+import { asyncSleep } from "../../../utils/generic";
+
+const RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS = 2000; // Yield control to the event loop every N raycasts
 
 function getOrientationsToSphereSurfaceVoxelOffsets(
   sphereRadius: number
@@ -44,12 +55,22 @@ function getOrientationsToSphereSurfaceVoxelOffsets(
 export class VisibilityRaycaster {
   private bot: Bot;
   private orientations: Map<OrientationString, ThreeDimOrientation>;
-  // TODO: We don't need the below
+  public isRaycasting: boolean = false;
+  // TODO: We don't need the below?
   private orientationsToSurfaceVoxelOffsets: Map<OrientationString, Vec3>;
   private sphereSpatialHash: HEALPixSpatialHash;
   private radius: number;
   private raycastStartRegion: number;
-  // TODO: voxelsToRays (don't raycast again if we know a block is )
+  // Raycast<->voxel penetrations data
+  private voxelsToCastsThatPenetrateThem: Map<
+    RelativeVoxelOffsetString, // Voxel offsets
+    Set<OrientationString> // Penetrated by what raycasts orientations
+  > = new Map();
+  private orientationsToPentratedVoxels: Map<
+    OrientationString, // Raycast orientation
+    Set<RelativeVoxelOffsetString> // Voxels penetrated by this raycast
+  > = new Map();
+  // Precomputed occlusion data loaded from file
   private voxelsToOcclusionRadii: Map<RelativeVoxelOffsetString, number> =
     new Map();
   private voxelsToOccludedRegions: Map<RelativeVoxelOffsetString, number[]> =
@@ -68,111 +89,151 @@ export class VisibilityRaycaster {
       `Got ${this.orientations.size} surface voxels for sphere radius ${this.radius}`
     );
 
+    const dataFPath = process.env
+      .SEMANTIC_STEVE_PRECOMPUTED_RAYCAST_DATA_FPATH as string;
+    if (!dataFPath) {
+      throw new Error(
+        "SEMANTIC_STEVE_PRECOMPUTED_RAYCAST_DATA_FPATH environment variable is not set."
+      );
+    }
+    const rawData = fs.readFileSync(dataFPath, "utf8");
+    const precomputedData: PrecomputedRaycastData = JSON.parse(rawData);
+
     this.sphereSpatialHash = new HEALPixSpatialHash(
+      precomputedData.healpixData,
       [...this.orientations.values()].map((orientation) => orientation.vecNorm)
     );
+
+    for (const [voxelKey, occlusionRadius] of Object.entries(
+      precomputedData.voxelsToOcclusionRadii
+    )) {
+      this.voxelsToOcclusionRadii.set(
+        voxelKey as RelativeVoxelOffsetString,
+        occlusionRadius as number
+      );
+    }
+    for (const [voxelKey, occludedRegions] of Object.entries(
+      precomputedData.voxelsToOccludedRegions
+    )) {
+      this.voxelsToOccludedRegions.set(
+        voxelKey as RelativeVoxelOffsetString,
+        occludedRegions as number[]
+      );
+    }
 
     this.raycastStartRegion = this.sphereSpatialHash.getRegionOfDirection(
       new ThreeDimOrientation({ theta: 0, phi: Math.PI - 0.01 }).vecNorm
     ); // Straight down from the bot's pov
 
-    this.calculateOcclusions();
+    this.calculateRaycastPenetrationData();
   }
 
-  private calculateOcclusions(): void {
-    // Iterate through all possible voxel positions within the sphere radius
-    console.log("Calculating occlusions...");
+  /**
+   * Calculates and stores which voxels are penetrated by each raycast orientation
+   * This method traces each ray direction and records all voxel offsets it passes through
+   * Creates both forward and reverse mappings for efficient lookups
+   */
+  private calculateRaycastPenetrationData(): void {
+    console.log("Calculating raycast penetration data...");
 
-    for (let xOffset = -this.radius; xOffset <= this.radius; xOffset++) {
-      for (let yOffset = -this.radius; yOffset <= this.radius; yOffset++) {
-        for (let zOffset = -this.radius; zOffset <= this.radius; zOffset++) {
-          // Skip origin voxel (bot's position)
-          if (xOffset === 0 && yOffset === 0 && zOffset === 0) continue;
+    this.voxelsToCastsThatPenetrateThem = new Map();
+    this.orientationsToPentratedVoxels = new Map();
 
-          const voxelOffset = new Vec3(xOffset, yOffset, zOffset);
+    const stepSize = 0.1; // Small increment for ray tracing
+    const maxDistance = this.radius + 0.5; // Slightly beyond sphere radius to ensure coverage
 
-          const distance = voxelOffset.distanceTo(new Vec3(0, 0, 0));
+    let processedRays = 0;
+    const totalRays = this.orientations.size;
 
-          // Only consider voxels within reasonable range (up to sphere radius)
-          if (distance > this.radius) continue;
+    for (const [orientationKey, orientation] of this.orientations.entries()) {
+      const rayDirection = orientation.vecNorm;
+      const penetratedVoxels = new Set<RelativeVoxelOffsetString>();
 
-          const voxelOffsetKey = serializeVec3(
-            voxelOffset
-          ) as RelativeVoxelOffsetString;
+      // Initialize the reverse mapping for this orientation
+      this.orientationsToPentratedVoxels.set(orientationKey, new Set());
 
-          // Approximate the voxel as a sphere with radius 0.495 at the given distance
-          const angularOcclusionRadius = Math.atan(0.495 / distance);
+      // Trace the ray from origin outward
+      for (
+        let distance = stepSize;
+        distance <= maxDistance;
+        distance += stepSize
+      ) {
+        // Calculate current position along the ray
+        const currentPos = new Vec3(
+          rayDirection.x * distance,
+          rayDirection.y * distance,
+          rayDirection.z * distance
+        );
 
-          this.voxelsToOcclusionRadii.set(
-            voxelOffsetKey,
-            angularOcclusionRadius
-          );
+        // Get the voxel offset this position is in
+        const voxelOffset = new Vec3(
+          Math.floor(currentPos.x),
+          Math.floor(currentPos.y),
+          Math.floor(currentPos.z)
+        );
 
-          // Get the orientation that points toward this voxel's center
-          const centerOrientation = new ThreeDimOrientation({
-            towards: voxelOffset,
-          });
+        // Skip the origin voxel (0,0,0)
+        if (voxelOffset.x === 0 && voxelOffset.y === 0 && voxelOffset.z === 0) {
+          continue;
+        }
 
-          // Find all regions that would be wholly occluded by this voxel
-          const occludedRegions: number[] = [];
+        // Check if this voxel is within our sphere of interest
+        const voxelDistance = Math.sqrt(
+          voxelOffset.x * voxelOffset.x +
+            voxelOffset.y * voxelOffset.y +
+            voxelOffset.z * voxelOffset.z
+        );
 
-          // Check each region to see if it's wholly within the occlusion area
-          for (const [
-            regionKey,
-            orientationsInRegion,
-          ] of this.sphereSpatialHash.iterRegions()) {
-            let regionIsWhollyOccluded = true;
+        if (voxelDistance > this.radius + 0.5) {
+          break; // Beyond our sphere of interest
+        }
 
-            // A region is wholly occluded if ALL orientations in it are within the angular radius
-            for (const vecNorm of orientationsInRegion) {
-              const orientation = new ThreeDimOrientation(vecNorm);
+        const voxelKey = serializeVec3(
+          voxelOffset
+        ) as RelativeVoxelOffsetString;
 
-              // Calculate angular distance between this orientation and the voxel center
-              const angularDistance =
-                centerOrientation.angularDistanceTo(orientation);
+        // Only process each voxel once per ray
+        if (!penetratedVoxels.has(voxelKey)) {
+          penetratedVoxels.add(voxelKey);
 
-              // If any orientation in the region is outside the occlusion radius,
-              // the region is not wholly occluded
-              if (angularDistance > angularOcclusionRadius) {
-                regionIsWhollyOccluded = false;
-                break;
-              }
-            }
-
-            if (regionIsWhollyOccluded) {
-              occludedRegions.push(regionKey);
-            }
+          // Add this ray to the set of rays that penetrate this voxel
+          if (!this.voxelsToCastsThatPenetrateThem.has(voxelKey)) {
+            this.voxelsToCastsThatPenetrateThem.set(voxelKey, new Set());
           }
+          this.voxelsToCastsThatPenetrateThem
+            .get(voxelKey)!
+            .add(orientationKey);
 
-          this.voxelsToOccludedRegions.set(voxelOffsetKey, occludedRegions);
+          // Add this voxel to the set of voxels penetrated by this ray
+          this.orientationsToPentratedVoxels.get(orientationKey)!.add(voxelKey);
         }
       }
+
+      processedRays++;
+      if (processedRays % 1000 === 0) {
+        console.log(`Processed ${processedRays}/${totalRays} rays`);
+      }
     }
-    console.log("Done calculating occlusions!");
+
+    console.log(`Raycast penetration data calculated:`);
     console.log(
-      `voxelsToOccludedRegions.size: ${this.voxelsToOccludedRegions.size}`
+      `- ${this.voxelsToCastsThatPenetrateThem.size} voxels have penetrating rays`
+    );
+    console.log(
+      `- ${this.orientationsToPentratedVoxels.size} orientations mapped to penetrated voxels`
     );
   }
 
   // TODO: Why am I doing redundant raycasts?
-  // Once I pepper a block, don't revisit it
+  // ...Once I pepper a block, don't revisit it!
   // TODO: Heuristic to do hierarchically increasingly granular when shooting at likely sky
   /**
    * Performs optimized raycasting with occlusion culling from bot's position
    * Starting from straight down, expanding outward
    */
-  public *doRaycasting(fromVoxel: Vec3): Generator<[Vec3, PBlock | null]> {
-    const temp = new Set<string>();
-    let nRegionsSkipped = 0;
-    let nRegionsProcessed = 0;
-    console.log(
-      `${
-        this.sphereSpatialHash.data.npix *
-        this.sphereSpatialHash.avgNumDirectionsPerRegion
-      } orientations to raycast`
-    );
-
-    console.log(fromVoxel);
+  public async *doRaycasting(
+    fromVoxel: Vec3
+  ): AsyncGenerator<[Vec3, PBlock | null]> {
     if (
       !Number.isInteger(fromVoxel.x) ||
       !Number.isInteger(fromVoxel.y) ||
@@ -180,10 +241,23 @@ export class VisibilityRaycaster {
     ) {
       throw new Error("Only raycasting from a voxel (int coords) is supported");
     }
+    this.isRaycasting = true;
+    let nRaycastsPerformed = 0;
+    async function doAfterRaycast() {
+      nRaycastsPerformed++;
+      if (nRaycastsPerformed % RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS === 0) {
+        await asyncSleep(0);
+      }
+    }
+    // let nRegionsSkipped = 0;
+    // let nRegionsProcessed = 0;
     const fromVoxelCenter = fromVoxel.offset(0.5, 0.5, 0.5);
     const queue: number[] = [this.raycastStartRegion];
     const seenRegions = new Set<number>();
-    const skipRaycastRegions = new Set<number>();
+
+    // const skipRaycastRegions = new Set<number>();
+
+    const castOrientationsToSkip = new Set<OrientationString>();
     const maxRaycastDistance = this.radius;
 
     while (queue.length > 0) {
@@ -198,71 +272,113 @@ export class VisibilityRaycaster {
       );
       queue.push(...unprocessedNeighbors);
 
-      // Perform raycasting for this region unless it's been marked as skippable
-      if (skipRaycastRegions.has(currentRegion)) {
-        nRegionsSkipped++;
-        continue;
-      }
-      nRegionsProcessed++;
+      // // Perform raycasting for this region unless it's been marked as skippable
+      // if (skipRaycastRegions.has(currentRegion)) {
+      //   nRegionsSkipped++;
+      //   continue;
+      // }
+      // nRegionsProcessed++;
 
       const regionRayOrientations =
         this.sphereSpatialHash.getRegion(currentRegion);
       for (const vecNorm of regionRayOrientations) {
-        if (temp.has(serializeVec3(vecNorm))) {
-          continue; // Skip if we've already processed this orientation
+        // Perform raycast unless orientation has been marked as skippable
+        const orientationKey = new ThreeDimOrientation(vecNorm).serialize();
+        if (castOrientationsToSkip.has(orientationKey)) {
+          continue;
         }
-        temp.add(serializeVec3(vecNorm));
 
-        const orientation = new ThreeDimOrientation(vecNorm);
         const hit: PBlock | null = this.bot.world.raycast(
           fromVoxelCenter,
-          orientation.vecNorm,
+          vecNorm,
           maxRaycastDistance
         );
-        yield [orientation.vecNorm, hit];
+        yield [vecNorm, hit];
+        await doAfterRaycast();
 
         if (hit) {
           const hitBlockAtOffsetKey = serializeVec3(
             hit.position.minus(fromVoxel)
           ) as RelativeVoxelOffsetString;
-          const regionsOccludedByHitBlock =
-            this.voxelsToOccludedRegions.get(hitBlockAtOffsetKey);
-          // If the above returned undefined, it's likely because the raycast hit something
-          // just beyond the radius--which I assume to result from an allowed maxDistance
-          // tolerance in Mineflayer's raycast implementation.
-          if (regionsOccludedByHitBlock !== undefined) {
-            const projectedRaycastSavings =
-              regionsOccludedByHitBlock.filter(
-                (region) =>
-                  !skipRaycastRegions.has(region) && !seenRegions.has(region)
-              ).length * this.sphereSpatialHash.avgNumDirectionsPerRegion;
 
-            if (projectedRaycastSavings > 4) {
-              // Mark occluded regions as completed to skip their full raycast
-              for (const occludedRegion of regionsOccludedByHitBlock) {
-                skipRaycastRegions.add(occludedRegion);
-              }
+          const castOrientationsThatPenetrateHitBlock =
+            this.voxelsToCastsThatPenetrateThem.get(hitBlockAtOffsetKey);
+          // console.log(
+          //   `Hit block at offset ${hitBlockAtOffsetKey} with ${castOrientationsThatPenetrateHitBlock?.size} penetrating orientations`
+          // );
+          if (
+            castOrientationsThatPenetrateHitBlock &&
+            castOrientationsThatPenetrateHitBlock.size - 1 > 4
+          ) {
+            // Add the orientations that penetrate the hit block to the skip list
+            for (const orientationKey of castOrientationsThatPenetrateHitBlock) {
+              castOrientationsToSkip.add(orientationKey);
+            }
 
-              // Sparse raycast around the hit block's angular vicinity
-              const occlusionRadius =
-                this.voxelsToOcclusionRadii.get(hitBlockAtOffsetKey)!;
-              for (const offsetOrientation of orientation.getCardinalOffsets(
-                occlusionRadius
-              )) {
-                const hitAtOffset: PBlock | null = this.bot.world.raycast(
-                  fromVoxelCenter,
-                  offsetOrientation.vecNorm,
-                  maxRaycastDistance
-                );
-                yield [offsetOrientation.vecNorm, hitAtOffset];
-              }
+            // Sparse raycast around the hit block's angular vicinity
+            const occlusionRadius =
+              this.voxelsToOcclusionRadii.get(hitBlockAtOffsetKey)!;
+            const orientationTowardsBlock = new ThreeDimOrientation({
+              towards: hit.position.minus(fromVoxel),
+            });
+            for (const offsetOrientation of orientationTowardsBlock.getCardinalOffsets(
+              occlusionRadius
+            )) {
+              const hitAtOffset: PBlock | null = this.bot.world.raycast(
+                fromVoxelCenter,
+                offsetOrientation.vecNorm,
+                maxRaycastDistance
+              );
+              yield [offsetOrientation.vecNorm, hitAtOffset];
+              await doAfterRaycast();
             }
           }
         }
+
+        // if (hit) {
+        //   const hitBlockAtOffsetKey = serializeVec3(
+        //     hit.position.minus(fromVoxel)
+        //   ) as RelativeVoxelOffsetString;
+        //   const regionsOccludedByHitBlock =
+        //     this.voxelsToOccludedRegions.get(hitBlockAtOffsetKey);
+        //   // If the above returned undefined, it's likely because the raycast hit something
+        //   // just beyond the radius--which I assume to result from an allowed maxDistance
+        //   // tolerance in Mineflayer's raycast implementation.
+        //   if (regionsOccludedByHitBlock !== undefined) {
+        //     const projectedRaycastSavings =
+        //       regionsOccludedByHitBlock.filter(
+        //         (region) =>
+        //           !skipRaycastRegions.has(region) && !seenRegions.has(region)
+        //       ).length * this.sphereSpatialHash.avgNumDirectionsPerRegion;
+
+        //     if (projectedRaycastSavings > 4) {
+        //       // Mark occluded regions as completed to skip their full raycast
+        //       for (const occludedRegion of regionsOccludedByHitBlock) {
+        //         skipRaycastRegions.add(occludedRegion);
+        //       }
+
+        //       // Sparse raycast around the hit block's angular vicinity
+        //       const occlusionRadius =
+        //         this.voxelsToOcclusionRadii.get(hitBlockAtOffsetKey)!;
+        //       for (const offsetOrientation of orientation.getCardinalOffsets(
+        //         occlusionRadius
+        //       )) {
+        //         const hitAtOffset: PBlock | null = this.bot.world.raycast(
+        //           fromVoxelCenter,
+        //           offsetOrientation.vecNorm,
+        //           maxRaycastDistance
+        //         );
+        //         yield [offsetOrientation.vecNorm, hitAtOffset];
+        //         await doAfterRaycast();
+        //       }
+        //     }
+        //   }
+        // }
       }
     }
-    console.log(`Skipped ${nRegionsSkipped} regions`);
-    console.log(`Processed ${nRegionsProcessed} regions`);
-    console.log(this.sphereSpatialHash.data.npix);
+    // console.log(`Skipped ${nRegionsSkipped} regions`);
+    // console.log(`Processed ${nRegionsProcessed} regions`);
+    console.log(`Performed ${nRaycastsPerformed} raycasts`);
+    this.isRaycasting = false;
   }
 }

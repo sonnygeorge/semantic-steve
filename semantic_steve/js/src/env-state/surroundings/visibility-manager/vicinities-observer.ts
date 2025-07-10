@@ -28,14 +28,15 @@ export class VicinitiesObserver {
   }
 
   public beginObservation(): void {
-    console.log("V-OBSERVER SETTING UP LISTENERS");
+    console.log("V-OBSERVER BEGINNING OBSERVATION/SETTING UP LISTENERS");
     this.curEyeVoxel = this.bot.entity.position.floor();
     // Setup listeners
     this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
     this.bot.on("move", this.handleBotMove.bind(this));
   }
 
-  public handleBotMove(newBotPos: Vec3): void {
+  public async handleBotMove(newBotPos: Vec3): Promise<void> {
+    if (this.visibilityRaycaster.isRaycasting) return; // Throttle if already raycasting
     const newEyeVoxel = getEyePos(this.bot, newBotPos).floor();
     if (this.curEyeVoxel && newEyeVoxel.equals(this.curEyeVoxel)) return;
     this.curEyeVoxel = newEyeVoxel;
@@ -52,7 +53,7 @@ export class VicinitiesObserver {
         }
       ]
     > = [];
-    for (const [vecNorm, pBlock] of this.visibilityRaycaster.doRaycasting(
+    for await (const [vecNorm, pBlock] of this.visibilityRaycaster.doRaycasting(
       this.curEyeVoxel
     )) {
       const orientation = new ThreeDimOrientation(vecNorm);
@@ -82,8 +83,7 @@ export class VicinitiesObserver {
     }
 
     const end = performance.now();
-    console.log(`${raycasts.length} orientations raycasted`);
-    console.log(`Num of hits: ${raycasts.filter((r) => r[0].hit).length}`);
+    // console.log(`Num of hits: ${raycasts.filter((r) => r[0].hit).length}`);
     console.log(`Raycasting took ${(end - start).toFixed(4)} milliseconds`);
 
     // Save to file

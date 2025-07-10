@@ -1,39 +1,16 @@
-import * as fs from "fs";
 import { Vec3 } from "vec3";
-
-interface CubemapPixelData {
-  face: number;
-  u: number;
-  v: number;
-  center: [number, number, number];
-}
-
-interface HEALPixData {
-  nside: number;
-  npix: number;
-  cubemap: { [pixel: string]: CubemapPixelData };
-  adjacency: { [pixel: string]: number[] };
-  faceGrids: { [key: string]: number }[];
-  gridSize: number;
-}
+import { HEALPixSpatialHashData } from "./types";
 
 export class HEALPixSpatialHash {
-  public data: HEALPixData;
+  public data: HEALPixSpatialHashData;
   private regionsToDirections: Map<number, Vec3[]>;
   public avgNumDirectionsPerRegion: number;
 
-  constructor(vectors: Vec3[] | IterableIterator<Vec3>) {
-    // Load HEALPix data
-    const dataFPath = process.env
-      .SEMANTIC_STEVE_HEALPIX_HASH_SAVE_FILE_PATH as string;
-    if (!dataFPath) {
-      throw new Error(
-        "SEMANTIC_STEVE_HEALPIX_HASH_SAVE_FILE_PATH environment variable is not set"
-      );
-    }
-    const rawData = fs.readFileSync(dataFPath, "utf8");
-    this.data = JSON.parse(rawData);
-
+  constructor(
+    data: HEALPixSpatialHashData,
+    vectors: Vec3[] | IterableIterator<Vec3>
+  ) {
+    this.data = data;
     // Initialize region map
     this.regionsToDirections = new Map();
 

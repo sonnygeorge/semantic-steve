@@ -3,28 +3,6 @@ import { Vec3 } from "vec3";
 export type OrientationString = string; // e.g., "0.785398,1.570796" for theta=π/4, phi=π/2
 export type SphereSurfaceHashRegionString = string; // e.g., "0,0" for theta=0, phi=0
 
-export interface CubemapPixelData {
-  face: number;
-  u: number;
-  v: number;
-  center: [number, number, number];
-}
-
-export interface HEALPixSpatialHashData {
-  nside: number;
-  npix: number;
-  cubemap: { [pixel: string]: CubemapPixelData };
-  adjacency: { [pixel: string]: number[] };
-  faceGrids: { [key: string]: number }[];
-  gridSize: number;
-}
-
-export interface PrecomputedRaycastData {
-  healpixData: HEALPixSpatialHashData;
-  voxelsToOcclusionRadii: Record<string, number>;
-  voxelsToOccludedRegions: Record<string, number[]>;
-}
-
 export interface RaycastHit {
   block: Vec3;
   distance: number;
@@ -298,7 +276,7 @@ export class ThreeDimOrientation {
    */
   public serialize(): OrientationString {
     const { theta, phi } = this.sphericalAngles;
-    return `${theta},${phi}`;
+    return `${theta.toFixed(6)},${phi.toFixed(6)}`;
   }
 
   /**

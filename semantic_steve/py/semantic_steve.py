@@ -7,17 +7,12 @@ from semantic_steve.py.constants import (
     DEFAULT_PATH_TO_SCREENSHOT_DIR,
     SCREENSHORT_DIR_ENV_VAR_NAME,
     SEMANTIC_STEVE_USER_ROLE_AS_VERB_PHRASE,
-    DEFAULT_PRECOMPUTED_RAYCAST_DATA_FPATH,
-    PRECOMPUTED_RAYCAST_DATA_FPATH_ENV_VAR_NAME,
-    DEFAULT_DISTANT_SURROUNDINGS_RADIUS,
-    DISTANT_SURROUNDINGS_RADIUS_ENV_VAR_NAME,
 )
 from semantic_steve.py.js_messages import DataFromMinecraft, SkillInvocation
 from semantic_steve.py.js_process import SemanticSteveJsProcessManager
 from semantic_steve.py.schema import SemanticSteveDocs, SemanticSteveUsageError
 from semantic_steve.py.skills_docs import generate_skills_docs
 from semantic_steve.py.utils import ascertain_js_dependencies
-from semantic_steve.py.precompute_raycast_data import precompute_raycast_data
 
 
 class SemanticSteve:
@@ -27,29 +22,18 @@ class SemanticSteve:
         screenshot_dir: str | os.PathLike = DEFAULT_PATH_TO_SCREENSHOT_DIR,
 
         # Users should never use the following args (only devs):
-        _recompute_healpix_hash: bool = False,
-        _healpix_nside: int = 16,
-        _distant_surroundings_radius: int = DEFAULT_DISTANT_SURROUNDINGS_RADIUS,
-        _precomputed_raycast_data_file_path: str = DEFAULT_PRECOMPUTED_RAYCAST_DATA_FPATH,
         _should_rebuild_typescript: bool = False,
         # Set this to false to run the JS process separately
         # (e.g., with your debugeer of choice)
         _should_run_js_process: bool = True,
     ):
         SemanticSteve.ascertain_js_dependencies()
-        if _recompute_healpix_hash:
-            precompute_raycast_data(_precomputed_raycast_data_file_path, _healpix_nside, sphere_radius=_distant_surroundings_radius)
+       
         self.js_process_manager = SemanticSteveJsProcessManager(
             should_rebuild_typescript=_should_rebuild_typescript
         )
         self._should_run_js_process = _should_run_js_process
         os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
-        os.environ[PRECOMPUTED_RAYCAST_DATA_FPATH_ENV_VAR_NAME] = str(
-            _precomputed_raycast_data_file_path
-        )
-        os.environ[DISTANT_SURROUNDINGS_RADIUS_ENV_VAR_NAME] = str(
-            _distant_surroundings_radius
-        )
         os.environ
         self.zmq_port = zmq_port
         self.socket: zmq.Socket | None = None

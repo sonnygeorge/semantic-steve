@@ -2,7 +2,7 @@ import assert from "assert";
 import * as fs from "fs";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { SurroundingsRadii, VicinityName, DirectionName } from "../common";
+import { SurroundingsRadii, VicinityName } from "../common";
 import { Block as PBlock } from "prismarine-block";
 import { getVicinitiesToOffsets } from "./vicinity";
 import { getEyePos } from "../../../utils/misc";
@@ -17,7 +17,6 @@ export class VicinitiesObserver {
   public radii: SurroundingsRadii;
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
-    console.log("INITIALIZING V-OBSERVER");
     this.bot = bot;
     this.radii = radii;
     this.visibilityRaycaster = new VisibilityRaycaster(
@@ -28,7 +27,6 @@ export class VicinitiesObserver {
   }
 
   public beginObservation(): void {
-    console.log("V-OBSERVER BEGINNING OBSERVATION/SETTING UP LISTENERS");
     this.curEyeVoxel = this.bot.entity.position.floor();
     // Setup listeners
     this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
@@ -41,7 +39,6 @@ export class VicinitiesObserver {
     if (this.curEyeVoxel && newEyeVoxel.equals(this.curEyeVoxel)) return;
     this.curEyeVoxel = newEyeVoxel;
 
-    console.log("BOT MOVED TO NEW VOXEL, PERFORMING RAYCASTING");
     const start = performance.now();
 
     const raycasts: Array<
@@ -63,9 +60,6 @@ export class VicinitiesObserver {
       let offset = null;
       if (pBlock) {
         offset = pBlock.position.minus(newEyeVoxel);
-        if (offset.y < -8) {
-          console.log("here");
-        }
       }
       raycasts.push([
         {
@@ -82,9 +76,11 @@ export class VicinitiesObserver {
       ]);
     }
 
-    const end = performance.now();
-    // console.log(`Num of hits: ${raycasts.filter((r) => r[0].hit).length}`);
-    console.log(`Raycasting took ${(end - start).toFixed(4)} milliseconds`);
+    console.log(
+      `${(performance.now() - start).toFixed(
+        4
+      )} ms passed while doing raycasting cycle`
+    );
 
     // Save to file
     fs.writeFileSync("raycasts.json", JSON.stringify(raycasts));

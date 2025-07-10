@@ -9,8 +9,7 @@
       "runtimeArgs": ["-r", "ts-node/register"],
       "env": {
         "TS_NODE_PROJECT": "${workspaceFolder}/semantic_steve/js/tsconfig.json",
-        "SEMANTIC_STEVE_SCREENSHOT_DIR": "${workspaceFolder}/semantic_steve/screenshots",
-        "SEMANTIC_STEVE_PRECOMPUTED_RAYCAST_DATA_FPATH": "${workspaceFolder}/semantic_steve/precomputed_raycast_data.json"
+        "SEMANTIC_STEVE_SCREENSHOT_DIR": "${workspaceFolder}/semantic_steve/screenshots"
       },
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
       "console": "integratedTerminal",

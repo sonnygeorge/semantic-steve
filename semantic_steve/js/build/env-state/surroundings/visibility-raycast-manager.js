@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VisibilityRaycastManager = void 0;
 const assert_1 = __importDefault(require("assert"));
 const generic_1 = require("../../utils/generic");
-const misc_1 = require("../../utils/misc");
 const voxel_space_around_bot_eyes_1 = require("./voxel-space-around-bot-eyes");
 const asserts_1 = require("./asserts");
 function getVoxelPenetrationsOfRaycast(direction, maxDistance, step = 0.1 // Adjust based on voxel size for accuracy vs performance
@@ -15,7 +14,7 @@ function getVoxelPenetrationsOfRaycast(direction, maxDistance, step = 0.1 // Adj
     const alreadyAdded = new Set();
     for (let distance = 0; distance <= maxDistance; distance += step) {
         const point = direction.scaled(distance);
-        const voxel = (0, misc_1.getVoxelOfPosition)(point);
+        const voxel = point.floor();
         if (!alreadyAdded.has((0, generic_1.serializeVec3)(voxel))) {
             voxels.push(voxel);
             alreadyAdded.add((0, generic_1.serializeVec3)(voxel));

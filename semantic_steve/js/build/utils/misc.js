@@ -1,19 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurEyePos = getCurEyePos;
-exports.getVoxelOfPosition = getVoxelOfPosition;
+exports.getEyePos = getEyePos;
 exports.getCurrentDimensionYLimits = getCurrentDimensionYLimits;
 exports.getAllCoordsWithinRadiusToPos = getAllCoordsWithinRadiusToPos;
 const vec3_1 = require("vec3");
-function getCurEyePos(bot) {
-    return bot.entity.position.plus(new vec3_1.Vec3(0, bot.entity.height, 0));
-}
-/**
- * In Minecraft, the block (voxel) something is in conventionally defined by its
- * rounded-down down coordinates.
- */
-function getVoxelOfPosition(position) {
-    return new vec3_1.Vec3(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z));
+function getEyePos(bot, botPos) {
+    if (botPos === undefined) {
+        botPos = bot.entity.position;
+    }
+    return botPos.plus(new vec3_1.Vec3(0, 1.68, 0));
+    // return botPos.plus(new Vec3(0, bot.entity.height, 0));
 }
 function getCurrentDimensionYLimits(bot) {
     if (bot.version < "1.18")

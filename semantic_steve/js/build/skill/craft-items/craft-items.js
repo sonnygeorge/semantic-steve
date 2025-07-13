@@ -139,7 +139,7 @@ class CraftItems extends skill_1.Skill {
             }
             (0, assert_1.default)(nearestImmediateSurroundingsTableCoords); // Should always be set by now
             const tableIsReachable = () => {
-                const eyePosition = (0, misc_1.getCurEyePos)(this.bot);
+                const eyePosition = (0, misc_1.getEyePos)(this.bot);
                 nearestImmediateSurroundingsTableCoords =
                     craftingTableBlockType.locateNearestInImmediateSurroundings();
                 (0, assert_1.default)(nearestImmediateSurroundingsTableCoords);

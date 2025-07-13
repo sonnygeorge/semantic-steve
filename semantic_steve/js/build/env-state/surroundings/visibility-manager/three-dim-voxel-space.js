@@ -3,14 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VoxelSpaceAroundBotEyes = void 0;
+exports.ThreeDimVoxelSpace = void 0;
 const assert_1 = __importDefault(require("assert"));
 const vec3_1 = require("vec3");
-const generic_1 = require("../../utils/generic");
+const generic_1 = require("../../../utils/generic");
 /**
  * Wrapper around a 3D array that represents a voxel space around the bot's eyes
  */
-class VoxelSpaceAroundBotEyes {
+class ThreeDimVoxelSpace {
     constructor(bot, radiusOfInterest, defaultValue) {
         this.bot = bot;
         this.radiusOfInterest = radiusOfInterest;
@@ -197,4 +197,4 @@ class VoxelSpaceAroundBotEyes {
         return shiftOffset; // Return the shift offset for further use if needed
     }
 }
-exports.VoxelSpaceAroundBotEyes = VoxelSpaceAroundBotEyes;
+exports.ThreeDimVoxelSpace = ThreeDimVoxelSpace;

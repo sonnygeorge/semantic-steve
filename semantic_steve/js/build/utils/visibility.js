@@ -66,7 +66,7 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
     if (!isExposed)
         return false;
     // Try raycasting to all vertices of the block's shapes
-    const eyePosition = (0, misc_1.getCurEyePos)(bot);
+    const eyePosition = (0, misc_1.getEyePos)(bot);
     for (const shape of block.shapes) {
         const bb = mineflayer_util_plugin_1.AABB.fromShape(shape, blockCoords); // TODO: Remove dependency on AABB
         const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
@@ -95,7 +95,7 @@ function canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints = 24) {
     const [c1, c2, c3, c4] = face.corners;
     const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));
     const heightPoints = widthPoints; // Should always be a square
-    const eyePosition = (0, misc_1.getCurEyePos)(bot);
+    const eyePosition = (0, misc_1.getEyePos)(bot);
     // Relative padding that adapts to the grid size prevents points from being flush
     const padding = 1 / (widthPoints * 2);
     // Generate points uniformly distributed on the face with padding

@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Approach = void 0;
 const assert_1 = __importDefault(require("assert"));
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
-const surroundings_1 = require("../../env-state/surroundings");
+const index_old_1 = require("../../env-state/surroundings/index-old");
 const results_1 = require("./results");
 const skill_1 = require("../skill");
 const types_1 = require("../../types");
@@ -47,7 +47,7 @@ class Approach extends skill_1.Skill {
             }
             // Otherwise, check to see if the approach was successful & handle
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetThingCoords);
-            if (vicinityOfOriginalTargetCoords == surroundings_1.VicinityName.IMMEDIATE_SURROUNDINGS) {
+            if (vicinityOfOriginalTargetCoords == index_old_1.VicinityName.IMMEDIATE_SURROUNDINGS) {
                 if (this.thing instanceof thing_type_1.ItemType) {
                     (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
                     // Wait for a bit to make sure the item is picked up
@@ -90,7 +90,7 @@ class Approach extends skill_1.Skill {
                 this.thing = thing;
             }
             (0, assert_1.default)(typeof this.thing === "object"); // Obviously true (above), but TS compiler doesn't know this
-            if (!Object.values(surroundings_1.DirectionName).includes(direction)) {
+            if (!Object.values(index_old_1.DirectionName).includes(direction)) {
                 const result = new results_1.ApproachResults.InvalidDirection(direction);
                 this.resolve(result);
                 return;

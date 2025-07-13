@@ -22,13 +22,13 @@ const generic_1 = require("./utils/generic");
 console.log("Starting SemanticSteve javascript process...");
 // Create a config by loading environment variables or using defaults.
 const config = new types_1.SemanticSteveConfig({
-    botHost: process.env.BOT_HOST || "localhost",
-    botPort: parseInt(process.env.BOT_PORT || "25565"),
-    mfViewerPort: parseInt(process.env.MF_VIEWER_PORT || "3000"),
-    zmqPort: parseInt(process.env.ZMQ_PORT || "5555"),
-    immediateSurroundingsRadius: parseInt(process.env.IMMEDIATE_SURROUNDINGS_RADIUS || "4"),
-    distantSurroundingsRadius: parseInt(process.env.DISTANT_SURROUNDINGS_RADIUS || "30"),
-    username: process.env.MC_USERNAME || "SemanticSteve",
+    botHost: process.env.SEMANTIC_STEVE_BOT_HOST || "localhost",
+    botPort: parseInt(process.env.SEMANTIC_STEVE_BOT_PORT || "25565"),
+    mfViewerPort: parseInt(process.env.SEMANTIC_STEVE_MF_VIEWER_PORT || "3000"),
+    zmqPort: parseInt(process.env.SEMANTIC_STEVE_ZMQ_PORT || "5555"),
+    immediateSurroundingsRadius: parseInt(process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4"),
+    distantSurroundingsRadius: parseInt(process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "25"),
+    username: process.env.SEMANTIC_STEVE_MC_USERNAME || "SemanticSteve",
 });
 // Create a Mineflayer bot instance
 const bot = (0, mineflayer_1.createBot)({

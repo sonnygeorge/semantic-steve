@@ -1,19 +1,19 @@
 import { Vec3 } from "vec3";
 
+// BlockFace as used in prismarine-world
+export const BlockFace = {
+  UNKNOWN: -999,
+  BOTTOM: 0,
+  TOP: 1,
+  NORTH: 2,
+  SOUTH: 3,
+  WEST: 4,
+  EAST: 5,
+};
+
 export type OrientationString = string; // e.g., "0.785398,1.570796" for theta=π/4, phi=π/2
 export type SphereSurfaceHashRegionString = string; // e.g., "0,0" for theta=0, phi=0
-
-export interface RaycastHit {
-  block: Vec3;
-  distance: number;
-}
-
-export interface SphereSurfaceHashConfig {
-  thetaStepSize: number;
-  phiStepSize: number;
-  thetaRange: [number, number];
-  phiRange: [number, number];
-}
+export type VoxelFaceString = string; // Format: "${serializeVec3(voxelOffset)},${BlockFace}"
 
 /**
  * Represents spherical coordinates using Y-up coordinate system (Minecraft convention).

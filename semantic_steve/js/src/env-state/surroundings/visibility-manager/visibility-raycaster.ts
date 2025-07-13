@@ -1,69 +1,46 @@
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
-import { ThreeDimOrientation, OrientationString } from "./types";
+import {
+  ThreeDimOrientation,
+  OrientationString,
+  VoxelFaceString,
+  BlockFace,
+} from "./types";
 import { serializeVec3 } from "../../../utils/generic";
-import { RelativeVoxelOffsetString } from "../../../types";
 import { Block as PBlock } from "prismarine-block";
 import { asyncSleep } from "../../../utils/generic";
+import { iterators } from "prismarine-world";
 
 const RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS = 2000;
 
-function getOrientations(
-  sphereRadius: number
-): Map<OrientationString, ThreeDimOrientation> {
-  if (!Number.isInteger(sphereRadius) || sphereRadius <= 0) {
-    throw new Error("sphereRadius must be a positive integer");
-  }
-
-  const orientations: Map<OrientationString, ThreeDimOrientation> = new Map();
-  const visited = new Set<RelativeVoxelOffsetString>();
-
-  const processXYZ = (x: number, y: number, z: number) => {
-    // Skip zero vector to avoid degenerate cases
-    if (x === 0 && y === 0 && z === 0) return;
-    const voxelOffset: Vec3 = new Vec3(x, y, z);
-    const voxelOffsetString = serializeVec3(voxelOffset);
-    const distanceToVoxel = Math.sqrt(x * x + y * y + z * z);
-    if (Math.abs(distanceToVoxel - sphereRadius) <= 0.5) {
-      const orientation = new ThreeDimOrientation({ towards: voxelOffset });
-      if (!visited.has(voxelOffsetString)) {
-        const key = orientation.serialize();
-        orientations.set(key, orientation);
-        visited.add(voxelOffsetString);
-      }
-    }
-  };
-
-  for (let y = -sphereRadius; y <= 0; y++) {
-    for (let x = -sphereRadius; x <= sphereRadius; x++) {
-      for (let z = -sphereRadius; z <= sphereRadius; z++) {
-        processXYZ(x, y, z);
-      }
-    }
-  }
-  for (let y = sphereRadius; y >= 0; y--) {
-    for (let x = -sphereRadius; x <= sphereRadius; x++) {
-      for (let z = -sphereRadius; z <= sphereRadius; z++) {
-        processXYZ(x, y, z);
-      }
-    }
-  }
-  return orientations;
-}
+// TODO:
+// - During raycasting, gradually update the `OffsetBased3DArray`s:
+//   - this.visibleBlocksInSurroundings
+//   - this.surroundingsVisibilityMask
+// - Update VicinitiesObserver to:
+//   - Keep track of item itentities and mob entities
+//   - For each vicinity, store distance-sorted, offset-based idxs for accessing the `OffsetBased3DArray`s
+// - Write the Vicinity class to expose the expected API for querying the surroundings's vicinities
+// - Write the ImmediateSurroundings and DistantSurroundingsInADirection classes to implement getDTO methods
+// - Add MobType to thing-type implementations and test approaching mobs
+// - Add KillMob skill
 
 export class VisibilityRaycaster {
   private bot: Bot;
   private radius: number; // Radius of the sphere of interest
-  private orientations: Map<OrientationString, ThreeDimOrientation>;
   public isRaycasting: boolean = false;
-  // Raycast<->voxel penetrations mappings
-  private voxelsToCastsThatPenetrateThem: Map<
-    RelativeVoxelOffsetString, // Voxel offsets
-    Set<OrientationString> // Penetrated by what raycasts orientations
+
+  private orientations: Map<OrientationString, ThreeDimOrientation> = new Map();
+
+  // Face<->cast orientation penetration mappings
+  private facesToCastOrientationsThatPenetrateThem: Map<
+    VoxelFaceString, // Face identifier
+    Set<OrientationString> // Penetrated by what raycast orientations
   > = new Map();
-  private orientationsToPentratedVoxels: Map<
+
+  private castOrientationsToPenetratedFaces: Map<
     OrientationString, // Raycast orientation
-    Set<RelativeVoxelOffsetString> // Voxels penetrated by this raycast
+    Set<VoxelFaceString> // Faces penetrated by this raycast
   > = new Map();
 
   constructor(bot: Bot, radiusOfInterest: number) {
@@ -72,154 +49,198 @@ export class VisibilityRaycaster {
     }
     this.bot = bot;
     this.radius = radiusOfInterest;
-
-    this.orientations = getOrientations(this.radius);
-
-    this.calculateRaycastPenetrationData();
+    this.getOrientationsAndPenetrations();
   }
 
   /**
-   * Traces a ray through voxels using 3D DDA algorithm
-   * @param origin - Starting point of the ray (typically 0.5, 0.5, 0.5 for voxel center)
-   * @param direction - Normalized direction vector
-   * @param maxDistance - Maximum distance to trace
-   * @returns Set of voxel offsets the ray passes through
+   * Helper function to serialize a face consistently
+   * Uses the voxel that the face is the bottom, north, or west face of
+   * @returns A string in the format "${serializeVec3(voxelOffset)},${BlockFace}"
    */
-  private traceRayThroughVoxels(
-    origin: Vec3,
-    direction: Vec3,
-    maxDistance: number
-  ): Set<RelativeVoxelOffsetString> {
-    const penetratedVoxels = new Set<RelativeVoxelOffsetString>();
+  private serializeFace(voxelPos: Vec3, face: number): VoxelFaceString {
+    let canonicalVoxel: Vec3;
 
-    // Current voxel position
-    let currentVoxel = new Vec3(
-      Math.floor(origin.x),
-      Math.floor(origin.y),
-      Math.floor(origin.z)
-    );
+    switch (face) {
+      case BlockFace.BOTTOM:
+      case BlockFace.TOP:
+        // For vertical faces, use the lower voxel (smaller Y)
+        canonicalVoxel =
+          face === BlockFace.BOTTOM
+            ? new Vec3(voxelPos.x, voxelPos.y - 1, voxelPos.z)
+            : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+        return `${serializeVec3(canonicalVoxel)},${BlockFace.BOTTOM}`;
 
-    // Calculate step direction for each axis (-1, 0, or 1)
-    const step = new Vec3(
-      direction.x > 0 ? 1 : direction.x < 0 ? -1 : 0,
-      direction.y > 0 ? 1 : direction.y < 0 ? -1 : 0,
-      direction.z > 0 ? 1 : direction.z < 0 ? -1 : 0
-    );
+      case BlockFace.NORTH:
+      case BlockFace.SOUTH:
+        // For north-south faces, use the northern voxel (smaller Z)
+        canonicalVoxel =
+          face === BlockFace.NORTH
+            ? new Vec3(voxelPos.x, voxelPos.y, voxelPos.z - 1)
+            : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+        return `${serializeVec3(canonicalVoxel)},${BlockFace.NORTH}`;
 
-    // Calculate the position of the next voxel boundary for each axis
-    const nextBoundary = new Vec3(
-      direction.x > 0 ? Math.floor(origin.x) + 1 : Math.floor(origin.x),
-      direction.y > 0 ? Math.floor(origin.y) + 1 : Math.floor(origin.y),
-      direction.z > 0 ? Math.floor(origin.z) + 1 : Math.floor(origin.z)
-    );
+      case BlockFace.WEST:
+      case BlockFace.EAST:
+        // For east-west faces, use the western voxel (smaller X)
+        canonicalVoxel =
+          face === BlockFace.WEST
+            ? new Vec3(voxelPos.x - 1, voxelPos.y, voxelPos.z)
+            : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+        return `${serializeVec3(canonicalVoxel)},${BlockFace.WEST}`;
 
-    // Calculate tMax: the distance along the ray to the next voxel boundary for each axis
-    const tMax = new Vec3(
-      direction.x !== 0 ? (nextBoundary.x - origin.x) / direction.x : Infinity,
-      direction.y !== 0 ? (nextBoundary.y - origin.y) / direction.y : Infinity,
-      direction.z !== 0 ? (nextBoundary.z - origin.z) / direction.z : Infinity
-    );
-
-    // Calculate tDelta: how far along the ray we must move to cross one voxel boundary
-    const tDelta = new Vec3(
-      direction.x !== 0 ? Math.abs(1.0 / direction.x) : Infinity,
-      direction.y !== 0 ? Math.abs(1.0 / direction.y) : Infinity,
-      direction.z !== 0 ? Math.abs(1.0 / direction.z) : Infinity
-    );
-
-    // Track total distance traveled
-    let distanceTraveled = 0;
-
-    // Add the starting voxel if it's not the origin
-    if (currentVoxel.x !== 0 || currentVoxel.y !== 0 || currentVoxel.z !== 0) {
-      const voxelKey = serializeVec3(currentVoxel) as RelativeVoxelOffsetString;
-      penetratedVoxels.add(voxelKey);
+      default:
+        throw new Error(`Unknown face: ${face}`);
     }
-
-    // Traverse voxels
-    while (distanceTraveled < maxDistance) {
-      // Find the axis with the smallest tMax (next boundary crossing)
-      let minAxis: "x" | "y" | "z";
-      if (tMax.x < tMax.y && tMax.x < tMax.z) {
-        minAxis = "x";
-      } else if (tMax.y < tMax.z) {
-        minAxis = "y";
-      } else {
-        minAxis = "z";
-      }
-
-      // Update distance traveled
-      distanceTraveled = tMax[minAxis];
-
-      // Check if we've exceeded our maximum distance
-      if (distanceTraveled > maxDistance) {
-        break;
-      }
-
-      // Move to the next voxel
-      currentVoxel[minAxis] += step[minAxis];
-
-      // Update tMax for the axis we just crossed
-      tMax[minAxis] += tDelta[minAxis];
-
-      // Check if the new voxel is within our sphere of interest
-      const voxelDistance = Math.sqrt(
-        currentVoxel.x * currentVoxel.x +
-          currentVoxel.y * currentVoxel.y +
-          currentVoxel.z * currentVoxel.z
-      );
-
-      if (voxelDistance > this.radius + 0.5) {
-        break; // Beyond our sphere of interest
-      }
-
-      // Skip the origin voxel
-      if (
-        currentVoxel.x === 0 &&
-        currentVoxel.y === 0 &&
-        currentVoxel.z === 0
-      ) {
-        continue;
-      }
-
-      // Add this voxel to our set
-      const voxelKey = serializeVec3(currentVoxel) as RelativeVoxelOffsetString;
-      penetratedVoxels.add(voxelKey);
-    }
-
-    return penetratedVoxels;
   }
 
   /**
-   * Calculates and stores which voxels are penetrated by each raycast orientation
-   * Uses 3D DDA algorithm to ensure all voxels are visited
+   * Generates a list of in-radius voxel offsets sorted by distance from origin
+   * @returns Array of Vec3 offsets
    */
-  private calculateRaycastPenetrationData(): void {
-    this.voxelsToCastsThatPenetrateThem = new Map();
-    this.orientationsToPentratedVoxels = new Map();
+  private getInRadiusOffsetsSortedByDistance(): Vec3[] {
+    const voxelOffsets: Vec3[] = [];
 
+    // Generate all voxel offsets within radius
+    for (let x = -this.radius; x <= this.radius; x++) {
+      for (let y = -this.radius; y <= this.radius; y++) {
+        for (let z = -this.radius; z <= this.radius; z++) {
+          // Skip zero vector and voxels outside radius
+          if (x === 0 && y === 0 && z === 0) continue;
+
+          const distance = Math.sqrt(x * x + y * y + z * z);
+          if (distance < this.radius) {
+            voxelOffsets.push(new Vec3(x, y, z));
+          }
+        }
+      }
+    }
+
+    // Sort by distance from origin
+    voxelOffsets.sort((a, b) => {
+      const distA = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+      const distB = Math.sqrt(b.x * b.x + b.y * b.y + b.z * b.z);
+      return distA - distB;
+    });
+
+    return voxelOffsets;
+  }
+
+  /**
+   * Calculates which in-radius faces are penetrated by a raycast in the given direction
+   * @returns Set of face identifiers penetrated by the raycast
+   */
+  private getFacesPenetratedByCast(rayDirection: Vec3): Set<VoxelFaceString> {
+    const penetratedFaces = new Set<VoxelFaceString>();
     const maxDistance = this.radius + 0.5; // Slightly beyond sphere radius
     const rayOrigin = new Vec3(0.5, 0.5, 0.5); // Center of the origin voxel
 
-    for (const [orientationKey, orientation] of this.orientations.entries()) {
-      const rayDirection = orientation.vecNorm;
+    const raycastIterator = new iterators.RaycastIterator(
+      rayOrigin,
+      rayDirection,
+      maxDistance
+    );
 
-      // Use DDA to trace the ray through voxels
-      const penetratedVoxels = this.traceRayThroughVoxels(
-        rayOrigin,
-        rayDirection,
-        maxDistance
-      );
+    let currentBlock = raycastIterator.next();
+    while (currentBlock !== null) {
+      // Skip the origin voxel (0,0,0)
+      if (
+        currentBlock.x !== 0 ||
+        currentBlock.y !== 0 ||
+        currentBlock.z !== 0
+      ) {
+        const voxelPos = new Vec3(
+          currentBlock.x,
+          currentBlock.y,
+          currentBlock.z
+        );
+        const faceKey = this.serializeFace(voxelPos, currentBlock.face);
+        penetratedFaces.add(faceKey);
+      }
 
-      // Store the forward mapping (orientation -> voxels)
-      this.orientationsToPentratedVoxels.set(orientationKey, penetratedVoxels);
+      currentBlock = raycastIterator.next();
+    }
 
-      // Store the reverse mapping (voxel -> orientations)
-      for (const voxelKey of penetratedVoxels) {
-        if (!this.voxelsToCastsThatPenetrateThem.has(voxelKey)) {
-          this.voxelsToCastsThatPenetrateThem.set(voxelKey, new Set());
+    return penetratedFaces;
+  }
+
+  /**
+   * Generates orientations and calculates penetration data
+   * This method populates the `orientations`, `castOrientationsToPenetratedFaces`,
+   * and `facesToCastOrientationsThatPenetrateThem` maps.
+   */
+  private getOrientationsAndPenetrations(): void {
+    this.orientations = new Map();
+    this.castOrientationsToPenetratedFaces = new Map();
+    this.facesToCastOrientationsThatPenetrateThem = new Map();
+
+    const alreadyPenetrated = new Set<VoxelFaceString>();
+    const voxelOffsets = this.getInRadiusOffsetsSortedByDistance();
+
+    // Face offsets: each face center is 0.5 units away from voxel center in one direction
+    const faceOffsets = [
+      { offset: new Vec3(0.5, 0, 0), face: BlockFace.EAST }, // +X face
+      { offset: new Vec3(-0.5, 0, 0), face: BlockFace.WEST }, // -X face
+      { offset: new Vec3(0, 0.5, 0), face: BlockFace.TOP }, // +Y face
+      { offset: new Vec3(0, -0.5, 0), face: BlockFace.BOTTOM }, // -Y face
+      { offset: new Vec3(0, 0, 0.5), face: BlockFace.SOUTH }, // +Z face
+      { offset: new Vec3(0, 0, -0.5), face: BlockFace.NORTH }, // -Z face
+    ];
+
+    // Process voxels in order from closest to furthest
+    for (const voxelOffset of voxelOffsets) {
+      // Generate orientations for all 6 faces of this voxel
+      for (const { offset: faceOffset, face } of faceOffsets) {
+        const faceCenter = new Vec3(
+          voxelOffset.x + faceOffset.x,
+          voxelOffset.y + faceOffset.y,
+          voxelOffset.z + faceOffset.z
+        );
+
+        // Create the face identifier for this face
+        const faceKey = this.serializeFace(voxelOffset, face);
+
+        // Skip if this face has already been penetrated by a previous raycast
+        if (alreadyPenetrated.has(faceKey)) {
+          continue;
         }
-        this.voxelsToCastsThatPenetrateThem.get(voxelKey)!.add(orientationKey);
+
+        // Create orientation pointing to this face
+        const orientation = new ThreeDimOrientation({
+          towards: faceCenter,
+        });
+        const orientationKey = orientation.serialize();
+
+        // Store the orientation
+        this.orientations.set(orientationKey, orientation);
+
+        // Calculate which faces this raycast penetrates
+        const penetratedFaces = this.getFacesPenetratedByCast(
+          orientation.vecNorm
+        );
+
+        // Store the forward mapping (orientation -> faces)
+        this.castOrientationsToPenetratedFaces.set(
+          orientationKey,
+          penetratedFaces
+        );
+
+        // Add all penetrated faces to the already-penetrated set
+        for (const penetratedFace of penetratedFaces) {
+          alreadyPenetrated.add(penetratedFace);
+        }
+      }
+    }
+
+    // Build the reverse mapping (face -> orientations that penetrate it)
+    for (const [orientationKey, penetratedFaces] of this
+      .castOrientationsToPenetratedFaces) {
+      for (const faceKey of penetratedFaces) {
+        if (!this.facesToCastOrientationsThatPenetrateThem.has(faceKey)) {
+          this.facesToCastOrientationsThatPenetrateThem.set(faceKey, new Set());
+        }
+        this.facesToCastOrientationsThatPenetrateThem
+          .get(faceKey)!
+          .add(orientationKey);
       }
     }
   }
@@ -241,26 +262,46 @@ export class VisibilityRaycaster {
     ) {
       throw new Error("Only raycasting from a voxel (int coords) is supported");
     }
-    this.isRaycasting = true;
 
+    // Setup variables
+    this.isRaycasting = true;
     const fromVoxelCenter = fromVoxel.offset(0.5, 0.5, 0.5);
     const orientationsToSkip = new Set<OrientationString>();
     const maxRaycastDistance = this.radius + 0.5; // Slightly beyond sphere radius to ensure coverage
-
     let nRaycastsPerformed = 0;
+
+    // Inner helper functions
     async function releaseEventLoopIfNecessary() {
       nRaycastsPerformed++;
       if (nRaycastsPerformed % RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS === 0) {
         await asyncSleep(0);
       }
     }
+    const doRaycast = (
+      from: Vec3,
+      direction: Vec3,
+      range: number
+    ): [PBlock | null, number | null] => {
+      const iter = new iterators.RaycastIterator(from, direction, range);
+      let pos = iter.next();
+      while (pos) {
+        const position = new Vec3(pos.x, pos.y, pos.z);
+        const block = this.bot.world.getBlock(position);
+        if (block && block.name !== "air") {
+          return [block, pos.face];
+        }
+        pos = iter.next();
+      }
+      return [null, null];
+    };
 
+    // Main raycasting loop
     for (const [originalRayOrientationKey, OriginalRayOrientation] of this
       .orientations) {
       if (orientationsToSkip.has(originalRayOrientationKey)) {
         continue;
       }
-      const hit: PBlock | null = this.bot.world.raycast(
+      const [hit, face] = doRaycast(
         fromVoxelCenter,
         OriginalRayOrientation.vecNorm,
         maxRaycastDistance
@@ -268,39 +309,41 @@ export class VisibilityRaycaster {
       yield [OriginalRayOrientation.vecNorm, hit];
       await releaseEventLoopIfNecessary();
 
-      if (hit) {
-        const hitBlockAtOffsetKey = serializeVec3(
-          hit.position.minus(fromVoxel)
-        ) as RelativeVoxelOffsetString;
+      if (hit && face) {
+        const hitBlockOffset = hit.position.minus(fromVoxel);
+        const faceKey = this.serializeFace(
+          hitBlockOffset,
+          face
+        ) as VoxelFaceString;
 
-        const castOrientationsThatPenetrateHitBlock =
-          this.voxelsToCastsThatPenetrateThem.get(hitBlockAtOffsetKey);
+        const castOrientationsThatPenetrateHitBlockFace =
+          this.facesToCastOrientationsThatPenetrateThem.get(faceKey);
 
         if (
-          castOrientationsThatPenetrateHitBlock &&
-          castOrientationsThatPenetrateHitBlock.size - 1 > 4
+          castOrientationsThatPenetrateHitBlockFace &&
+          castOrientationsThatPenetrateHitBlockFace.size - 1 > 4
         ) {
-          // Pepper around the block (4 raycasts-up down, left, and right of center orientation)
-          const occlusionRadius = Math.atan(
-            0.495 / hit.position.distanceTo(fromVoxel)
-          );
-          const orientationTowardsBlock = new ThreeDimOrientation({
-            towards: hit.position.minus(fromVoxel),
-          });
-          for (const offsetOrientation of orientationTowardsBlock.getCardinalOffsets(
-            occlusionRadius
-          )) {
-            const hitAtOffset: PBlock | null = this.bot.world.raycast(
-              fromVoxelCenter,
-              offsetOrientation.vecNorm,
-              maxRaycastDistance
-            );
-            yield [offsetOrientation.vecNorm, hitAtOffset];
-            await releaseEventLoopIfNecessary();
-          }
+          // // Pepper around the block (4 raycasts-up down, left, and right of center orientation)
+          // const occlusionRadius = Math.atan(
+          //   0.495 / hit.position.distanceTo(fromVoxel)
+          // );
+          // const orientationTowardsBlock = new ThreeDimOrientation({
+          //   towards: hit.position.minus(fromVoxel),
+          // });
+          // for (const offsetOrientation of orientationTowardsBlock.getCardinalOffsets(
+          //   occlusionRadius
+          // )) {
+          //   const hitAtOffset: PBlock | null = this.bot.world.raycast(
+          //     fromVoxelCenter,
+          //     offsetOrientation.vecNorm,
+          //     maxRaycastDistance
+          //   );
+          //   yield [offsetOrientation.vecNorm, hitAtOffset];
+          //   await releaseEventLoopIfNecessary();
+          // }
 
           // In the future, skip the orientations that penetrate the hit block
-          for (const penetratorOrientationKey of castOrientationsThatPenetrateHitBlock) {
+          for (const penetratorOrientationKey of castOrientationsThatPenetrateHitBlockFace) {
             orientationsToSkip.add(penetratorOrientationKey);
           }
         }

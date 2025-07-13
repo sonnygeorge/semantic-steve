@@ -1,21 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ThreeDimOrientation = void 0;
+exports.ThreeDimOrientation = exports.BlockFace = void 0;
 const vec3_1 = require("vec3");
+// BlockFace as used in prismarine-world
+exports.BlockFace = {
+    UNKNOWN: -999,
+    BOTTOM: 0,
+    TOP: 1,
+    NORTH: 2,
+    SOUTH: 3,
+    WEST: 4,
+    EAST: 5,
+};
 /**
- * Represents spherical coordinates using mathematical convention.
- * @remarks Angles are in radians. Theta is the azimuthal angle (horizontal) in the xy-plane,
- * where 0 points along the positive x-axis. Phi is the polar angle (vertical) from the
- * positive z-axis, where 0 is straight upward and π is straight downward.
+ * Represents spherical coordinates using Y-up coordinate system (Minecraft convention).
+ * @remarks Angles are in radians. This class uses Y-up coordinates to match Minecraft's
+ * coordinate system where Y is the vertical axis (up/down), X is east/west, and Z is north/south.
+ *
+ * Theta is the azimuthal angle (horizontal rotation) in the XZ-plane, where 0 points along
+ * the positive X-axis (east). Phi is the polar angle (vertical) from the positive Y-axis,
+ * where 0 is straight upward (+Y) and π is straight downward (-Y).
  */
 class SphericalAngles {
     /**
      * Creates a new SphericalAngles instance.
-     * @param theta - Azimuthal angle in radians, must be in [0, 2π).
      * @param phi - Polar angle in radians, must be in [0, π].
+     * @param theta - Azimuthal angle in radians, must be in [0, 2π).
      * @throws Error if theta is not in [0, 2π) or phi is not in [0, π].
      */
-    constructor(theta, phi) {
+    constructor(phi, theta) {
         if (theta < 0 || theta >= 2 * Math.PI) {
             throw new Error("Theta must be in the range [0, 2π)");
         }
@@ -28,9 +41,17 @@ class SphericalAngles {
 }
 /**
  * Represents a 3D orientation using spherical angles or a normalized vector.
- * @remarks Can be initialized with a vector, spherical angles, or a target vector to point towards.
- * Provides access to both spherical angles (theta, phi) and a normalized 3D vector.
- * Uses mathematical spherical coordinate convention: theta = azimuthal (horizontal), phi = polar (vertical).
+ * @remarks Uses Y-up coordinate system to match Minecraft conventions:
+ * - X-axis: East/West (positive X = east)
+ * - Y-axis: Up/Down (positive Y = up)
+ * - Z-axis: North/South (positive Z = south)
+ *
+ * Can be initialized with a vector, spherical angles, or a target vector to point towards.
+ * Provides access to both spherical angles (phi, theta) and a normalized 3D vector.
+ *
+ * Spherical coordinate convention:
+ * - theta = azimuthal angle (horizontal rotation in XZ-plane)
+ * - phi = polar angle (vertical angle from +Y axis)
  */
 class ThreeDimOrientation {
     /**
@@ -44,16 +65,20 @@ class ThreeDimOrientation {
         else if ("theta" in params && "phi" in params) {
             this._input = {
                 kind: "angles",
-                angles: new SphericalAngles(params.theta, params.phi),
+                angles: new SphericalAngles(params.phi, params.theta),
             };
         }
         else {
-            this._input = { kind: "towards", value: params.towards };
+            this._input = { kind: "towards", value: params.towards.clone() };
         }
     }
     /**
      * Gets the normalized 3D vector representing the orientation.
-     * @returns A normalized Vec3.
+     * @returns A normalized Vec3 in Minecraft coordinate system (Y-up).
+     * @remarks Vector components correspond to:
+     * - X: East/West direction (positive = east)
+     * - Y: Up/Down direction (positive = up)
+     * - Z: North/South direction (positive = south)
      */
     get vecNorm() {
         if (!this._vecNorm) {
@@ -65,27 +90,27 @@ class ThreeDimOrientation {
                     this._vecNorm = this._input.value.normalize();
                     break;
                 case "angles":
-                    // Mathematical spherical to Cartesian conversion:
-                    // x = sin(phi) * cos(theta)
-                    // y = sin(phi) * sin(theta)
-                    // z = cos(phi)
                     this._vecNorm = new vec3_1.Vec3(Math.sin(this._input.angles.phi) *
-                        Math.cos(this._input.angles.theta), Math.sin(this._input.angles.phi) *
-                        Math.sin(this._input.angles.theta), Math.cos(this._input.angles.phi)).normalize();
+                        Math.cos(this._input.angles.theta), // X (east/west)
+                    Math.cos(this._input.angles.phi), // Y (up/down)
+                    Math.sin(this._input.angles.phi) *
+                        Math.sin(this._input.angles.theta) // Z (north/south)
+                    ).normalize();
                     break;
             }
         }
         return this._vecNorm;
     }
     /**
-     * Gets the spherical angles (theta, phi) representing the orientation.
+     * Gets the spherical angles (phi, theta) representing the orientation.
      * @returns A SphericalAngles object with theta in [0, 2π) and phi in [0, π].
-     * @remarks Theta is the azimuthal angle in the xy-plane; phi is the polar angle from the positive z-axis (0 = upward, π = downward).
+     * @remarks Uses Minecraft/Y-up coordinate system: theta is azimuthal angle in xz-plane;
+     * phi is polar angle from positive y-axis (0 = upward, π = downward).
      */
     get sphericalAngles() {
         if (!this._sphericalAngles) {
             if (this._input.kind === "angles") {
-                this._sphericalAngles = new SphericalAngles(this._input.angles.theta, this._input.angles.phi);
+                this._sphericalAngles = new SphericalAngles(this._input.angles.phi, this._input.angles.theta);
             }
             else {
                 const vec = this.vecNorm;
@@ -93,18 +118,18 @@ class ThreeDimOrientation {
                 if (vec.x === 0 && vec.y === 0 && vec.z === 0) {
                     throw new Error("Cannot compute spherical angles for zero vector");
                 }
-                // Compute phi (polar angle, angle from z-axis)
+                // Compute phi (polar angle, angle from Y-axis for Y-up system)
                 // Clamp to handle floating point precision issues
-                const cosPhiRaw = vec.z;
+                const cosPhiRaw = vec.y; // ✅ Fixed: Use Y component for Y-up system
                 const cosPhi = Math.max(-1, Math.min(1, cosPhiRaw));
                 const phi = Math.acos(cosPhi);
-                // Compute theta (azimuthal angle, angle in xy-plane)
-                let theta = Math.atan2(vec.y, vec.x);
+                // Compute theta (azimuthal angle, angle in XZ-plane for Y-up system)
+                let theta = Math.atan2(vec.z, vec.x); // ✅ Fixed: Use Z,X for XZ-plane
                 // Normalize theta to [0, 2π) range
                 if (theta < 0) {
                     theta += 2 * Math.PI;
                 }
-                this._sphericalAngles = new SphericalAngles(theta, phi);
+                this._sphericalAngles = new SphericalAngles(phi, theta);
             }
         }
         return this._sphericalAngles;
@@ -115,7 +140,7 @@ class ThreeDimOrientation {
      * @returns Angular distance in radians (0 to π).
      * @remarks Uses the dot product method for numerical stability and proper handling of angle wraparound.
      */
-    distanceTo(other) {
+    angularDistanceTo(other) {
         // Use normalized vectors for dot product calculation
         // This avoids issues with angle wraparound and is numerically stable
         const vec1 = this.vecNorm;
@@ -127,12 +152,70 @@ class ThreeDimOrientation {
         return Math.acos(clampedDot);
     }
     /**
+     * Generates orientations at a fixed angular distance in cardinal directions.
+     * @param angularRadius - Angular distance in radians from the base orientation
+     * @yields ThreeDimOrientation objects offset in +/-theta and +/-phi directions
+     * @remarks Uses proper spherical geometry to ensure exact angular distances.
+     * The offsets are applied using the plusAngularOffset method.
+     */
+    *getCardinalOffsets(angularRadius) {
+        // Create 4 offset directions
+        const angularOffsets = [
+            { theta: angularRadius, phi: 0 },
+            { theta: -angularRadius, phi: 0 },
+            { theta: 0, phi: angularRadius },
+            { theta: 0, phi: -angularRadius },
+        ];
+        for (const angularOffset of angularOffsets) {
+            yield this.plusAngularOffset(angularOffset);
+        }
+    }
+    /**
+     * Creates a new orientation offset by the given angular amounts.
+     * @param angularOffset - Spherical angle offsets to apply
+     * @returns New ThreeDimOrientation with the offset applied
+     * @remarks Uses proper spherical geometry rather than simple angle addition.
+     * This method ensures the offset represents a true angular distance on the sphere.
+     */
+    plusAngularOffset(angularOffset) {
+        const baseVec = this.vecNorm;
+        // Calculate the magnitude of the offset
+        const offsetMagnitude = Math.sqrt(angularOffset.theta * angularOffset.theta +
+            angularOffset.phi * angularOffset.phi);
+        if (offsetMagnitude === 0) {
+            return new ThreeDimOrientation(baseVec);
+        }
+        // Create local coordinate system at the base orientation
+        const up = new vec3_1.Vec3(0, 1, 0); // Y-up reference
+        let thetaDirection;
+        let phiDirection;
+        // Handle special case when base vector is parallel to Y axis
+        if (Math.abs(baseVec.y) > 0.999) {
+            thetaDirection = new vec3_1.Vec3(1, 0, 0);
+            phiDirection = new vec3_1.Vec3(0, 0, 1);
+        }
+        else {
+            // General case: create orthonormal basis
+            thetaDirection = baseVec.cross(up).normalize();
+            phiDirection = baseVec.cross(thetaDirection).normalize();
+        }
+        // Apply the offset using rotation in 3D space
+        const thetaComponent = thetaDirection.scale((angularOffset.theta * Math.sin(offsetMagnitude)) / offsetMagnitude);
+        const phiComponent = phiDirection.scale((angularOffset.phi * Math.sin(offsetMagnitude)) / offsetMagnitude);
+        const radialComponent = baseVec.scale(Math.cos(offsetMagnitude));
+        const offsetVec = radialComponent
+            .add(thetaComponent)
+            .add(phiComponent)
+            .normalize();
+        return new ThreeDimOrientation(offsetVec);
+    }
+    /**
      * Serializes the orientation to a string.
      * @returns A string in the format "theta,phi"
      */
     serialize() {
         const { theta, phi } = this.sphericalAngles;
-        return `${theta},${phi}`;
+        return `${theta.toFixed(6)},${phi.toFixed(6)}`;
     }
     /**
      * Deserializes a string to create a ThreeDimOrientation.
@@ -144,7 +227,7 @@ class ThreeDimOrientation {
         if (isNaN(theta) || isNaN(phi)) {
             throw new Error("Invalid serialized orientation string");
         }
-        return new ThreeDimOrientation(new SphericalAngles(theta, phi));
+        return new ThreeDimOrientation(new SphericalAngles(phi, theta));
     }
 }
 exports.ThreeDimOrientation = ThreeDimOrientation;

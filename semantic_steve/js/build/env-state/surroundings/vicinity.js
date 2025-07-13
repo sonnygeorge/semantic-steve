@@ -91,7 +91,7 @@ class VicinitiesManager {
     hydrateVisibleBlocks() {
         for (const offset of this.visibleBlocks.iterAllOffsets()) {
             if (this.raycastManager.visibilityMask.getFromOffset(offset)) {
-                const block = this.bot.world.getBlock((0, misc_1.getVoxelOfPosition)(offset).add(this.bot.entity.position));
+                const block = this.bot.world.getBlock(offset.floor().add(this.bot.entity.position));
                 if (block) {
                     this.visibleBlocks.setFromOffset(offset, block);
                 }
@@ -102,7 +102,7 @@ class VicinitiesManager {
         }
     }
     beginObservation() {
-        const curEyePos = (0, misc_1.getCurEyePos)(this.bot);
+        const curEyePos = (0, misc_1.getEyePos)(this.bot);
         this.raycastManager.visibilityMask.setInitialEyePos(curEyePos);
         this.raycastManager.hitsOrganizedIntoVoxelSpace.setInitialEyePos(curEyePos);
         this.visibleBlocks.setInitialEyePos(curEyePos);
@@ -132,7 +132,7 @@ class VicinitiesManager {
         }
         if (oldBlockWasVisible && !newBlockIsVisible) {
             this.raycastManager.updateRaycasts(eyePos, {
-                forWorldVoxel: (0, misc_1.getVoxelOfPosition)(oldBlock.position),
+                forWorldVoxel: oldBlock.position.floor(),
             });
         }
     }
@@ -146,7 +146,7 @@ class VicinitiesManager {
             return;
         }
         this.botPosAsOfLastMoveHandling = curBotPosition.clone();
-        const curEyePos = (0, misc_1.getCurEyePos)(this.bot);
+        const curEyePos = (0, misc_1.getEyePos)(this.bot);
         // Re-evaluate all visibility raycasts
         this.raycastManager.updateRaycasts(curEyePos, "everywhere");
         // Update the visibility mask's eye pos
@@ -162,7 +162,7 @@ class VicinitiesManager {
         for (const offset of this.raycastManager.visibilityMask.iterOffsetsWithSetValues()) {
             // Set the blocks that became visible
             if (!this.visibleBlocks.getFromOffset(offset)) {
-                const worldPos = (0, misc_1.getVoxelOfPosition)(offset).add(this.bot.entity.position);
+                const worldPos = offset.floor().add(this.bot.entity.position);
                 const block = this.bot.world.getBlock(worldPos);
                 if (block) {
                     this.visibleBlocks.setFromOffset(offset, block);

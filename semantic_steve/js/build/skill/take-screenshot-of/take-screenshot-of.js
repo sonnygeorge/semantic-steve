@@ -105,7 +105,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             if (!viewer.setVersion(this.bot.version)) {
                 throw new Error(`prismarine-viewer does not support version: ${this.bot.version}`);
             }
-            const eyePosition = (0, misc_1.getCurEyePos)(this.bot);
+            const eyePosition = (0, misc_1.getEyePos)(this.bot);
             // Create world view
             const worldView = new WorldView(this.bot.world, this.viewDistanceToNumber(), eyePosition);
             viewer.listen(worldView);

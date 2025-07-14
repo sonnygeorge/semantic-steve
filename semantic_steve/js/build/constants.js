@@ -19,12 +19,12 @@ exports.SCREENSHOT_WAIT_MS = 300;
 exports.MAX_PLACEMENT_REACH = 4;
 // The maximum distance from the bot at which a block can be reached for mining
 exports.MAX_MINING_REACH = 4.5;
-// Six sides of a cubed meter (block space) in minecraft
-exports.ADJACENT_OFFSETS = {
-    [types_1.ConnectingSide.WEST]: new vec3_1.Vec3(-1, 0, 0),
-    [types_1.ConnectingSide.EAST]: new vec3_1.Vec3(1, 0, 0),
-    [types_1.ConnectingSide.BOTTOM]: new vec3_1.Vec3(0, -1, 0),
-    [types_1.ConnectingSide.TOP]: new vec3_1.Vec3(0, 1, 0),
-    [types_1.ConnectingSide.NORTH]: new vec3_1.Vec3(0, 0, -1),
-    [types_1.ConnectingSide.SOUTH]: new vec3_1.Vec3(0, 0, 1),
-};
+// Six sides of a voxel (block space) in minecraft
+exports.ADJACENT_OFFSETS = new Map([
+    [types_1.VoxelFace.WEST, new vec3_1.Vec3(-1, 0, 0)],
+    [types_1.VoxelFace.EAST, new vec3_1.Vec3(1, 0, 0)],
+    [types_1.VoxelFace.BOTTOM, new vec3_1.Vec3(0, -1, 0)],
+    [types_1.VoxelFace.TOP, new vec3_1.Vec3(0, 1, 0)],
+    [types_1.VoxelFace.NORTH, new vec3_1.Vec3(0, 0, -1)],
+    [types_1.VoxelFace.SOUTH, new vec3_1.Vec3(0, 0, 1)],
+]);

@@ -1,31 +1,31 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { SurroundingsRadii, VicinityName, DirectionName } from "./common";
+import { SurroundingsRadii, VicinityName, DirectionName } from "../../types";
 import { SurroundingsDTO } from "./dto";
 import {
+  VicinitiesObserver,
   ImmediateSurroundings,
   DistantSurroundingsInADirection,
-  VicinitiesManager,
 } from "./vicinity";
-import { classifyVicinityOfPosition } from "./get-vicinity-masks";
+import { classifyVicinityOfPosition } from "./classify-vicinity";
 
 export class Surroundings {
   private bot: Bot;
-  private vicinitiesManager: VicinitiesManager;
+  private vicinitiesObserver: VicinitiesObserver;
   public immediate: ImmediateSurroundings;
   public distant: Map<DirectionName, DistantSurroundingsInADirection>;
   public radii: SurroundingsRadii;
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
     this.bot = bot;
-    this.vicinitiesManager = new VicinitiesManager(bot, radii);
-    this.immediate = this.vicinitiesManager.immediate;
-    this.distant = this.vicinitiesManager.distant;
-    this.radii = this.vicinitiesManager.radii;
+    this.vicinitiesObserver = new VicinitiesObserver(bot, radii);
+    this.immediate = this.vicinitiesObserver.immediate;
+    this.distant = this.vicinitiesObserver.distant;
+    this.radii = this.vicinitiesObserver.radii;
   }
 
   public beginObservation(): void {
-    this.vicinitiesManager.beginObservation();
+    this.vicinitiesObserver.beginObservation();
   }
 
   public *iterVicinities(): Generator<
@@ -42,15 +42,16 @@ export class Surroundings {
       position,
       this.bot.entity.position,
       this.radii.immediateSurroundingsRadius,
-      this.radii.distantSurroundingsRadius
+      this.radii.distantSurroundingsRadius,
     );
   }
 
   getDTO(): SurroundingsDTO {
+    console.log("Getting Surroundings DTO");
     return {
       immediateSurroundings: this.immediate.getDTO(),
       distantSurroundings: Object.fromEntries(
-        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()])
+        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()]),
       ),
     };
   }

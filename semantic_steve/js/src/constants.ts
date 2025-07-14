@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { ConnectingSide } from "./types";
+import { VoxelFace } from "./types";
 
 // Amount of wait that should lead to an item entity pickup if the bot is in range for pickup
 export const ITEM_PICKUP_WAIT_MS = 400;
@@ -25,12 +25,12 @@ export const MAX_PLACEMENT_REACH = 4;
 // The maximum distance from the bot at which a block can be reached for mining
 export const MAX_MINING_REACH = 4.5;
 
-// Six sides of a cubed meter (block space) in minecraft
-export const ADJACENT_OFFSETS = {
-  [ConnectingSide.WEST]: new Vec3(-1, 0, 0),
-  [ConnectingSide.EAST]: new Vec3(1, 0, 0),
-  [ConnectingSide.BOTTOM]: new Vec3(0, -1, 0),
-  [ConnectingSide.TOP]: new Vec3(0, 1, 0),
-  [ConnectingSide.NORTH]: new Vec3(0, 0, -1),
-  [ConnectingSide.SOUTH]: new Vec3(0, 0, 1),
-};
+// Six sides of a voxel (block space) in minecraft
+export const ADJACENT_OFFSETS: Map<VoxelFace, Vec3> = new Map([
+  [VoxelFace.WEST, new Vec3(-1, 0, 0)],
+  [VoxelFace.EAST, new Vec3(1, 0, 0)],
+  [VoxelFace.BOTTOM, new Vec3(0, -1, 0)],
+  [VoxelFace.TOP, new Vec3(0, 1, 0)],
+  [VoxelFace.NORTH, new Vec3(0, 0, -1)],
+  [VoxelFace.SOUTH, new Vec3(0, 0, 1)],
+]);

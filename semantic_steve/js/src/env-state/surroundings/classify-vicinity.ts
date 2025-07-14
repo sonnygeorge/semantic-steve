@@ -1,7 +1,6 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { SurroundingsRadii, VicinityName } from "./common";
-import { VoxelSpaceAroundBotEyes } from "./voxel-space-around-bot-eyes";
+import { SurroundingsRadii, VicinityName } from "../../types";
 
 /**
  * Takes a point and calculates which of the 11 "vicinities" it is in relative to the bot's
@@ -135,39 +134,45 @@ export function classifyVicinityOfPosition(
   }
 }
 
-export function getVicinityMasks(
+const vicinitiesToDistanceSortedOffsets: null | Map<VicinityName, Vec3[]> =
+  null;
+
+export function getVicinitiesToDistanceSortedOffsets(
   bot: Bot,
   radii: SurroundingsRadii
-): Map<VicinityName, VoxelSpaceAroundBotEyes<boolean>> {
-  const vicinityMasks: Map<
-    VicinityName,
-    VoxelSpaceAroundBotEyes<boolean>
-  > = new Map();
-  for (const vicinityName of Object.values(VicinityName)) {
-    vicinityMasks.set(
-      vicinityName,
-      new VoxelSpaceAroundBotEyes<boolean>(
-        bot,
-        radii.distantSurroundingsRadius,
-        false // Default value for the mask
-      )
-    );
+): Map<VicinityName, Vec3[]> {
+  // If the map has already been created, return it.
+  // It only ever needs to be created once per runtime.
+  if (vicinitiesToDistanceSortedOffsets) {
+    return vicinitiesToDistanceSortedOffsets;
   }
 
+  const distantRadius = radii.distantSurroundingsRadius;
+  const immediateRadius = radii.immediateSurroundingsRadius;
   const origin = new Vec3(0, 0, 0);
-  for (const offset of vicinityMasks
-    .get(VicinityName.IMMEDIATE_SURROUNDINGS)!
-    .iterAllOffsets()) {
-    const vicinityNameOfOffset = classifyVicinityOfPosition(
-      offset,
-      origin,
-      radii.immediateSurroundingsRadius,
-      radii.distantSurroundingsRadius
-    );
-    if (vicinityNameOfOffset) {
-      // If the vicinity is defined, set the respective mask to true for this offset
-      vicinityMasks.get(vicinityNameOfOffset)!.setFromOffset(offset, true);
+  const vicinitiesToOffsets: Map<VicinityName, Vec3[]> = new Map(
+    Object.values(VicinityName).map((vicinityName) => [vicinityName, []])
+  );
+  // Populate arrays with offsets
+  for (let xOffset = -distantRadius; xOffset <= distantRadius; xOffset++) {
+    for (let yOffset = -distantRadius; yOffset <= distantRadius; yOffset++) {
+      for (let zOffset = -distantRadius; zOffset <= distantRadius; zOffset++) {
+        const offset = new Vec3(xOffset, yOffset, zOffset);
+        const vicinityNameOfOffset = classifyVicinityOfPosition(
+          offset,
+          origin,
+          immediateRadius,
+          distantRadius
+        );
+        if (vicinityNameOfOffset) {
+          vicinitiesToOffsets.get(vicinityNameOfOffset)!.push(offset);
+        }
+      }
     }
   }
-  return vicinityMasks;
+  // Sort the offsets by ascending distance to origin (closest to furthest)
+  for (const offsets of vicinitiesToOffsets.values()) {
+    offsets.sort((a, b) => a.distanceTo(origin) - b.distanceTo(origin));
+  }
+  return vicinitiesToOffsets;
 }

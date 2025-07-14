@@ -6,7 +6,7 @@ import { MAX_PLACEMENT_REACH } from "../constants";
 
 export function isBlock(
   block: PBlock | null,
-  allowedBoundingBoxes?: string[]
+  allowedBoundingBoxes?: string[],
 ): boolean {
   if (block === null || block.type === 0) {
     return false;
@@ -22,7 +22,7 @@ export function isBlock(
 export function blockExistsAt(
   bot: Bot,
   coords: Vec3,
-  allowedBoundingBoxes?: string[]
+  allowedBoundingBoxes?: string[],
 ): boolean {
   const block = bot.blockAt(coords);
   return isBlock(block, allowedBoundingBoxes);
@@ -39,7 +39,7 @@ export function getDigTimeMS(
   effects?: Effect[],
   underwater = false,
   notOnGround = false,
-  aquaAffinity = false
+  aquaAffinity = false,
 ): number {
   // Get block data
   const block = bot.registry.blocks[blockID];
@@ -138,7 +138,7 @@ export function getDigTimeMS(
 export function isWithinInteractionReach(
   bot: Bot,
   coords: Vec3,
-  maxDistance: number = MAX_PLACEMENT_REACH
+  maxDistance: number = MAX_PLACEMENT_REACH,
 ): boolean {
   const distance = bot.entity.position.distanceTo(coords);
   return distance <= maxDistance;

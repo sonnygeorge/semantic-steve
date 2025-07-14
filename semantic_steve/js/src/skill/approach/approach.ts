@@ -2,13 +2,14 @@ import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
-import {
-  VicinityName,
-  DirectionName,
-} from "../../env-state/surroundings/index-old";
 import { ApproachResults } from "./results";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { InvalidThingError, SkillResult } from "../../types";
+import {
+  InvalidThingError,
+  SkillResult,
+  VicinityName,
+  DirectionName,
+} from "../../types";
 import { ThingType, SUPPORTED_THING_TYPES, ItemType } from "../../thing-type";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
@@ -45,7 +46,7 @@ export class Approach extends Skill {
   }
 
   private async resolveFromSubskillResolution(
-    result: SkillResult
+    result: SkillResult,
   ): Promise<void> {
     assert(this.thing);
     assert(this.targetThingCoords);
@@ -58,7 +59,7 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInDistantSurroundings(
         this.thing.name,
-        result.foundThingName
+        result.foundThingName,
       );
       this.resolve(result);
       return;
@@ -68,7 +69,7 @@ export class Approach extends Skill {
     ) {
       result = new ApproachResults.FoundThingInImmediateSurroundings(
         this.thing.name,
-        result.foundThingName
+        result.foundThingName,
       );
       this.resolve(result);
       return;
@@ -77,7 +78,7 @@ export class Approach extends Skill {
     // Otherwise, check to see if the approach was successful & handle
     const vicinityOfOriginalTargetCoords =
       this.bot.envState.surroundings.getVicinityForPosition(
-        this.targetThingCoords
+        this.targetThingCoords,
       );
 
     if (vicinityOfOriginalTargetCoords == VicinityName.IMMEDIATE_SURROUNDINGS) {
@@ -90,13 +91,13 @@ export class Approach extends Skill {
         result = new ApproachResults.SuccessItemEntity(
           this.thing.name,
           this.direction,
-          netItemGain
+          netItemGain,
         );
         this.resolve(result);
       } else {
         const successResult = new ApproachResults.Success(
           this.thing.name,
-          this.direction
+          this.direction,
         );
         this.resolve(successResult);
       }
@@ -113,7 +114,7 @@ export class Approach extends Skill {
   public async doInvoke(
     thing: string | ThingType,
     direction: string,
-    stopIfFound?: string[]
+    stopIfFound?: string[],
   ): Promise<void> {
     if (typeof thing === "string") {
       try {
@@ -122,7 +123,7 @@ export class Approach extends Skill {
         if (err instanceof InvalidThingError) {
           const result = new ApproachResults.InvalidThing(
             thing,
-            SUPPORTED_THING_TYPES.toString()
+            SUPPORTED_THING_TYPES.toString(),
           );
           this.resolve(result);
           return;
@@ -147,7 +148,7 @@ export class Approach extends Skill {
     if (!this.targetThingCoords) {
       const result = new ApproachResults.ThingNotInDistantSurroundingsDirection(
         this.thing.name,
-        direction
+        direction,
       );
       this.resolve(result);
       return;
@@ -163,7 +164,7 @@ export class Approach extends Skill {
       this.bot,
       (result: SkillResult) => {
         this.resolveFromSubskillResolution(result);
-      }
+      },
     );
     await this.activeSubskill.invoke(this.targetThingCoords, stopIfFound);
   }

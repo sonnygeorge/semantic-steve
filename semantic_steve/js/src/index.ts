@@ -2,7 +2,7 @@ import { pathfinder, Movements } from "mineflayer-pathfinder";
 import type { Bot, BotOptions } from "mineflayer";
 import { EnvState } from "./env-state/env-state";
 import { ThingTypeFactory as ThingTypeFactory } from "./thing-type";
-import { SurroundingsRadii } from "./env-state/surroundings/index-old";
+import { SurroundingsRadii } from "./types";
 
 declare module "mineflayer" {
   interface Bot {

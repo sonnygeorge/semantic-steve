@@ -1,16 +1,16 @@
 import { Bot } from "mineflayer";
 import { Block as PBlock } from "prismarine-block";
 import { Vec3 } from "vec3";
-import { AABB } from "@nxg-org/mineflayer-util-plugin";
+import { AABB } from "@nxg-org/mineflayer-util-plugin"; // TODO: Remove this dependency
 import { bilinearInterpolate } from "./generic";
 import { blockExistsAt } from "./block";
-import { CubedMeter, CubedMeterFace } from "./cubed-meter";
+import { VoxelAroundBot, VoxelFaceAroundBot } from "./voxel";
 import { ADJACENT_OFFSETS } from "../constants";
 import { getEyePos } from "./misc";
 
 /**
  * Checks if the bot can see the contents of any given coordinates, i.e., its line of
- * sight can reach or penetrate the 3 closest faces of the cubed meter.
+ * sight can reach or penetrate the 3 closest faces of the voxel.
  *
  * Crucially, this function does NOT raycast to the extreme edges of the faces which can
  * hit through corners of diagonally adjacent encasing neighbor blocks and lead to false
@@ -23,15 +23,15 @@ import { getEyePos } from "./misc";
 export function areContentsOfCoordsVisible(
   bot: Bot,
   coords: Vec3,
-  strategy: "cheap" | "expensive" = "cheap"
+  strategy: "cheap" | "expensive" = "cheap",
 ): boolean {
   // Get bot position with eye height
-  const cubedMeter = new CubedMeter(bot, coords);
-  const threeClosestFaces = cubedMeter.getThreeClosestFaces();
+  const voxel = new VoxelAroundBot(bot, coords);
+  const threeClosestFaces = voxel.getThreeClosestFaces();
   // Check if the bot can raycast to or beyond any of the three closest faces
   const nRaycastPoints = strategy === "cheap" ? 10 : 24;
   for (const [side, face] of threeClosestFaces) {
-    if (canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints)) {
+    if (canRaycastToOrBeyondVoxelFace(bot, face, nRaycastPoints)) {
       return true;
     }
   }
@@ -42,17 +42,17 @@ export function isBlockVisible(
   bot: Bot,
   block: PBlock,
   blockCoords: Vec3,
-  strategy: "cheap" | "expensive" = "cheap"
+  strategy: "cheap" | "expensive" = "cheap",
 ): boolean {
-  const cubedMeter = new CubedMeter(bot, blockCoords);
+  const voxel = new VoxelAroundBot(bot, blockCoords);
   let isExposed = false;
-  for (const [side, face] of cubedMeter.getThreeClosestFaces()) {
+  for (const [side, face] of voxel.getThreeClosestFaces()) {
     if (strategy === "cheap") {
       // Cheap strategy: If block has three closest faces covered by full blocks
       // NOTE: We will still attempt to raycast to the block if the faces are fully
       // covered by non-full blocks—e.g., slabs, stairs, etc.—leading to false positives
       // if the raycast reaches the corner the block (despite being covered)
-      const offset = ADJACENT_OFFSETS[side];
+      const offset = ADJACENT_OFFSETS.get(side)!;
       const adjacentCoords = blockCoords.offset(offset.x, offset.y, offset.z);
       const allowedBoundingBoxes = ["block"];
       if (!blockExistsAt(bot, adjacentCoords, allowedBoundingBoxes)) {
@@ -64,7 +64,7 @@ export function isBlockVisible(
       // NOTE: This way, we will have already weeded out corner-based false positives by the
       // time we reach raycasting.
       const nRaycastPoints = 10; // Low-ish value to not incur high cost.
-      if (!canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints)) {
+      if (!canRaycastToOrBeyondVoxelFace(bot, face, nRaycastPoints)) {
         isExposed = true;
         break;
       }
@@ -93,14 +93,14 @@ export function isBlockVisible(
  * corner-based false positives when checking visibility.
  *
  * @param bot - The Mineflayer bot instance
- * @param face - The CubedMeterFace to check if the bots line of sight can reach
+ * @param face - The voxel face to check if the bots line of sight can reach
  * @param nRaycastPoints - Number of points to interpolate on the face (default: 24)
  * @returns true if any raycast hits something beyond the face, false otherwise
  */
-export function canRaycastToOrBeyondCubedMeterFace(
+export function canRaycastToOrBeyondVoxelFace(
   bot: any,
-  face: CubedMeterFace,
-  nRaycastPoints: number = 24
+  face: VoxelFaceAroundBot,
+  nRaycastPoints: number = 24,
 ): boolean {
   const [c1, c2, c3, c4] = face.corners;
   const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));

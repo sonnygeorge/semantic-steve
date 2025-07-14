@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { DirectionName } from "../../env-state/surroundings/index-old";
+import { DirectionName } from "../../types";
 import { MaybePromise, InvalidThingError } from "../../types";
 
 export class ItemType implements ThingType {
@@ -12,7 +12,7 @@ export class ItemType implements ThingType {
   constructor(bot: Bot, name?: string, id?: number) {
     if (name) {
       const itemEntityNames = Object.values(bot.registry.itemsByName).map(
-        (i) => i.name
+        (i) => i.name,
       );
       if (!itemEntityNames.includes(name)) {
         throw new InvalidThingError(`Invalid item entity type: ${name}.`);
@@ -28,7 +28,7 @@ export class ItemType implements ThingType {
       this.name = bot.registry.items[id].name;
     } else {
       throw new Error(
-        "Either name or id must be provided to create an ItemEntity."
+        "Either name or id must be provided to create an ItemEntity.",
       );
     }
     this.bot = bot;
@@ -89,7 +89,7 @@ export class ItemType implements ThingType {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
@@ -107,7 +107,7 @@ export class ItemType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys()
+      this.bot.envState.surroundings.distant.keys(),
     );
 
     // Find the closest coordinates across all directions

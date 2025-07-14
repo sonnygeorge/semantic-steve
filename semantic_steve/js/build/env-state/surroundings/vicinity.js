@@ -1,36 +1,194 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VisibleVicinityContents = exports.VicinitiesManager = exports.ImmediateSurroundings = exports.DistantSurroundingsInADirection = exports.Vicinity = void 0;
+exports.ImmediateSurroundings = exports.DistantSurroundingsInADirection = exports.Vicinity = exports.VisibleVicinityContents = exports.VicinitiesObserver = void 0;
 const assert_1 = __importDefault(require("assert"));
-const common_1 = require("./common");
-const visibility_raycast_manager_1 = require("./visibility-raycast-manager");
-const voxel_space_around_bot_eyes_1 = require("./voxel-space-around-bot-eyes");
-const get_vicinity_masks_1 = require("./get-vicinity-masks");
+const fs = __importStar(require("fs"));
+const types_1 = require("../../types");
+const generic_1 = require("../../utils/generic");
+const classify_vicinity_1 = require("./classify-vicinity");
 const misc_1 = require("../../utils/misc");
-// The Main Idea(s):
-// 1. Store stuff (blocks) in voxel space (3d arrays) which has implicit "distance" from bot & quick lookup with indices
-// 2. Only do/manage N ongoing raycasts evenly distibuted over the possible eyeball orientations
-//    => Allowing us to update only certain raycasts when we don't want to re-evaluate every raycast
-// 3. Query/store blocks ONLY AFTER these managed raycasts confirm visibility
-// Next TODO:
-// - Implement the getters+DTOs (for blocks+biomes) and test like crazy!
-// - Implement everything for itemEntityWithData
-// - Clean up? Document? Maybe have
-class Vicinity {
-    constructor(bot, manager, name, mask) {
+const visibility_raycaster_1 = require("./visibility-raycaster");
+const orientation_1 = require("../../utils/orientation");
+class VicinitiesObserver {
+    constructor(bot, radii) {
         this.bot = bot;
-        this.manager = manager;
+        this.radii = radii;
+        this.visibilityRaycaster = new visibility_raycaster_1.VisibilityRaycaster(bot, this.radii.distantSurroundingsRadius);
+        this.immediate = new ImmediateSurroundings(bot, types_1.VicinityName.IMMEDIATE_SURROUNDINGS, this);
+        this.distant = new Map(Object.values(types_1.DirectionName).map((direction) => [
+            direction,
+            new DistantSurroundingsInADirection(bot, direction, this),
+        ]));
+    }
+    get visibleBlocks() {
+        return this.visibilityRaycaster.visibleBlocks;
+    }
+    beginObservation() {
+        this.curEyeVoxel = this.bot.entity.position.floor();
+        // Setup listeners
+        this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
+        this.bot.on("move", this.handleBotMove.bind(this));
+    }
+    handleBotMove(newBotPos) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_1, _b, _c;
+            if (this.visibilityRaycaster.isRaycasting)
+                return; // Throttle if already raycasting
+            const newEyeVoxel = (0, misc_1.getEyePos)(this.bot, newBotPos).floor();
+            if (this.curEyeVoxel && newEyeVoxel.equals(this.curEyeVoxel))
+                return;
+            this.curEyeVoxel = newEyeVoxel;
+            const start = performance.now();
+            const raycasts = [];
+            try {
+                for (var _d = true, _e = __asyncValues(this.visibilityRaycaster.doRaycasting(this.curEyeVoxel)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const [vecNorm, pBlock] = _c;
+                    const orientation = new orientation_1.ThreeDimOrientation(vecNorm);
+                    // Save phi-theta pair
+                    const { phi, theta } = orientation.sphericalAngles;
+                    let offset = null;
+                    if (pBlock) {
+                        offset = pBlock.position.minus(newEyeVoxel);
+                    }
+                    raycasts.push([
+                        {
+                            phi,
+                            theta,
+                            hit: offset
+                                ? {
+                                    x: offset.x,
+                                    y: offset.y,
+                                    z: offset.z,
+                                }
+                                : null,
+                        },
+                    ]);
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            console.log(`${(performance.now() - start).toFixed(4)} ms passed while doing raycasting cycle`);
+            // Save to file
+            fs.writeFileSync("raycasts.json", JSON.stringify(raycasts));
+        });
+    }
+    handleBlockUpdate(oldBlock, newBlock) {
+        if (oldBlock && newBlock) {
+            (0, assert_1.default)(oldBlock.position.equals(newBlock.position));
+        } // I think this is always true since falling (moving) blocks are considered 'entities'
+    }
+}
+exports.VicinitiesObserver = VicinitiesObserver;
+class VisibleVicinityContents {
+    constructor(bot, vicinity, vicinityObserver) {
+        this.bot = bot;
+        this.vicinity = vicinity;
+        this.vicinitiesObserver = vicinityObserver;
+    }
+    *getDistinctBlockNames() {
+        const blockNames = new Set();
+        for (const block of this.vicinity.iterVisibleBlocks()) {
+            if (block) {
+                blockNames.add(block.name);
+            }
+        }
+        return blockNames;
+    }
+    *getBlockNamesToClosestCoords() { }
+    *getBlockNamesToAllCoords() { }
+    *getDistinctBiomeNames() {
+        const alreadyYielded = new Set();
+        for (const block of this.vicinity.iterVisibleBlocks()) {
+            (0, assert_1.default)(block);
+            const biomeName = this.bot.registry.biomes[block.biome.id].name;
+            if (!alreadyYielded.has(biomeName)) {
+                yield biomeName;
+                alreadyYielded.add(biomeName);
+            }
+        }
+    }
+    *getBiomeNamesToClosestCoords() { }
+    *getBiomeNamesToAllCoords() { }
+    *getDistinctItemNames() { }
+    *getItemNamesToClosestCoords() { }
+    *getItemNamesToAllCoords() { }
+}
+exports.VisibleVicinityContents = VisibleVicinityContents;
+class Vicinity {
+    constructor(bot, name, observer) {
+        this.bot = bot;
         this.name = name;
-        this.mask = mask;
-        this.visible = new VisibleVicinityContents(bot, this, manager);
+        this.vicinitiesObserver = observer;
+        this.distanceSortedOffsets = (0, classify_vicinity_1.getVicinitiesToDistanceSortedOffsets)(this.bot, this.vicinitiesObserver.radii).get(name);
+        this.offsets = new Map(this.distanceSortedOffsets.map((offset) => [
+            (0, generic_1.serializeVec3)(offset),
+            offset,
+        ]));
+        this.visible = new VisibleVicinityContents(this.bot, this, this.vicinitiesObserver);
     }
     *iterVisibleBlocks() {
-        for (const offset of this.manager.visibleBlocks.iterOffsetsWithSetValues()) {
-            if (this.mask.getFromOffset(offset)) {
-                const block = this.manager.visibleBlocks.getFromOffset(offset);
+        for (const offset of this.vicinitiesObserver.visibleBlocks.iterOffsetsWithSetValues()) {
+            if (this.offsets.has((0, generic_1.serializeVec3)(offset))) {
+                const block = this.vicinitiesObserver.visibleBlocks.getFromOffset(offset);
                 (0, assert_1.default)(block);
                 yield block;
             }
@@ -70,143 +228,3 @@ class ImmediateSurroundings extends Vicinity {
     }
 }
 exports.ImmediateSurroundings = ImmediateSurroundings;
-const HANDLE_MOVEMENT_OVER = 0.1; // Minimum distance to move before updating raycasts
-class VicinitiesManager {
-    constructor(bot, radii) {
-        this.botPosAsOfLastMoveHandling = null;
-        this.bot = bot;
-        this.radii = radii;
-        this.raycastManager = new visibility_raycast_manager_1.VisibilityRaycastManager(bot, radii.distantSurroundingsRadius);
-        const vicinityMasks = (0, get_vicinity_masks_1.getVicinityMasks)(bot, radii);
-        this.immediate = new ImmediateSurroundings(bot, this, common_1.VicinityName.IMMEDIATE_SURROUNDINGS, vicinityMasks.get(common_1.VicinityName.IMMEDIATE_SURROUNDINGS));
-        this.distant = new Map();
-        for (const directionName of Object.values(common_1.DirectionName)) {
-            // (DirectionName is a subset of VicinityName)
-            const vicinityName = directionName;
-            this.distant.set(directionName, new DistantSurroundingsInADirection(bot, this, vicinityName, vicinityMasks.get(vicinityName)));
-        }
-        this.visibleBlocks = new voxel_space_around_bot_eyes_1.VoxelSpaceAroundBotEyes(bot, radii.distantSurroundingsRadius, null // Default value for empty block spaces
-        );
-    }
-    hydrateVisibleBlocks() {
-        for (const offset of this.visibleBlocks.iterAllOffsets()) {
-            if (this.raycastManager.visibilityMask.getFromOffset(offset)) {
-                const block = this.bot.world.getBlock(offset.floor().add(this.bot.entity.position));
-                if (block) {
-                    this.visibleBlocks.setFromOffset(offset, block);
-                }
-            }
-            else {
-                this.visibleBlocks.unsetFromOffset(offset);
-            }
-        }
-    }
-    beginObservation() {
-        const curEyePos = (0, misc_1.getEyePos)(this.bot);
-        this.raycastManager.visibilityMask.setInitialEyePos(curEyePos);
-        this.raycastManager.hitsOrganizedIntoVoxelSpace.setInitialEyePos(curEyePos);
-        this.visibleBlocks.setInitialEyePos(curEyePos);
-        this.raycastManager.updateRaycasts(curEyePos, "everywhere");
-        this.hydrateVisibleBlocks();
-        this.botPosAsOfLastMoveHandling = this.bot.entity.position.clone();
-        // Setup listeners
-        this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
-        this.bot.on("move", this.handleBotMove.bind(this));
-        // TODO: entity...
-    }
-    handleBlockUpdate(oldBlock, newBlock) {
-        if (oldBlock && newBlock) {
-            (0, assert_1.default)(oldBlock.position.equals(newBlock.position));
-        } // I think this is always true since falling (moving) blocks are considered 'entities'
-        const eyePos = this.raycastManager.visibilityMask.eyePosAtLastUpdate;
-        (0, assert_1.default)(eyePos);
-        const oldBlockWasVisible = oldBlock &&
-            this.raycastManager.visibilityMask.getFromWorldPosition(oldBlock.position, eyePos);
-        const newBlockIsVisible = newBlock &&
-            this.raycastManager.visibilityMask.getFromWorldPosition(newBlock.position, eyePos);
-        if (oldBlockWasVisible) {
-            this.visibleBlocks.unsetFromWorldPosition(oldBlock.position, eyePos);
-        }
-        if (newBlockIsVisible) {
-            this.visibleBlocks.setFromWorldPosition(newBlock.position, eyePos, newBlock);
-        }
-        if (oldBlockWasVisible && !newBlockIsVisible) {
-            this.raycastManager.updateRaycasts(eyePos, {
-                forWorldVoxel: oldBlock.position.floor(),
-            });
-        }
-    }
-    handleBotMove(newBotPosition) {
-        (0, assert_1.default)(this.botPosAsOfLastMoveHandling);
-        const curBotPosition = this.bot.entity.position;
-        const prevBotPosition = this.botPosAsOfLastMoveHandling;
-        // Do nothing if magnitude of bot movement is small enought that we don't want to process it
-        if (curBotPosition.equals(prevBotPosition) ||
-            curBotPosition.distanceTo(prevBotPosition) < HANDLE_MOVEMENT_OVER) {
-            return;
-        }
-        this.botPosAsOfLastMoveHandling = curBotPosition.clone();
-        const curEyePos = (0, misc_1.getEyePos)(this.bot);
-        // Re-evaluate all visibility raycasts
-        this.raycastManager.updateRaycasts(curEyePos, "everywhere");
-        // Update the visibility mask's eye pos
-        this.visibleBlocks.updateEyePosAndShiftAsNeeded(curEyePos);
-        // Having updated this.visibleBlocks to the cur eye pos, we only need to update
-        // this.visibleBlocks when it does not match up with the visibility mask.
-        for (const offset of this.visibleBlocks.iterOffsetsWithSetValues()) {
-            // Unset the blocks that are no longer visible
-            if (!this.raycastManager.visibilityMask.getFromOffset(offset)) {
-                this.visibleBlocks.unsetFromOffset(offset);
-            }
-        }
-        for (const offset of this.raycastManager.visibilityMask.iterOffsetsWithSetValues()) {
-            // Set the blocks that became visible
-            if (!this.visibleBlocks.getFromOffset(offset)) {
-                const worldPos = offset.floor().add(this.bot.entity.position);
-                const block = this.bot.world.getBlock(worldPos);
-                if (block) {
-                    this.visibleBlocks.setFromOffset(offset, block);
-                } // Otherwise, it was likely an entity that was visible in this voxel (not a block)
-            }
-        }
-    }
-}
-exports.VicinitiesManager = VicinitiesManager;
-class VisibleVicinityContents {
-    constructor(bot, vicinity, vicinityManager) {
-        this.bot = bot;
-        this.vicinity = vicinity;
-        this.vicinityManager = vicinityManager;
-    }
-    // Block getters
-    *getDistinctBlockNames() {
-        const blockNames = new Set();
-        for (const block of this.vicinity.iterVisibleBlocks()) {
-            if (block) {
-                blockNames.add(block.name);
-            }
-        }
-        return blockNames;
-    }
-    *getBlockNamesToClosestCoords() { }
-    *getBlockNamesToAllCoords() { }
-    // Biome getters
-    *getDistinctBiomeNames() {
-        const alreadyYielded = new Set();
-        for (const block of this.vicinity.iterVisibleBlocks()) {
-            (0, assert_1.default)(block);
-            const biomeName = this.bot.registry.biomes[block.biome.id].name;
-            if (!alreadyYielded.has(biomeName)) {
-                yield biomeName;
-                alreadyYielded.add(biomeName);
-            }
-        }
-    }
-    *getBiomeNamesToClosestCoords() { }
-    *getBiomeNamesToAllCoords() { }
-    // Item getters
-    *getDistinctItemNames() { }
-    *getItemNamesToClosestCoords() { }
-    *getItemNamesToAllCoords() { }
-}
-exports.VisibleVicinityContents = VisibleVicinityContents;

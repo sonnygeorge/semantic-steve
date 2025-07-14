@@ -1,19 +1,5 @@
 import { Vec3 } from "vec3";
-
-// BlockFace as used in prismarine-world
-export const BlockFace = {
-  UNKNOWN: -999,
-  BOTTOM: 0,
-  TOP: 1,
-  NORTH: 2,
-  SOUTH: 3,
-  WEST: 4,
-  EAST: 5,
-};
-
-export type OrientationString = string; // e.g., "0.785398,1.570796" for theta=π/4, phi=π/2
-export type SphereSurfaceHashRegionString = string; // e.g., "0,0" for theta=0, phi=0
-export type VoxelFaceString = string; // Format: "${serializeVec3(voxelOffset)},${BlockFace}"
+import { SerializedOrientation } from "../types";
 
 /**
  * Represents spherical coordinates using Y-up coordinate system (Minecraft convention).
@@ -274,17 +260,19 @@ export class ThreeDimOrientation {
    * Serializes the orientation to a string.
    * @returns A string in the format "theta,phi"
    */
-  public serialize(): OrientationString {
+  public serialize(): SerializedOrientation {
     const { theta, phi } = this.sphericalAngles;
     return `${theta.toFixed(6)},${phi.toFixed(6)}`;
   }
 
   /**
    * Deserializes a string to create a ThreeDimOrientation.
-   * @param serialized - A string in the format "theta,phi".
-   * @returns A new ThreeDimOrientation instance.
+   * @param serialized - The serialized ThreeDimOrientation
+   * @returns A new ThreeDimOrientation instance
    */
-  public static deserialize(serialized: string): ThreeDimOrientation {
+  public static deserialize(
+    serialized: SerializedOrientation
+  ): ThreeDimOrientation {
     const [theta, phi] = serialized.split(",").map(Number);
     if (isNaN(theta) || isNaN(phi)) {
       throw new Error("Invalid serialized orientation string");

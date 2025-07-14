@@ -6,7 +6,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/semantic_steve/js/src/main.ts",
-      "runtimeArgs": ["-r", "ts-node/register"],
+      "runtimeArgs": ["-r", "ts-node/register", "--prof"],
       "env": {
         "TS_NODE_PROJECT": "${workspaceFolder}/semantic_steve/js/tsconfig.json",
         "SEMANTIC_STEVE_SCREENSHOT_DIR": "${workspaceFolder}/semantic_steve/screenshots"

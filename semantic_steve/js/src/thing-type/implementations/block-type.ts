@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { DirectionName } from "../../env-state/surroundings/index-old";
+import { DirectionName } from "../../types";
 import { InvalidThingError } from "../../types";
 import { IndexedBlock } from "minecraft-data";
 import { simplify as nbtSimplify } from "prismarine-nbt";
@@ -69,7 +69,7 @@ export class BlockType implements ThingType {
           this.pblock.id,
           itemID,
           item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
-          this.bot.entity.effects
+          this.bot.entity.effects,
         );
         if (digTime < fastestDigTime) {
           fastestDigTime = digTime;
@@ -133,7 +133,7 @@ export class BlockType implements ThingType {
   }
 
   locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Vec3 | undefined {
     // If a specific direction is provided, check only that direction
     if (direction) {
@@ -151,7 +151,7 @@ export class BlockType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys()
+      this.bot.envState.surroundings.distant.keys(),
     );
 
     // Find the closest coordinates across all directions

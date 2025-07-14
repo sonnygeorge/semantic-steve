@@ -34,6 +34,7 @@ extend-exclude = [
     "venv",
     ".git",
     "__pycache__",
+    "eai25_experiments",
 ]
 
 [tool.ruff.lint]

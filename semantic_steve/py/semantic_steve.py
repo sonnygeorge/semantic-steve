@@ -20,7 +20,6 @@ class SemanticSteve:
         self,
         zmq_port: int = 5555,
         screenshot_dir: str | os.PathLike = DEFAULT_PATH_TO_SCREENSHOT_DIR,
-
         # Users should never use the following args (only devs):
         _should_rebuild_typescript: bool = False,
         # Set this to false to run the JS process separately
@@ -28,13 +27,12 @@ class SemanticSteve:
         _should_run_js_process: bool = True,
     ):
         SemanticSteve.ascertain_js_dependencies()
-       
+
         self.js_process_manager = SemanticSteveJsProcessManager(
             should_rebuild_typescript=_should_rebuild_typescript
         )
         self._should_run_js_process = _should_run_js_process
         os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
-        os.environ
         self.zmq_port = zmq_port
         self.socket: zmq.Socket | None = None
         self.context: zmq.Context | None = None

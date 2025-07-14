@@ -9,7 +9,7 @@ exports.getAllPlaceableCoords = getAllPlaceableCoords;
 exports.getPlaceableCoords = getPlaceableCoords;
 const assert_1 = __importDefault(require("assert"));
 const constants_1 = require("../constants");
-const cubed_meter_1 = require("./cubed-meter");
+const voxel_1 = require("./voxel");
 const visibility_1 = require("./visibility");
 const block_1 = require("./block");
 function isBotOccupyingCoords(bot, coords) {
@@ -47,22 +47,22 @@ function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(bot, coords) {
     if (!(0, visibility_1.areContentsOfCoordsVisible)(bot, coords)) {
         return;
     }
-    const cubedMeter = new cubed_meter_1.CubedMeter(bot, coords);
-    for (const [side, offset] of Object.entries(constants_1.ADJACENT_OFFSETS)) {
+    const voxel = new voxel_1.VoxelAroundBot(bot, coords);
+    for (const [face, offset] of constants_1.ADJACENT_OFFSETS) {
         const adjacentCoords = coords.clone().add(offset);
         const adjacentBlock = bot.blockAt(adjacentCoords);
         if (!(0, block_1.isBlock)(adjacentBlock)) {
             continue;
         }
         (0, assert_1.default)(adjacentBlock !== null);
-        const connectingFace = cubedMeter.faces.get(side);
+        const connectingFace = voxel.faces.get(face);
         (0, assert_1.default)(connectingFace !== undefined);
         // Skip if out of reach for placement
         if (!connectingFace.isWithinReachForPlacement()) {
             continue;
         }
         // Skip if the bot's line of sight can't reach
-        if (!(0, visibility_1.canRaycastToOrBeyondCubedMeterFace)(bot, connectingFace)) {
+        if (!(0, visibility_1.canRaycastToOrBeyondVoxelFace)(bot, connectingFace)) {
             continue;
         }
         // Use this block as reference with the opposite face vector

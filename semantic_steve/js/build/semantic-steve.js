@@ -99,7 +99,7 @@ class SemanticSteve {
             if (!this.skills[skillInvocation.skillName]) {
                 const result = new skill_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
                 // NOTE: Faux skill-resolution w/out ever ever having an active skill
-                this.handleSkillResolution(result);
+                yield this.handleSkillResolution(result);
                 return;
             }
             const skillToInvoke = this.skills[skillInvocation.skillName];
@@ -130,20 +130,23 @@ class SemanticSteve {
         }), 0);
     }
     handleSkillResolution(result) {
-        var _a;
-        // Unset fields that are only to be set while skills are running
-        console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
-        this.activeSkill = undefined;
-        this.timeOfLastSkillInvocation = undefined;
-        // Get Inventory changes since the skill was invoked
-        const invChanges = this.getInventoryChanges();
-        // Prepare the data to send to Python
-        const toSendToPython = {
-            envState: this.bot.envState.getDTO(),
-            skillInvocationResults: result.message,
-            inventoryChanges: (0, inventory_changes_1.getInventoryChangesDTO)(this.bot, invChanges),
-        };
-        this.sendDataToPython(toSendToPython);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            console.log(result);
+            // Unset fields that are only to be set while skills are running
+            console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
+            this.activeSkill = undefined;
+            this.timeOfLastSkillInvocation = undefined;
+            // Get Inventory changes since the skill was invoked
+            const invChanges = this.getInventoryChanges();
+            // Prepare the data to send to Python
+            const toSendToPython = {
+                envState: yield this.bot.envState.getDTO(),
+                skillInvocationResults: result.message,
+                inventoryChanges: (0, inventory_changes_1.getInventoryChangesDTO)(this.bot, invChanges),
+            };
+            this.sendDataToPython(toSendToPython);
+        });
     }
     // ==============
     // Other helpers
@@ -213,7 +216,7 @@ class SemanticSteve {
     getAndSendInitialState() {
         return __awaiter(this, void 0, void 0, function* () {
             let toSendToPython = {
-                envState: this.bot.envState.getDTO(),
+                envState: yield this.bot.envState.getDTO(),
                 // NOTE: No skill invocation results yet
                 // NOTE: No inventory changes yet
             };
@@ -239,7 +242,7 @@ class SemanticSteve {
                         this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
                         const result = new skill_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
                         // NOTE: Faux skill-resolution w/out ever ever having an active skill
-                        this.handleSkillResolution(result);
+                        yield this.handleSkillResolution(result);
                     }
                     else {
                         this.invokeSkill(skillInvocation);

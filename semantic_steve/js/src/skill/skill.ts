@@ -1,6 +1,7 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
 import { SkillResult } from "../types";
+import { on } from "events";
 
 export enum SkillStatus {
   PENDING_INVOCATION = "PENDING_INVOCATION",
@@ -9,7 +10,7 @@ export enum SkillStatus {
   STOPPED = "STOPPED",
 }
 
-export type SkillResolutionHandler = (result: SkillResult) => void;
+export type SkillResolutionHandler = (result: SkillResult) => Promise<void>;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.
@@ -40,12 +41,11 @@ export abstract class Skill {
     assert(
       this.status === SkillStatus.ACTIVE_RUNNING ||
         this.status === SkillStatus.STOPPED,
-      `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`,
+      `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`
     );
     this.status = SkillStatus.PENDING_INVOCATION;
-    setTimeout(() => {
-      this.onResolution(result);
-    }, 0);
+    const onResolution = this.onResolution.bind(this, result);
+    setTimeout(onResolution, 0);
   }
 
   /**
@@ -56,7 +56,7 @@ export abstract class Skill {
   public async invoke(...args: any[]): Promise<void> {
     assert(
       this.status === SkillStatus.PENDING_INVOCATION,
-      `Skill must be in PENDING_INVOCATION state to invoke, but was in ${this.status}`,
+      `Skill must be in PENDING_INVOCATION state to invoke, but was in ${this.status}`
     );
     this.status = SkillStatus.ACTIVE_RUNNING;
     await this.doInvoke(...args);
@@ -70,7 +70,7 @@ export abstract class Skill {
   public async pause(): Promise<void> {
     assert(
       this.status === SkillStatus.ACTIVE_RUNNING,
-      `Skill must be in ACTIVE state to pause, but was in ${this.status}`,
+      `Skill must be in ACTIVE state to pause, but was in ${this.status}`
     );
     this.status = SkillStatus.ACTIVE_PAUSED;
     await this.doPause();
@@ -84,7 +84,7 @@ export abstract class Skill {
   public async resume(): Promise<void> {
     assert(
       this.status === SkillStatus.ACTIVE_PAUSED,
-      `Skill must be in PAUSED state to resume, but was in ${this.status}`,
+      `Skill must be in PAUSED state to resume, but was in ${this.status}`
     );
     this.status = SkillStatus.ACTIVE_RUNNING;
     await this.doResume();
@@ -99,7 +99,7 @@ export abstract class Skill {
     assert(
       this.status === SkillStatus.ACTIVE_RUNNING ||
         this.status === SkillStatus.ACTIVE_PAUSED,
-      `Skill must be in ACTIVE or PAUSED state to stop, but was in ${this.status}`,
+      `Skill must be in ACTIVE or PAUSED state to stop, but was in ${this.status}`
     );
     this.status = SkillStatus.STOPPED;
     await this.doStop();

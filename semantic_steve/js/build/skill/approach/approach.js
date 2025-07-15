@@ -108,9 +108,7 @@ class Approach extends skill_1.Skill {
                 this.itemTotalAtPathingStart = this.thing.getTotalCountInInventory();
             }
             // Invoke pathfinding to the coordinates of the thing
-            this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, (result) => {
-                this.resolveFromSubskillResolution(result);
-            });
+            this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, this.resolveFromSubskillResolution.bind(this));
             yield this.activeSubskill.invoke(this.targetThingCoords, stopIfFound);
         });
     }

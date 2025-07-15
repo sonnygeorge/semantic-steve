@@ -148,7 +148,7 @@ class MineBlocks extends skill_1.Skill {
     getDigCoordsAfterPathfindingToNearestBlockToMine() {
         return __awaiter(this, void 0, void 0, function* () {
             (0, assert_1.default)(this.blockTypeToMine);
-            let nearestPosOfBlockType =
+            let nearestPosOfBlockType = 
             // TODO: Somehow prefer same y-level and especially avoid digging straight down?
             yield this.blockTypeToMine.locateNearestInImmediateSurroundings();
             if (!nearestPosOfBlockType) {
@@ -249,7 +249,7 @@ class MineBlocks extends skill_1.Skill {
             // If we are resuming from a pause that happened before a drop was picked up
             if (this.numBlocksBroken < this.numDropPickupsAttempted &&
                 this.blockToMineDrop &&
-                this.blockToMineDrop.itemEntity.isVisibleInImmediateSurroundings()) {
+                (yield this.blockToMineDrop.itemEntity.isVisibleInImmediateSurroundings())) {
                 yield this.attemptDropPickup();
             }
             // Main loop to attempt mining blocks until resolution or pause

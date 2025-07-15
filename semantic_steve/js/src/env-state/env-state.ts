@@ -72,7 +72,7 @@ export class EnvState {
     return equipped;
   }
 
-  public getDTO(): EnvStateDTO {
+  public async getDTO(): Promise<EnvStateDTO> {
     return {
       playerCoordinates: [
         // Round to 1 decimal place
@@ -87,9 +87,9 @@ export class EnvState {
         Object.entries(this.equipped).map(([key, item]) => [
           key,
           item?.name ?? null,
-        ]),
+        ])
       ) as Map<EquipmentDestination, string | undefined>,
-      surroundings: this.surroundings.getDTO(),
+      surroundings: await this.surroundings.getDTO(),
     };
   }
 }

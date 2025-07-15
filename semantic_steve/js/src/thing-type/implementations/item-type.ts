@@ -2,7 +2,7 @@ import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
 import { DirectionName } from "../../types";
-import { MaybePromise, InvalidThingError } from "../../types";
+import { InvalidThingError } from "../../types";
 
 export class ItemType implements ThingType {
   bot: Bot;
@@ -12,7 +12,7 @@ export class ItemType implements ThingType {
   constructor(bot: Bot, name?: string, id?: number) {
     if (name) {
       const itemEntityNames = Object.values(bot.registry.itemsByName).map(
-        (i) => i.name,
+        (i) => i.name
       );
       if (!itemEntityNames.includes(name)) {
         throw new InvalidThingError(`Invalid item entity type: ${name}.`);
@@ -28,7 +28,7 @@ export class ItemType implements ThingType {
       this.name = bot.registry.items[id].name;
     } else {
       throw new Error(
-        "Either name or id must be provided to create an ItemEntity.",
+        "Either name or id must be provided to create an ItemEntity."
       );
     }
     this.bot = bot;
@@ -46,8 +46,8 @@ export class ItemType implements ThingType {
   // Implementation of ThingType API
   // ================================
 
-  isVisibleInImmediateSurroundings(): boolean {
-    for (const itemName of this.bot.envState.surroundings.immediate.visible.getDistinctItemNames()) {
+  async isVisibleInImmediateSurroundings(): Promise<boolean> {
+    for await (const itemName of this.bot.envState.surroundings.immediate.visible.getDistinctItemNames()) {
       if (itemName === this.name) {
         return true;
       }
@@ -55,9 +55,9 @@ export class ItemType implements ThingType {
     return false;
   }
 
-  isVisibleInDistantSurroundings(): boolean {
+  async isVisibleInDistantSurroundings(): Promise<boolean> {
     for (const dir of this.bot.envState.surroundings.distant.values()) {
-      for (const itemName of dir.visible.getDistinctItemNames()) {
+      for await (const itemName of dir.visible.getDistinctItemNames()) {
         if (itemName === this.name) {
           return true;
         }
@@ -66,38 +66,36 @@ export class ItemType implements ThingType {
     return false;
   }
 
-  locateNearest(): Vec3 | undefined {
+  async locateNearest(): Promise<Vec3 | undefined> {
     // Try immediate surroundings first
-    const immediateResult = this.locateNearestInImmediateSurroundings();
+    const immediateResult = await this.locateNearestInImmediateSurroundings();
     if (immediateResult) {
       return immediateResult;
     }
 
     // If not found in immediate surroundings, try distant surroundings
-    return this.locateNearestInDistantSurroundings();
+    return await this.locateNearestInDistantSurroundings();
   }
 
-  locateNearestInImmediateSurroundings(): Vec3 | undefined {
-    for (const [
-      name,
-      closestCoords,
-    ] of this.bot.envState.surroundings.immediate.visible.getItemNamesToClosestCoords()) {
+  async locateNearestInImmediateSurroundings(): Promise<Vec3 | undefined> {
+    const itemNamesToClosestCoords =
+      await this.bot.envState.surroundings.immediate.visible.getItemNamesToClosestCoords();
+    for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
       if (name === this.name) {
         return closestCoords.clone();
       }
     }
   }
 
-  locateNearestInDistantSurroundings(
-    direction?: DirectionName,
-  ): Vec3 | undefined {
+  async locateNearestInDistantSurroundings(
+    direction?: DirectionName
+  ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const vicinity = this.bot.envState.surroundings.distant.get(direction)!;
-      for (const [
-        name,
-        closestCoords,
-      ] of vicinity.visible.getItemNamesToClosestCoords()) {
+      const itemNamesToClosestCoords =
+        await vicinity.visible.getItemNamesToClosestCoords();
+      for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
         if (name === this.name) {
           return closestCoords.clone();
         }
@@ -107,7 +105,7 @@ export class ItemType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -115,10 +113,9 @@ export class ItemType implements ThingType {
     let smallestDistance = Infinity;
     for (const dir of directions) {
       const vicinity = this.bot.envState.surroundings.distant.get(dir)!;
-      for (const [
-        name,
-        closestCoords,
-      ] of vicinity.visible.getItemNamesToClosestCoords()) {
+      const itemNamesToClosestCoords =
+        await vicinity.visible.getItemNamesToClosestCoords();
+      for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
         if (name === this.name) {
           const distance = this.bot.entity.position.distanceTo(closestCoords);
           if (distance < smallestDistance) {
@@ -132,11 +129,10 @@ export class ItemType implements ThingType {
     return closestOfClosestCoords;
   }
 
-  isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean {
-    for (const [
-      name,
-      coordsIterable,
-    ] of this.bot.envState.surroundings.immediate.visible.getItemNamesToAllCoords()) {
+  async isVisibleInImmediateSurroundingsAt(coords: Vec3): Promise<boolean> {
+    const itemNamesToAllCoords =
+      await this.bot.envState.surroundings.immediate.visible.getItemNamesToAllCoords();
+    for (const [name, coordsIterable] of itemNamesToAllCoords.entries()) {
       if (name === this.name) {
         for (const itemCoords of coordsIterable) {
           if (itemCoords.equals(coords)) {

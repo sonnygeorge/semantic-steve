@@ -1,19 +1,20 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VoxelAroundBot = exports.VoxelFaceAroundBot = void 0;
-exports.assertIsVoxel = assertIsVoxel;
+exports.isVoxel = isVoxel;
 exports.serializeVoxelOffsetFace = serializeVoxelOffsetFace;
+const assert_1 = __importDefault(require("assert"));
 const vec3_1 = require("vec3");
 const constants_1 = require("../constants");
 const types_1 = require("../types");
 const generic_1 = require("./generic");
-function assertIsVoxel(vec) {
-    // A Vec3 is considered a voxel if its coordinates are integers (floored)
-    if (!Number.isInteger(vec.x) ||
-        !Number.isInteger(vec.y) ||
-        !Number.isInteger(vec.z)) {
-        throw new Error("Coordinates must be integers for voxel representation");
-    }
+function isVoxel(vec) {
+    return (Number.isInteger(vec.x) &&
+        Number.isInteger(vec.y) &&
+        Number.isInteger(vec.z));
 }
 /**
  * Helper function to serialize a face consistently
@@ -55,7 +56,7 @@ function serializeVoxelOffsetFace(voxelPos, face) {
 class VoxelFaceAroundBot {
     constructor(bot, c1, c2, c3, c4) {
         for (const corner of [c1, c2, c3, c4]) {
-            assertIsVoxel(corner);
+            (0, assert_1.default)(isVoxel(corner));
         }
         this.bot = bot;
         this.corners = [c1, c2, c3, c4];
@@ -73,7 +74,7 @@ class VoxelFaceAroundBot {
 exports.VoxelFaceAroundBot = VoxelFaceAroundBot;
 class VoxelAroundBot {
     constructor(bot, coords) {
-        assertIsVoxel(coords);
+        (0, assert_1.default)(isVoxel(coords));
         this.bot = bot;
         this.coords = coords;
         this.faces = this.createFaces();

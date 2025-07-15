@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { SurroundingsRadii, VicinityName, DirectionName } from "../../types";
-import { SurroundingsDTO } from "./dto";
+import { DistantSurroundingsInADirectionDTO, SurroundingsDTO } from "./dto";
 import {
   VicinitiesObserver,
   ImmediateSurroundings,
@@ -11,7 +11,7 @@ import { classifyVicinityOfPosition } from "./classify-vicinity";
 
 export class Surroundings {
   private bot: Bot;
-  private vicinitiesObserver: VicinitiesObserver;
+  public vicinitiesObserver: VicinitiesObserver;
   public immediate: ImmediateSurroundings;
   public distant: Map<DirectionName, DistantSurroundingsInADirection>;
   public radii: SurroundingsRadii;
@@ -24,8 +24,8 @@ export class Surroundings {
     this.radii = this.vicinitiesObserver.radii;
   }
 
-  public beginObservation(): void {
-    this.vicinitiesObserver.beginObservation();
+  public async beginObservation(): Promise<void> {
+    await this.vicinitiesObserver.beginObservation();
   }
 
   public *iterVicinities(): Generator<
@@ -42,17 +42,20 @@ export class Surroundings {
       position,
       this.bot.entity.position,
       this.radii.immediateSurroundingsRadius,
-      this.radii.distantSurroundingsRadius,
+      this.radii.distantSurroundingsRadius
     );
   }
 
-  getDTO(): SurroundingsDTO {
-    console.log("Getting Surroundings DTO");
+  async getDTO(): Promise<SurroundingsDTO> {
+    const distantDTOs: Map<DirectionName, DistantSurroundingsInADirectionDTO> =
+      new Map();
+    for (const direction of Object.values(DirectionName)) {
+      distantDTOs.set(direction, await this.distant.get(direction)!.getDTO());
+    }
+
     return {
-      immediateSurroundings: this.immediate.getDTO(),
-      distantSurroundings: Object.fromEntries(
-        [...this.distant.entries()].map(([dir, ds]) => [dir, ds.getDTO()]),
-      ),
+      immediateSurroundings: await this.immediate.getDTO(),
+      distantSurroundings: Object.fromEntries(distantDTOs.entries()),
     };
   }
 }

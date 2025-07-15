@@ -21,8 +21,12 @@ var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _ar
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VisibilityRaycaster = void 0;
+const assert_1 = __importDefault(require("assert"));
 const vec3_1 = require("vec3");
 const orientation_1 = require("../../utils/orientation");
 const types_1 = require("../../types");
@@ -31,7 +35,7 @@ const generic_1 = require("../../utils/generic");
 const array_1 = require("../../utils/array");
 const prismarine_world_1 = require("prismarine-world");
 const voxel_2 = require("../../utils/voxel");
-const RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS = 2000;
+const RELEASE_EVENT_LOOP_EVERY_N_MS = 80;
 class VisibilityRaycaster {
     constructor(bot, radiusOfInterest) {
         this.isRaycasting = false;
@@ -152,42 +156,50 @@ class VisibilityRaycaster {
         }
     }
     /**
-     * Performs a raycast from a given position in a specified direction and updates the
-     * visibility mask and visible blocks as the raycast progresses.
-     *
-     * This is a simplified version of prismarine-world's raycasting that:
-     * - Doesn't take into account the shapes of blocks. Here, unlike bot.world.raycast, any
-     *   block in a voxel reached voxel is considered a hit, even if the ray would not have
-     *   intersected with the block's shape (e.g., a slab).
-     * - Adds our custom updating of the visibility mask and visible blocks arrays.
+     * Performs a raycast from a given position in a specified direction up until this.radius,
+     * updating the visibility mask and visible blocks arrays as the raycast progresses.
      *
      * @param from - The starting position of the raycast.
      * @param direction - The normalized direction vector of the raycast.
-     * @param range - The maximum range of the raycast.
+     * @param alreadyAscertainedVoxels - A set of voxel offsets that have already been checked
+     *                                   to avoid redundant checks. NOTE: This set is mutated
+     *                                   within this function!
      * @returns A tuple containing the first block hit by the raycast and the face it hit,
      *          or null if no block was hit.
      */
-    doRaycast(from, direction, range) {
-        const iter = new prismarine_world_1.iterators.RaycastIterator(from, direction, range);
+    doRaycast(from, direction, alreadyAscertainedVoxels) {
+        const iter = new prismarine_world_1.iterators.RaycastIterator(from, direction, this.radius + 0.5);
         let pos = iter.next();
+        let hit = null;
         while (pos) {
             const position = new vec3_1.Vec3(pos.x, pos.y, pos.z);
-            const block = this.bot.world.getBlock(position);
+            const serializedPosition = (0, generic_1.serializeVec3)(position);
             const offset = position.floored().minus(from);
-            if (block === null || block.name === "air") {
-                // A ray passed through this voxel (is unobstructed from the bots eyes)
-                this.visibilityMask.setFromOffset(offset, true);
+            if (hit && !alreadyAscertainedVoxels.has(serializedPosition)) {
+                // This offset should be provisionally considered invisible.
+                // "Provisionally" since we are not adding it to the set of already ascertained
+                // voxels, meaning, the offset voxel can be hit later via a different entry face.
                 this.visibleBlocks.unsetFromOffset(offset);
+                this.visibilityMask.unsetFromOffset(offset);
             }
-            else {
-                this.visibilityMask.setFromOffset(offset, true); // Contents are technically visible
-                this.visibleBlocks.unsetFromOffset(offset);
-                return [block, pos.face];
+            else if (!hit && !alreadyAscertainedVoxels.has(serializedPosition)) {
+                const block = this.bot.world.getBlock(position);
+                // Any air/null that we hit is just an unobstructed (see-through) voxel
+                if (block === null || block.name === "air") {
+                    this.visibleBlocks.unsetFromOffset(offset); // No block at this offset
+                    this.visibilityMask.setFromOffset(offset, true); // Rays pass through = visible
+                }
+                else {
+                    // The first block has been reached by this raycast and is our hit!
+                    this.visibleBlocks.setFromOffset(offset, block); // Add block to visible blocks
+                    this.visibilityMask.setFromOffset(offset, true); // Mark offset as visible
+                    hit = [block, pos.face];
+                }
+                alreadyAscertainedVoxels.add(serializedPosition); // Mark this voxel as checked
             }
             pos = iter.next();
         }
-        // Finally, the raycast iterator has reached the end of its range
-        return [null, null];
+        return hit !== null && hit !== void 0 ? hit : [null, null];
     }
     /**
      * Performs raycasting with occlusion culling from a given voxel position.
@@ -198,19 +210,24 @@ class VisibilityRaycaster {
      */
     doRaycasting(fromVoxel) {
         return __asyncGenerator(this, arguments, function* doRaycasting_1() {
-            (0, voxel_2.assertIsVoxel)(fromVoxel);
+            (0, assert_1.default)((0, voxel_2.isVoxel)(fromVoxel));
+            let msElapsedWhileRaycasting = 0;
+            const start = performance.now();
+            let timeOfLastStart = start;
             // Variable setup
             this.isRaycasting = true;
+            let nRaycastsPerformed = 0;
             const fromVoxelCenter = fromVoxel.offset(0.5, 0.5, 0.5);
             const orientationsToSkip = new Set();
-            const maxRaycastDistance = this.radius + 0.5; // Slightly beyond sphere radius to ensure coverage
-            // Inner helper function to release event every N raycasts
-            let nRaycastsPerformed = 0;
+            const alreadyAscertainedVoxels = new Set();
+            // Inner helper function to release event loop every N raycasts
             function releaseEventLoopIfNecessary() {
                 return __awaiter(this, void 0, void 0, function* () {
-                    nRaycastsPerformed++;
-                    if (nRaycastsPerformed % RELEASE_EVENT_LOOP_EVERY_N_RAYCASTS === 0) {
+                    const elapsedSinceLastStart = performance.now() - timeOfLastStart;
+                    if (elapsedSinceLastStart > RELEASE_EVENT_LOOP_EVERY_N_MS) {
+                        msElapsedWhileRaycasting += elapsedSinceLastStart;
                         yield (0, generic_1.asyncSleep)(0);
+                        timeOfLastStart = performance.now();
                     }
                 });
             }
@@ -220,7 +237,8 @@ class VisibilityRaycaster {
                 if (orientationsToSkip.has(originalRayOrientationKey)) {
                     continue;
                 }
-                const [hit, face] = this.doRaycast(fromVoxelCenter, OriginalRayOrientation.vecNorm, maxRaycastDistance);
+                const [hit, face] = this.doRaycast(fromVoxelCenter, OriginalRayOrientation.vecNorm, alreadyAscertainedVoxels);
+                nRaycastsPerformed++;
                 yield yield __await([OriginalRayOrientation.vecNorm, hit]);
                 yield __await(releaseEventLoopIfNecessary());
                 // Once we've hit a face, we can skip the other orientations that penetrate this face
@@ -235,6 +253,13 @@ class VisibilityRaycaster {
                     }
                 }
             }
+            // Log performance metrics
+            const end = performance.now();
+            const totalMsElapsed = Math.round(end - start);
+            msElapsedWhileRaycasting += end - timeOfLastStart;
+            msElapsedWhileRaycasting = Math.round(msElapsedWhileRaycasting);
+            console.log(`${msElapsedWhileRaycasting}ms spent raycasting | ` +
+                `${totalMsElapsed - msElapsedWhileRaycasting}ms spent elsewhere`);
             this.isRaycasting = false;
         });
     }

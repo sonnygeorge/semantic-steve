@@ -46,8 +46,11 @@ bot.once("login", () => {
 });
 // Initialize and run SemanticSteve once the bot has spawned and chunks have loaded
 bot.once("spawn", () => __awaiter(void 0, void 0, void 0, function* () {
+    // Set the max time used by pathfinder for thinking to a low value to allow more frequent
+    // interleaving between pathfinding and visibility raycasting.
+    bot.pathfinder.tickTimeout = 8;
     yield bot.waitForChunksToLoad();
-    bot.envState.surroundings.beginObservation();
+    yield bot.envState.surroundings.beginObservation();
     (0, prismarine_viewer_1.mineflayer)(bot, { port: config.mfViewerPort, firstPerson: true });
     const semanticSteve = new semantic_steve_1.SemanticSteve(bot, config);
     semanticSteve.run();

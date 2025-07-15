@@ -112,10 +112,12 @@ class CraftItems extends skill_1.Skill {
             if (!nearestImmediateSurroundingsTableCoords &&
                 craftingTableIsInInventory) {
                 let placeCraftingTableResult = undefined;
-                const handlePlaceCraftingTableResolution = (result) => {
-                    this.activeSubskill = undefined;
-                    placeCraftingTableResult = result;
-                };
+                function handlePlaceCraftingTableResolution(result) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        this.activeSubskill = undefined;
+                        placeCraftingTableResult = result;
+                    });
+                }
                 this.activeSubskill = new place_block_1.PlaceBlock(this.bot, handlePlaceCraftingTableResolution.bind(this));
                 yield this.activeSubskill.invoke(craftingTableBlockType);
                 while (placeCraftingTableResult === undefined ||
@@ -149,10 +151,12 @@ class CraftItems extends skill_1.Skill {
             if (!tableIsReachable()) {
                 // Pathfind to the crafting table
                 let tableIsInRangeAfterPathfinding = undefined;
-                const handlePathfindingResolution = (result) => {
-                    this.activeSubskill = undefined;
-                    tableIsInRangeAfterPathfinding = tableIsReachable();
-                };
+                function handlePathfindingResolution(result) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        this.activeSubskill = undefined;
+                        tableIsInRangeAfterPathfinding = tableIsReachable();
+                    });
+                }
                 this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, handlePathfindingResolution.bind(this));
                 yield this.activeSubskill.invoke(nearestImmediateSurroundingsTableCoords);
                 while (tableIsInRangeAfterPathfinding === undefined ||
@@ -176,18 +180,20 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(table);
             yield this.botCraft(table);
             // Always collect the crafting table after crafting
-            const handleMineBlocksResolution = (mineBlocksResult) => {
-                this.activeSubskill = undefined;
-                (0, assert_1.default)(this.itemToCraft);
-                (0, assert_1.default)(this.quantityToCraft);
-                this.shouldBeDoingStuff = false;
-                let craftItemsResult = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
-                if (!(mineBlocksResult instanceof results_3.MineBlocksResults.Success)) {
-                    craftItemsResult =
-                        new results_1.CraftItemsResults.SuccessProblemCollectingCraftingTable(this.itemToCraft.name, this.quantityToCraft, mineBlocksResult);
-                }
-                this.resolve(craftItemsResult);
-            };
+            function handleMineBlocksResolution(mineBlocksResult) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    this.activeSubskill = undefined;
+                    (0, assert_1.default)(this.itemToCraft);
+                    (0, assert_1.default)(this.quantityToCraft);
+                    this.shouldBeDoingStuff = false;
+                    let craftItemsResult = new results_1.CraftItemsResults.Success(this.itemToCraft.name, this.quantityToCraft);
+                    if (!(mineBlocksResult instanceof results_3.MineBlocksResults.Success)) {
+                        craftItemsResult =
+                            new results_1.CraftItemsResults.SuccessProblemCollectingCraftingTable(this.itemToCraft.name, this.quantityToCraft, mineBlocksResult);
+                    }
+                    this.resolve(craftItemsResult);
+                });
+            }
             this.activeSubskill = new mine_blocks_1.MineBlocks(this.bot, handleMineBlocksResolution.bind(this));
             yield this.activeSubskill.invoke(craftingTableBlockType.name);
             while (this.activeSubskill) {

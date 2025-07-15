@@ -117,7 +117,7 @@ class OffsetBased3DArray {
     constructor(radiusOfInterest, defaultValue) {
         this.radiusOfInterest = radiusOfInterest;
         this.dimension = radiusOfInterest * 2 + 1;
-        this.voxelSpace = new Symmetrical3DArray(this.dimension, defaultValue);
+        this.array = new Symmetrical3DArray(this.dimension, defaultValue);
     }
     /**
      * Iterates through all possible offset coordinates within the radius of interest.
@@ -142,7 +142,7 @@ class OffsetBased3DArray {
      */
     *iterOffsetsWithSetValues() {
         // NOTE: Copy to avoid mutation during iteration
-        for (const idxs of new Map(this.voxelSpace.idxsWithSetValues).values()) {
+        for (const idxs of new Map(this.array.idxsWithSetValues).values()) {
             yield this.indicesToOffset(idxs);
         }
     }
@@ -204,7 +204,7 @@ class OffsetBased3DArray {
         if (!indices) {
             return null;
         }
-        return this.voxelSpace.get(indices[0], indices[1], indices[2]);
+        return this.array.get(indices[0], indices[1], indices[2]);
     }
     /**
      * Sets a value at the specified offset coordinates.
@@ -218,7 +218,7 @@ class OffsetBased3DArray {
         if (!indices) {
             return false;
         }
-        this.voxelSpace.set(indices[0], indices[1], indices[2], value);
+        this.array.set(indices[0], indices[1], indices[2], value);
         return true;
     }
     /**
@@ -232,7 +232,7 @@ class OffsetBased3DArray {
         if (!indices) {
             return false;
         }
-        this.voxelSpace.unset(indices[0], indices[1], indices[2]);
+        this.array.unset(indices[0], indices[1], indices[2]);
         return true;
     }
 }

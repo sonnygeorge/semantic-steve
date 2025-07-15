@@ -20,10 +20,10 @@ const config = new SemanticSteveConfig({
   mfViewerPort: parseInt(process.env.SEMANTIC_STEVE_MF_VIEWER_PORT || "3000"),
   zmqPort: parseInt(process.env.SEMANTIC_STEVE_ZMQ_PORT || "5555"),
   immediateSurroundingsRadius: parseInt(
-    process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4",
+    process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4"
   ),
   distantSurroundingsRadius: parseInt(
-    process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "25",
+    process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "25"
   ),
   username: process.env.SEMANTIC_STEVE_MC_USERNAME || "SemanticSteve",
 } as SemanticSteveConfigOptions);
@@ -42,7 +42,7 @@ bot.once("login", () => {
     createPlugin({
       immediateSurroundingsRadius: config.immediateSurroundingsRadius,
       distantSurroundingsRadius: config.distantSurroundingsRadius,
-    }),
+    })
   );
 });
 
@@ -53,7 +53,7 @@ bot.once("spawn", async () => {
   bot.pathfinder.tickTimeout = 8;
 
   await bot.waitForChunksToLoad();
-  bot.envState.surroundings.beginObservation();
+  await bot.envState.surroundings.beginObservation();
 
   mfViewer(bot, { port: config.mfViewerPort, firstPerson: true });
 

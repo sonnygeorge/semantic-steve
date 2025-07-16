@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -67,18 +34,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImmediateSurroundings = exports.DistantSurroundingsInADirection = exports.Vicinity = exports.VisibleVicinityContents = exports.VicinitiesObserver = void 0;
 const assert_1 = __importDefault(require("assert"));
-const fs = __importStar(require("fs"));
 const types_1 = require("../../types");
 const generic_1 = require("../../utils/generic");
 const classify_vicinity_1 = require("./classify-vicinity");
 const misc_1 = require("../../utils/misc");
 const visibility_raycaster_1 = require("./visibility-raycaster");
-const orientation_1 = require("../../utils/orientation");
 const item_entity_1 = require("../../utils/item-entity");
 class VicinitiesObserver {
     constructor(bot, radii) {
-        this.allSpawnedItemEntities = new Map();
-        this.itemEntitiesGoneBeforeAdd = new Set();
         // Outer contexts can set this to something and wait for it to be set to back to null to
         // know that a cycle has completed. Lol, there's probably a better way to do this.
         this.thisGetsSetToNullAtEndOfObservationCycle = null;
@@ -100,36 +63,15 @@ class VicinitiesObserver {
     doObservationCycle(fromBotPos) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
-            const fromEyeVoxel = (0, misc_1.getEyePos)(this.bot, fromBotPos).floor();
-            const raycasts = [];
             try {
-                for (var _d = true, _e = __asyncValues(this.visibilityRaycaster.doRaycasting(fromEyeVoxel)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                // Invoke the VisibilityRayaster to do all of its raycasts in a cycle
+                for (var _d = true, _e = __asyncValues(this.visibilityRaycaster.doRaycasting((0, misc_1.getEyePos)(this.bot, fromBotPos).floor())), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
                     _c = _f.value;
                     _d = false;
                     const [vecNorm, pBlock] = _c;
                     if (!vecNorm) {
-                        // No more raycasts to process
                         break;
                     }
-                    const orientation = new orientation_1.ThreeDimOrientation(vecNorm);
-                    const { phi, theta } = orientation.sphericalAngles;
-                    let offset = null;
-                    if (pBlock) {
-                        offset = pBlock.position.minus(fromEyeVoxel);
-                    }
-                    raycasts.push([
-                        {
-                            phi,
-                            theta,
-                            hit: offset
-                                ? {
-                                    x: offset.x,
-                                    y: offset.y,
-                                    z: offset.z,
-                                }
-                                : null,
-                        },
-                    ]);
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -139,8 +81,14 @@ class VicinitiesObserver {
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            fs.writeFileSync("raycasts.json", JSON.stringify(raycasts));
             this.thisGetsSetToNullAtEndOfObservationCycle = null;
+        });
+    }
+    onPhysicsTick() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.visibilityRaycaster.isRaycasting) {
+                yield this.doObservationCycle(this.bot.entity.position);
+            }
         });
     }
     beginObservation() {
@@ -148,24 +96,10 @@ class VicinitiesObserver {
             // Do an initial complete observation cycle
             yield this.doObservationCycle(this.bot.entity.position);
             // Setup listeners
-            this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
-            this.bot.on("move", this.handleBotMove.bind(this));
+            this.bot.on("physicsTick", this.onPhysicsTick.bind(this));
             // NOTE handling below is useless unless the itemEntityWithData.entity.position doesn't self-update(?)
             // this.bot.on("entityMoved", this.handleEntityMoved.bind(this));
         });
-    }
-    handleBotMove(newBotPos) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.visibilityRaycaster.isRaycasting) {
-                yield this.doObservationCycle(newBotPos);
-            }
-        });
-    }
-    handleBlockUpdate(oldBlock, newBlock) {
-        if (oldBlock && newBlock) {
-            (0, assert_1.default)(oldBlock.position.equals(newBlock.position));
-        } // I think this is always true since falling (moving) blocks are considered 'entities'
-        // TODO: Implement
     }
 }
 exports.VicinitiesObserver = VicinitiesObserver;

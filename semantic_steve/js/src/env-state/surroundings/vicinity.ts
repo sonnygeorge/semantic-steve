@@ -29,11 +29,6 @@ export class VicinitiesObserver {
   public radii: SurroundingsRadii;
   public immediate: ImmediateSurroundings;
   public distant: Map<DirectionName, DistantSurroundingsInADirection>;
-  public allSpawnedItemEntities: Map<string, ItemEntityWithData> = new Map<
-    string,
-    ItemEntityWithData
-  >();
-  public itemEntitiesGoneBeforeAdd: Set<string> = new Set();
   // Outer contexts can set this to something and wait for it to be set to back to null to
   // know that a cycle has completed. Lol, there's probably a better way to do this.
   public thisGetsSetToNullAtEndOfObservationCycle: null | any = null;
@@ -71,73 +66,30 @@ export class VicinitiesObserver {
   }
 
   private async doObservationCycle(fromBotPos: Vec3): Promise<void> {
-    const fromEyeVoxel = getEyePos(this.bot, fromBotPos).floor();
-    const raycasts: Array<
-      [
-        {
-          phi: number;
-          theta: number;
-          hit: null | { x: number; y: number; z: number };
-        }
-      ]
-    > = [];
+    // Invoke the VisibilityRayaster to do all of its raycasts in a cycle
     for await (const [vecNorm, pBlock] of this.visibilityRaycaster.doRaycasting(
-      fromEyeVoxel
+      getEyePos(this.bot, fromBotPos).floor()
     )) {
       if (!vecNorm) {
-        // No more raycasts to process
         break;
       }
-      const orientation = new ThreeDimOrientation(vecNorm);
-      const { phi, theta } = orientation.sphericalAngles;
-      let offset = null;
-      if (pBlock) {
-        offset = pBlock.position.minus(fromEyeVoxel);
-      }
-      raycasts.push([
-        {
-          phi,
-          theta,
-          hit: offset
-            ? {
-                x: offset.x,
-                y: offset.y,
-                z: offset.z,
-              }
-            : null,
-        },
-      ]);
     }
-    fs.writeFileSync("raycasts.json", JSON.stringify(raycasts));
-
     this.thisGetsSetToNullAtEndOfObservationCycle = null;
+  }
+
+  public async onPhysicsTick(): Promise<void> {
+    if (!this.visibilityRaycaster.isRaycasting) {
+      await this.doObservationCycle(this.bot.entity.position);
+    }
   }
 
   public async beginObservation(): Promise<void> {
     // Do an initial complete observation cycle
     await this.doObservationCycle(this.bot.entity.position);
     // Setup listeners
-    this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
-    this.bot.on("move", this.handleBotMove.bind(this));
+    this.bot.on("physicsTick", this.onPhysicsTick.bind(this));
     // NOTE handling below is useless unless the itemEntityWithData.entity.position doesn't self-update(?)
     // this.bot.on("entityMoved", this.handleEntityMoved.bind(this));
-  }
-
-  public async handleBotMove(newBotPos: Vec3): Promise<void> {
-    if (!this.visibilityRaycaster.isRaycasting) {
-      await this.doObservationCycle(newBotPos);
-    }
-  }
-
-  public handleBlockUpdate(
-    oldBlock: PBlock | null,
-    newBlock: PBlock | null
-  ): void {
-    if (oldBlock && newBlock) {
-      assert(oldBlock.position.equals(newBlock.position));
-    } // I think this is always true since falling (moving) blocks are considered 'entities'
-
-    // TODO: Implement
   }
 }
 

@@ -109,7 +109,7 @@ export class ThreeDimOrientation {
               Math.cos(this._input.angles.theta), // X (east/west)
             Math.cos(this._input.angles.phi), // Y (up/down)
             Math.sin(this._input.angles.phi) *
-              Math.sin(this._input.angles.theta) // Z (north/south)
+              Math.sin(this._input.angles.theta), // Z (north/south)
           ).normalize();
           break;
       }
@@ -128,7 +128,7 @@ export class ThreeDimOrientation {
       if (this._input.kind === "angles") {
         this._sphericalAngles = new SphericalAngles(
           this._input.angles.phi,
-          this._input.angles.theta
+          this._input.angles.theta,
         );
       } else {
         const vec = this.vecNorm;
@@ -186,7 +186,7 @@ export class ThreeDimOrientation {
    * The offsets are applied using the plusAngularOffset method.
    */
   public *getCardinalOffsets(
-    angularRadius: number
+    angularRadius: number,
   ): Generator<ThreeDimOrientation> {
     // Create 4 offset directions
     const angularOffsets = [
@@ -217,7 +217,7 @@ export class ThreeDimOrientation {
     // Calculate the magnitude of the offset
     const offsetMagnitude = Math.sqrt(
       angularOffset.theta * angularOffset.theta +
-        angularOffset.phi * angularOffset.phi
+        angularOffset.phi * angularOffset.phi,
     );
 
     if (offsetMagnitude === 0) {
@@ -242,10 +242,10 @@ export class ThreeDimOrientation {
 
     // Apply the offset using rotation in 3D space
     const thetaComponent = thetaDirection.scale(
-      (angularOffset.theta * Math.sin(offsetMagnitude)) / offsetMagnitude
+      (angularOffset.theta * Math.sin(offsetMagnitude)) / offsetMagnitude,
     );
     const phiComponent = phiDirection.scale(
-      (angularOffset.phi * Math.sin(offsetMagnitude)) / offsetMagnitude
+      (angularOffset.phi * Math.sin(offsetMagnitude)) / offsetMagnitude,
     );
     const radialComponent = baseVec.scale(Math.cos(offsetMagnitude));
 
@@ -271,7 +271,7 @@ export class ThreeDimOrientation {
    * @returns A new ThreeDimOrientation instance
    */
   public static deserialize(
-    serialized: SerializedOrientation
+    serialized: SerializedOrientation,
   ): ThreeDimOrientation {
     const [theta, phi] = serialized.split(",").map(Number);
     if (isNaN(theta) || isNaN(phi)) {

@@ -230,6 +230,13 @@ class SemanticSteve {
     }
     getAndSendInitialState() {
         return __awaiter(this, void 0, void 0, function* () {
+            // Wait for the running observation cycle to complete
+            this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+                "I'm going to wait for this to be null and indicate the observation cycle has completed";
+            while (this.bot.envState.surroundings.vicinitiesObserver
+                .thisGetsSetToNullAtEndOfObservationCycle !== null) {
+                yield (0, generic_1.asyncSleep)(10);
+            }
             let toSendToPython = {
                 envState: yield this.bot.envState.getDTO(),
                 // NOTE: No skill invocation results yet

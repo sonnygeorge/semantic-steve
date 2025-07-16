@@ -83,7 +83,7 @@ export function classifyVicinityOfPosition(
   pos: Vec3,
   botPos: Vec3,
   immediateSurroundingsRadius: number,
-  distantSurroundingsRadius: number
+  distantSurroundingsRadius: number,
 ): VicinityName | undefined {
   const distanceToPos = botPos.distanceTo(pos);
 
@@ -99,7 +99,7 @@ export function classifyVicinityOfPosition(
     // circle in the apple-slicer analogy.
 
     const horizontalDist = Math.sqrt(
-      Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2)
+      Math.pow(pos.x - botPos.x, 2) + Math.pow(pos.z - botPos.z, 2),
     );
     if (horizontalDist <= immediateSurroundingsRadius) {
       // If the point's horizontal distance to the bot (on the xz plane) is less than the
@@ -139,7 +139,7 @@ const vicinitiesToDistanceSortedOffsets: null | Map<VicinityName, Vec3[]> =
 
 export function getVicinitiesToDistanceSortedOffsets(
   bot: Bot,
-  radii: SurroundingsRadii
+  radii: SurroundingsRadii,
 ): Map<VicinityName, Vec3[]> {
   // If the map has already been created, return it.
   // It only ever needs to be created once per runtime.
@@ -151,7 +151,7 @@ export function getVicinitiesToDistanceSortedOffsets(
   const immediateRadius = radii.immediateSurroundingsRadius;
   const origin = new Vec3(0, 0, 0);
   const vicinitiesToOffsets: Map<VicinityName, Vec3[]> = new Map(
-    Object.values(VicinityName).map((vicinityName) => [vicinityName, []])
+    Object.values(VicinityName).map((vicinityName) => [vicinityName, []]),
   );
   // Populate arrays with offsets
   for (let xOffset = -distantRadius; xOffset <= distantRadius; xOffset++) {
@@ -162,7 +162,7 @@ export function getVicinitiesToDistanceSortedOffsets(
           offset,
           origin,
           immediateRadius,
-          distantRadius
+          distantRadius,
         );
         if (vicinityNameOfOffset) {
           vicinitiesToOffsets.get(vicinityNameOfOffset)!.push(offset);

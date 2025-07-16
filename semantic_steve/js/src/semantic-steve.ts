@@ -247,6 +247,15 @@ export class SemanticSteve {
   }
 
   private async getAndSendInitialState(): Promise<void> {
+    // Wait for the running observation cycle to complete
+    this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+      "I'm going to wait for this to be null and indicate the observation cycle has completed";
+    while (
+      this.bot.envState.surroundings.vicinitiesObserver
+        .thisGetsSetToNullAtEndOfObservationCycle !== null
+    ) {
+      await asyncSleep(10);
+    }
     let toSendToPython: DataFromMinecraft = {
       envState: await this.bot.envState.getDTO(),
       // NOTE: No skill invocation results yet

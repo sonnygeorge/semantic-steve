@@ -1,6 +1,9 @@
 import { Vec3 } from "vec3";
 import { VoxelFace } from "./types";
 
+// PEntity types that fall under the umbrella of "mob"
+export const MOB_ENTITY_TYPES = ["animal", "hostile", "mob", "passive"];
+
 // Max time to allow a single pathfinding run to take
 export const MAX_ALLOWED_PATHFINDING_TIME_MS = 27000; // 27 seconds
 

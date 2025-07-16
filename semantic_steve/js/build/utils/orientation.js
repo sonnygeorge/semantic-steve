@@ -84,8 +84,7 @@ class ThreeDimOrientation {
                         Math.cos(this._input.angles.theta), // X (east/west)
                     Math.cos(this._input.angles.phi), // Y (up/down)
                     Math.sin(this._input.angles.phi) *
-                        Math.sin(this._input.angles.theta) // Z (north/south)
-                    ).normalize();
+                        Math.sin(this._input.angles.theta)).normalize();
                     break;
             }
         }

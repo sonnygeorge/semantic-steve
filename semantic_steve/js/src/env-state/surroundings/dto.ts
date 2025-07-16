@@ -10,6 +10,7 @@ export type ImmediateSurroundingsDTO = {
   visibleBlocks: { [key: string]: [number, number, number][] };
   visibleBiomes: string[];
   visibleItems: { [key: string]: [number, number, number][] };
+  visibleMobCounts: { [key: string]: number };
 };
 
 /**
@@ -24,6 +25,7 @@ export type DistantSurroundingsInADirectionDTO = {
   visibleBlockCounts: { [key: string]: number };
   visibleBiomes: string[];
   visibleItemCounts: { [key: string]: number };
+  visibleMobCounts: { [key: string]: number };
 };
 
 /**

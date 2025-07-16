@@ -32,7 +32,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ImmediateSurroundings = exports.DistantSurroundingsInADirection = exports.Vicinity = exports.VisibleVicinityContents = exports.VicinitiesObserver = void 0;
+exports.DistantSurroundingsInADirection = exports.ImmediateSurroundings = exports.Vicinity = exports.VisibleVicinityContents = exports.VicinitiesObserver = void 0;
 const assert_1 = __importDefault(require("assert"));
 const types_1 = require("../../types");
 const generic_1 = require("../../utils/generic");
@@ -40,6 +40,7 @@ const classify_vicinity_1 = require("./classify-vicinity");
 const misc_1 = require("../../utils/misc");
 const visibility_raycaster_1 = require("./visibility-raycaster");
 const item_entity_1 = require("../../utils/item-entity");
+const constants_1 = require("../../constants");
 class VicinitiesObserver {
     constructor(bot, radii) {
         // Outer contexts can set this to something and wait for it to be set to back to null to
@@ -108,6 +109,9 @@ class VisibleVicinityContents {
         this.bot = bot;
         this.vicinity = vicinity;
     }
+    // ======================
+    // Block-related methods
+    // ======================
     *getDistinctBlockNames() {
         const alreadyYielded = new Set();
         for (const block of this.vicinity.iterVisibleBlocks()) {
@@ -154,6 +158,9 @@ class VisibleVicinityContents {
         }
         return blockNamesToCounts;
     }
+    // ======================
+    // Biome-related methods
+    // ======================
     *getDistinctBiomeNames() {
         const alreadyYielded = new Set();
         for (const block of this.vicinity.iterVisibleBlocks()) {
@@ -192,11 +199,13 @@ class VisibleVicinityContents {
         }
         return biomeNamesToClosestCoords;
     }
+    // =====================
+    // Item-related methods
+    // =====================
     getDistinctItemNames() {
         return __asyncGenerator(this, arguments, function* getDistinctItemNames_1() {
             const alreadyYielded = new Set();
             for (const entity of this.vicinity.iterVisibleEntities()) {
-                console.log(entity.name);
                 if (entity.name === "item") {
                     // Ensure the loading of its uuid and PItem data
                     const itemEntityWithData = yield __await((0, item_entity_1.ensureItemData)(this.bot, entity));
@@ -266,6 +275,61 @@ class VisibleVicinityContents {
             return itemNamesToCounts;
         });
     }
+    // ====================
+    // Mob-related methods
+    // ====================
+    *getDistinctMobNames() {
+        const alreadyYielded = new Set();
+        for (const entity of this.vicinity.iterVisibleEntities()) {
+            if (constants_1.MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+                if (!alreadyYielded.has(entity.name)) {
+                    yield entity.name;
+                    alreadyYielded.add(entity.name);
+                }
+            }
+        }
+    }
+    getMobNamesToAllCoords() {
+        const mobNamesToCoords = new Map();
+        for (const entity of this.vicinity.iterVisibleEntities()) {
+            if (constants_1.MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+                if (!mobNamesToCoords.has(entity.name)) {
+                    mobNamesToCoords.set(entity.name, []);
+                }
+                mobNamesToCoords.get(entity.name).push(entity.position);
+            }
+        }
+        return mobNamesToCoords;
+    }
+    getMobNamesToClosestCoords() {
+        const mobNamesToClosestCoords = new Map();
+        const mobNamesToAllCoords = this.getMobNamesToAllCoords();
+        for (const [mobName, coords] of mobNamesToAllCoords.entries()) {
+            if (coords.length > 0) {
+                // Find the closest coordinate to the bot's position
+                const closestCoord = coords.reduce((closest, current) => {
+                    return closest.distanceTo(this.bot.entity.position) <
+                        current.distanceTo(this.bot.entity.position)
+                        ? closest
+                        : current;
+                });
+                mobNamesToClosestCoords.set(mobName, closestCoord);
+            }
+        }
+        return mobNamesToClosestCoords;
+    }
+    getMobNamesToCounts() {
+        const mobNamesToCounts = new Map();
+        for (const entity of this.vicinity.iterVisibleEntities()) {
+            if (constants_1.MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+                if (!mobNamesToCounts.has(entity.name)) {
+                    mobNamesToCounts.set(entity.name, 0);
+                }
+                mobNamesToCounts.set(entity.name, mobNamesToCounts.get(entity.name) + 1);
+            }
+        }
+        return mobNamesToCounts;
+    }
 }
 exports.VisibleVicinityContents = VisibleVicinityContents;
 class Vicinity {
@@ -302,18 +366,6 @@ class Vicinity {
     }
 }
 exports.Vicinity = Vicinity;
-class DistantSurroundingsInADirection extends Vicinity {
-    getDTO() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return {
-                visibleBlockCounts: Object.fromEntries(this.visible.getBlockNamesToCounts()),
-                visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
-                visibleItemCounts: Object.fromEntries(yield this.visible.getItemNamesToCounts()),
-            };
-        });
-    }
-}
-exports.DistantSurroundingsInADirection = DistantSurroundingsInADirection;
 class ImmediateSurroundings extends Vicinity {
     getDTO() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -329,8 +381,22 @@ class ImmediateSurroundings extends Vicinity {
                 visibleBlocks: visibleBlocks,
                 visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
                 visibleItems: visibleItems,
+                visibleMobCounts: Object.fromEntries(this.visible.getMobNamesToCounts()),
             };
         });
     }
 }
 exports.ImmediateSurroundings = ImmediateSurroundings;
+class DistantSurroundingsInADirection extends Vicinity {
+    getDTO() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return {
+                visibleBlockCounts: Object.fromEntries(this.visible.getBlockNamesToCounts()),
+                visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
+                visibleItemCounts: Object.fromEntries(yield this.visible.getItemNamesToCounts()),
+                visibleMobCounts: Object.fromEntries(this.visible.getMobNamesToCounts()),
+            };
+        });
+    }
+}
+exports.DistantSurroundingsInADirection = DistantSurroundingsInADirection;

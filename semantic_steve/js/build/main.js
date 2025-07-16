@@ -28,7 +28,7 @@ const config = new types_1.SemanticSteveConfig({
     mfViewerPort: parseInt(process.env.SEMANTIC_STEVE_MF_VIEWER_PORT || "3000"),
     zmqPort: parseInt(process.env.SEMANTIC_STEVE_ZMQ_PORT || "5555"),
     immediateSurroundingsRadius: parseInt(process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4"),
-    distantSurroundingsRadius: parseInt(process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "25"),
+    distantSurroundingsRadius: parseInt(process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "27"),
     username: process.env.SEMANTIC_STEVE_MC_USERNAME || "SemanticSteve",
 });
 // Create a Mineflayer bot instance

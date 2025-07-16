@@ -35,7 +35,7 @@ const MC_SCREENSHOT_DIR_PATH = path.join(
   "Library",
   "Application Support",
   "minecraft",
-  "screenshots"
+  "screenshots",
 );
 
 export class TakeScreenshotOf extends Skill {
@@ -65,7 +65,7 @@ export class TakeScreenshotOf extends Skill {
     this.screenshotDir = process.env.SEMANTIC_STEVE_SCREENSHOT_DIR as string;
     if (!this.screenshotDir) {
       throw new Error(
-        "SEMANTIC_STEVE_SCREENSHOT_DIR environment variable is not set."
+        "SEMANTIC_STEVE_SCREENSHOT_DIR environment variable is not set.",
       );
     }
     // Ensure screenshot directory exists
@@ -90,7 +90,7 @@ export class TakeScreenshotOf extends Skill {
   }
 
   private async takePOVScreenshotWithViewer(
-    destinationPath: string
+    destinationPath: string,
   ): Promise<boolean> {
     assert(this.atCoords);
     const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -98,7 +98,7 @@ export class TakeScreenshotOf extends Skill {
     const viewer = new Viewer(renderer);
     if (!viewer.setVersion(this.bot.version)) {
       throw new Error(
-        `prismarine-viewer does not support version: ${this.bot.version}`
+        `prismarine-viewer does not support version: ${this.bot.version}`,
       );
     }
 
@@ -108,7 +108,7 @@ export class TakeScreenshotOf extends Skill {
     const worldView = new WorldView(
       this.bot.world,
       this.viewDistanceToNumber(),
-      eyePosition
+      eyePosition,
     );
     viewer.listen(worldView);
 
@@ -161,7 +161,7 @@ export class TakeScreenshotOf extends Skill {
 
   // NOTE: This is a macOS-specific implementation.
   private async takePOVScreenshotWithComputerControlAndSpectatorMode(
-    destinationPath: string
+    destinationPath: string,
   ): Promise<boolean> {
     const typeMinecraftChat = async (command: string): Promise<void> => {
       await keyboard.type(Key.Enter); // Make sure chat is closed
@@ -175,7 +175,7 @@ export class TakeScreenshotOf extends Skill {
     let previousApp: string | null = null;
     try {
       previousApp = execSync(
-        `osascript -e 'tell application "System Events" to get bundle identifier of (first process whose frontmost is true)'`
+        `osascript -e 'tell application "System Events" to get bundle identifier of (first process whose frontmost is true)'`,
       )
         .toString()
         .trim();
@@ -187,7 +187,7 @@ export class TakeScreenshotOf extends Skill {
     console.log("Attempting to focus Minecraft window...");
     try {
       execSync(
-        `osascript -e 'tell application "System Events" to tell (first process whose name contains "java" or name contains "Minecraft") to set frontmost to true'`
+        `osascript -e 'tell application "System Events" to tell (first process whose name contains "java" or name contains "Minecraft") to set frontmost to true'`,
       );
     } catch (error) {
       console.error("Failed to focus Minecraft window:", error);
@@ -220,7 +220,7 @@ export class TakeScreenshotOf extends Skill {
     if (previousApp) {
       try {
         execSync(
-          `osascript -e 'tell application id "${previousApp}" to activate'`
+          `osascript -e 'tell application id "${previousApp}" to activate'`,
         );
       } catch (error) {
         console.error("Failed to restore previous application:", error);
@@ -240,7 +240,7 @@ export class TakeScreenshotOf extends Skill {
     // Take screenshot of bot's POV
     const destinationPath = path.join(
       this.screenshotDir,
-      `${new Date().toISOString()}_${this.thing.name}.png`
+      `${new Date().toISOString()}_${this.thing.name}.png`,
     );
     let wasSuccess = false;
     if (
@@ -249,7 +249,7 @@ export class TakeScreenshotOf extends Skill {
     ) {
       wasSuccess =
         await this.takePOVScreenshotWithComputerControlAndSpectatorMode(
-          destinationPath
+          destinationPath,
         );
     } else {
       wasSuccess = await this.takePOVScreenshotWithViewer(destinationPath);
@@ -257,7 +257,7 @@ export class TakeScreenshotOf extends Skill {
     if (wasSuccess) {
       const result = new TakeScreenshotOfResults.Success(
         this.thing.name,
-        destinationPath
+        destinationPath,
       );
       this.resolve(result);
     } else {
@@ -272,7 +272,7 @@ export class TakeScreenshotOf extends Skill {
 
   public async doInvoke(
     thing: string,
-    atCoordinates?: [number, number, number]
+    atCoordinates?: [number, number, number],
   ): Promise<void> {
     // Validate thing
     try {
@@ -281,7 +281,7 @@ export class TakeScreenshotOf extends Skill {
       if (err instanceof InvalidThingError) {
         const result = new TakeScreenshotOfResults.InvalidThing(
           thing,
-          SUPPORTED_THING_TYPES.toString()
+          SUPPORTED_THING_TYPES.toString(),
         );
         this.resolve(result);
         return;
@@ -294,7 +294,7 @@ export class TakeScreenshotOf extends Skill {
       this.atCoords = new Vec3(
         atCoordinates[0],
         atCoordinates[1],
-        atCoordinates[2]
+        atCoordinates[2],
       );
       if (
         !(await this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords))

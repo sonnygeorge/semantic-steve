@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ADJACENT_OFFSETS = exports.MAX_MINING_REACH = exports.MAX_PLACEMENT_REACH = exports.SCREENSHOT_WAIT_MS = exports.MC_COMMAND_WAIT_MS = exports.CRAFTING_WAIT_MS = exports.BLOCK_DROP_WAIT_MS = exports.BLOCK_PLACEMENT_WAIT_MS = exports.ITEM_PICKUP_WAIT_MS = exports.MAX_ALLOWED_PATHFINDING_TIME_MS = void 0;
+exports.ADJACENT_OFFSETS = exports.MAX_MINING_REACH = exports.MAX_PLACEMENT_REACH = exports.SCREENSHOT_WAIT_MS = exports.MC_COMMAND_WAIT_MS = exports.CRAFTING_WAIT_MS = exports.BLOCK_DROP_WAIT_MS = exports.BLOCK_PLACEMENT_WAIT_MS = exports.ITEM_PICKUP_WAIT_MS = exports.MAX_ALLOWED_PATHFINDING_TIME_MS = exports.MOB_ENTITY_TYPES = void 0;
 const vec3_1 = require("vec3");
 const types_1 = require("./types");
+// PEntity types that fall under the umbrella of "mob"
+exports.MOB_ENTITY_TYPES = ["animal", "hostile", "mob", "passive"];
 // Max time to allow a single pathfinding run to take
 exports.MAX_ALLOWED_PATHFINDING_TIME_MS = 27000; // 27 seconds
 // Amount of wait that should lead to an item entity pickup if the bot is in range for pickup

@@ -15,7 +15,7 @@ export interface ThingType {
   locateNearestInImmediateSurroundings(): Promise<Vec3 | undefined>;
 
   locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Promise<Vec3 | undefined>;
 
   isVisibleInImmediateSurroundingsAt(coords: Vec3): Promise<boolean>;

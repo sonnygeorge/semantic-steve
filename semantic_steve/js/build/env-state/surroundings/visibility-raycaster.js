@@ -250,8 +250,10 @@ class VisibilityRaycaster {
             const totalMsElapsed = Math.round(end - start);
             msElapsedWhileRaycasting += end - timeOfLastStart;
             msElapsedWhileRaycasting = Math.round(msElapsedWhileRaycasting);
-            console.log(`${msElapsedWhileRaycasting}ms spent raycasting | ` +
-                `${totalMsElapsed - msElapsedWhileRaycasting}ms spent elsewhere`);
+            // console.log(
+            //   `${msElapsedWhileRaycasting}ms spent raycasting | ` +
+            //     `${totalMsElapsed - msElapsedWhileRaycasting}ms spent elsewhere`
+            // );
             this.isRaycasting = false;
             this.visibleBlocks = newVisibleBlocks;
             this.visibilityMask = newVisibilityMask;

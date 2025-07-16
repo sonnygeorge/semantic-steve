@@ -71,7 +71,7 @@ export class Symmetrical3DArray<T> {
       z >= this.dimension
     ) {
       throw new Error(
-        `Index out of bounds: (${x}, ${y}, ${z}) for dimension ${this.dimension}`
+        `Index out of bounds: (${x}, ${y}, ${z}) for dimension ${this.dimension}`,
       );
     }
   }
@@ -112,7 +112,7 @@ export class Symmetrical3DArray<T> {
         : this.defaultValue;
     if (value === defaultValue) {
       throw new Error(
-        "Cannot set a value equal to the default value. Use unset() to reset."
+        "Cannot set a value equal to the default value. Use unset() to reset.",
       );
     }
     const key = this.serializeIdx(x, y, z);
@@ -228,7 +228,7 @@ export class OffsetBased3DArray<T> {
     return new Vec3(
       indices[0] - this.radiusOfInterest,
       indices[1] - this.radiusOfInterest,
-      indices[2] - this.radiusOfInterest
+      indices[2] - this.radiusOfInterest,
     );
   }
 

@@ -42,7 +42,7 @@ export class Surroundings {
       position,
       this.bot.entity.position,
       this.radii.immediateSurroundingsRadius,
-      this.radii.distantSurroundingsRadius
+      this.radii.distantSurroundingsRadius,
     );
   }
 

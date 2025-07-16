@@ -1,5 +1,4 @@
 import assert from "assert";
-import * as fs from "fs";
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import {
@@ -7,7 +6,6 @@ import {
   SurroundingsRadii,
   VicinityName,
   DirectionName,
-  ItemEntityWithData,
 } from "../../types";
 import { Block as PBlock } from "prismarine-block";
 import { Entity as PEntity } from "prismarine-entity";
@@ -19,9 +17,9 @@ import {
 import { getVicinitiesToDistanceSortedOffsets } from "./classify-vicinity";
 import { getEyePos } from "../../utils/misc";
 import { VisibilityRaycaster } from "./visibility-raycaster";
-import { ThreeDimOrientation } from "../../utils/orientation";
 import { OffsetBased3DArray } from "../../utils/array";
 import { ensureItemData } from "../../utils/item-entity";
+import { MOB_ENTITY_TYPES } from "../../constants";
 
 export class VicinitiesObserver {
   private bot: Bot;
@@ -38,12 +36,12 @@ export class VicinitiesObserver {
     this.radii = radii;
     this.visibilityRaycaster = new VisibilityRaycaster(
       bot,
-      this.radii.distantSurroundingsRadius
+      this.radii.distantSurroundingsRadius,
     );
     this.immediate = new ImmediateSurroundings(
       bot,
       VicinityName.IMMEDIATE_SURROUNDINGS,
-      this
+      this,
     );
     this.distant = new Map<DirectionName, DistantSurroundingsInADirection>(
       Object.values(DirectionName).map((direction) => [
@@ -51,9 +49,9 @@ export class VicinitiesObserver {
         new DistantSurroundingsInADirection(
           bot,
           direction as any as VicinityName,
-          this
+          this,
         ),
-      ])
+      ]),
     );
   }
 
@@ -68,7 +66,7 @@ export class VicinitiesObserver {
   private async doObservationCycle(fromBotPos: Vec3): Promise<void> {
     // Invoke the VisibilityRayaster to do all of its raycasts in a cycle
     for await (const [vecNorm, pBlock] of this.visibilityRaycaster.doRaycasting(
-      getEyePos(this.bot, fromBotPos).floor()
+      getEyePos(this.bot, fromBotPos).floor(),
     )) {
       if (!vecNorm) {
         break;
@@ -101,6 +99,10 @@ export class VisibleVicinityContents {
     this.bot = bot;
     this.vicinity = vicinity;
   }
+
+  // ======================
+  // Block-related methods
+  // ======================
 
   public *getDistinctBlockNames(): Iterable<string> {
     const alreadyYielded = new Set<string>();
@@ -149,11 +151,15 @@ export class VisibleVicinityContents {
       }
       blockNamesToCounts.set(
         block.name,
-        blockNamesToCounts.get(block.name)! + 1
+        blockNamesToCounts.get(block.name)! + 1,
       );
     }
     return blockNamesToCounts;
   }
+
+  // ======================
+  // Biome-related methods
+  // ======================
 
   public *getDistinctBiomeNames(): Iterable<string> {
     const alreadyYielded: Set<string> = new Set<string>();
@@ -196,10 +202,13 @@ export class VisibleVicinityContents {
     return biomeNamesToClosestCoords;
   }
 
+  // =====================
+  // Item-related methods
+  // =====================
+
   public async *getDistinctItemNames(): AsyncIterable<string> {
     const alreadyYielded = new Set<string>();
     for (const entity of this.vicinity.iterVisibleEntities()) {
-      console.log(entity.name);
       if (entity.name === "item") {
         // Ensure the loading of its uuid and PItem data
         const itemEntityWithData = await ensureItemData(this.bot, entity);
@@ -265,11 +274,74 @@ export class VisibleVicinityContents {
 
         itemNamesToCounts.set(
           itemEntityWithData.itemData.name,
-          itemNamesToCounts.get(itemEntityWithData.itemData.name)! + itemCount
+          itemNamesToCounts.get(itemEntityWithData.itemData.name)! + itemCount,
         );
       }
     }
     return itemNamesToCounts;
+  }
+
+  // ====================
+  // Mob-related methods
+  // ====================
+
+  public *getDistinctMobNames(): Iterable<string> {
+    const alreadyYielded = new Set<string>();
+    for (const entity of this.vicinity.iterVisibleEntities()) {
+      if (MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+        if (!alreadyYielded.has(entity.name)) {
+          yield entity.name;
+          alreadyYielded.add(entity.name);
+        }
+      }
+    }
+  }
+
+  public getMobNamesToAllCoords(): Map<string, Vec3[]> {
+    const mobNamesToCoords: Map<string, Vec3[]> = new Map();
+    for (const entity of this.vicinity.iterVisibleEntities()) {
+      if (MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+        if (!mobNamesToCoords.has(entity.name)) {
+          mobNamesToCoords.set(entity.name, []);
+        }
+        mobNamesToCoords.get(entity.name)!.push(entity.position);
+      }
+    }
+    return mobNamesToCoords;
+  }
+
+  public getMobNamesToClosestCoords(): Map<string, Vec3> {
+    const mobNamesToClosestCoords: Map<string, Vec3> = new Map();
+    const mobNamesToAllCoords = this.getMobNamesToAllCoords();
+    for (const [mobName, coords] of mobNamesToAllCoords.entries()) {
+      if (coords.length > 0) {
+        // Find the closest coordinate to the bot's position
+        const closestCoord = coords.reduce((closest, current) => {
+          return closest.distanceTo(this.bot.entity.position) <
+            current.distanceTo(this.bot.entity.position)
+            ? closest
+            : current;
+        });
+        mobNamesToClosestCoords.set(mobName, closestCoord);
+      }
+    }
+    return mobNamesToClosestCoords;
+  }
+
+  public getMobNamesToCounts(): Map<string, number> {
+    const mobNamesToCounts: Map<string, number> = new Map();
+    for (const entity of this.vicinity.iterVisibleEntities()) {
+      if (MOB_ENTITY_TYPES.includes(entity.type) && entity.name) {
+        if (!mobNamesToCounts.has(entity.name)) {
+          mobNamesToCounts.set(entity.name, 0);
+        }
+        mobNamesToCounts.set(
+          entity.name,
+          mobNamesToCounts.get(entity.name)! + 1,
+        );
+      }
+    }
+    return mobNamesToCounts;
   }
 }
 
@@ -287,13 +359,13 @@ export class Vicinity {
     this.vicinitiesObserver = observer;
     this.distanceSortedOffsets = getVicinitiesToDistanceSortedOffsets(
       this.bot,
-      this.vicinitiesObserver.radii
+      this.vicinitiesObserver.radii,
     ).get(name)!;
     this.offsets = new Map(
       this.distanceSortedOffsets.map((offset) => [
         serializeVec3(offset),
         offset,
-      ])
+      ]),
     );
     this.visible = new VisibleVicinityContents(this.bot, this);
   }
@@ -317,26 +389,12 @@ export class Vicinity {
       if (
         this.offsets.has(serializeVec3(voxelOffsetOffPosition)) &&
         this.vicinitiesObserver.visibilityMask.getFromOffset(
-          voxelOffsetOffPosition
+          voxelOffsetOffPosition,
         )
       ) {
         yield entity;
       }
     }
-  }
-}
-
-export class DistantSurroundingsInADirection extends Vicinity {
-  async getDTO(): Promise<DistantSurroundingsInADirectionDTO> {
-    return {
-      visibleBlockCounts: Object.fromEntries(
-        this.visible.getBlockNamesToCounts()
-      ),
-      visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
-      visibleItemCounts: Object.fromEntries(
-        await this.visible.getItemNamesToCounts()
-      ),
-    };
   }
 }
 
@@ -348,7 +406,7 @@ export class ImmediateSurroundings extends Vicinity {
       allCoords,
     ] of this.visible.getBlockNamesToAllCoords()) {
       visibleBlocks[blockName] = Array.from(allCoords).map(
-        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number]
+        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number],
       );
     }
 
@@ -358,7 +416,7 @@ export class ImmediateSurroundings extends Vicinity {
       coordsIterable,
     ] of await this.visible.getItemNamesToAllCoords()) {
       visibleItems[itemName] = Array.from(coordsIterable).map(
-        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number]
+        (vec3) => [vec3.x, vec3.y, vec3.z] as [number, number, number],
       );
     }
 
@@ -366,6 +424,22 @@ export class ImmediateSurroundings extends Vicinity {
       visibleBlocks: visibleBlocks,
       visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
       visibleItems: visibleItems,
+      visibleMobCounts: Object.fromEntries(this.visible.getMobNamesToCounts()),
+    };
+  }
+}
+
+export class DistantSurroundingsInADirection extends Vicinity {
+  async getDTO(): Promise<DistantSurroundingsInADirectionDTO> {
+    return {
+      visibleBlockCounts: Object.fromEntries(
+        this.visible.getBlockNamesToCounts(),
+      ),
+      visibleBiomes: Array.from(this.visible.getDistinctBiomeNames()),
+      visibleItemCounts: Object.fromEntries(
+        await this.visible.getItemNamesToCounts(),
+      ),
+      visibleMobCounts: Object.fromEntries(this.visible.getMobNamesToCounts()),
     };
   }
 }

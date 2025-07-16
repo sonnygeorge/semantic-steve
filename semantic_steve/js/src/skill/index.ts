@@ -26,12 +26,12 @@ export {
 
 export function buildSkillsRegistry(
   bot: Bot,
-  onResolution: SkillResolutionHandler
+  onResolution: SkillResolutionHandler,
 ): { [key: string]: Skill } {
   return {
     [PathfindToCoordinates.METADATA.name]: new PathfindToCoordinates(
       bot,
-      onResolution
+      onResolution,
     ),
     [TakeScreenshotOf.METADATA.name]: new TakeScreenshotOf(bot, onResolution),
     [CraftItems.METADATA.name]: new CraftItems(bot, onResolution),
@@ -42,7 +42,7 @@ export function buildSkillsRegistry(
     [PickupItem.METADATA.name]: new PickupItem(bot, onResolution),
     [GetPlaceableCoordinates.METADATA.name]: new GetPlaceableCoordinates(
       bot,
-      onResolution
+      onResolution,
     ),
   };
 }

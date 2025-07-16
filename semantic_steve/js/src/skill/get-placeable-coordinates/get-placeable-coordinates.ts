@@ -31,7 +31,7 @@ export class GetPlaceableCoordinates extends Skill {
       this.resolve(result);
     } else {
       const result = new GetPlaceableCoordinatesResults.Success(
-        placeableCoords
+        placeableCoords,
       );
       this.resolve(result);
     }

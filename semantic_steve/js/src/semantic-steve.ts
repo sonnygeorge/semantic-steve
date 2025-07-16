@@ -131,7 +131,17 @@ export class SemanticSteve {
     // Get Inventory changes since the skill was invoked
     const invChanges = this.getInventoryChanges();
 
-    // Wait for observation cycle to complete so the DTOs will be up-to-data
+    // Wait for the running observation cycle to complete
+    this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+      "I'm going to wait for this to be null and indicate the observation cycle has completed";
+    while (
+      this.bot.envState.surroundings.vicinitiesObserver
+        .thisGetsSetToNullAtEndOfObservationCycle !== null
+    ) {
+      await asyncSleep(10);
+    }
+    // Wait for the next observation cycle that we know started after the skill resolved to complete
+    // (ensuring surroundings DTO will be up-to-date from the bot's POV after the skill resolved)
     this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
       "I'm going to wait for this to be null and indicate the observation cycle has completed";
     while (

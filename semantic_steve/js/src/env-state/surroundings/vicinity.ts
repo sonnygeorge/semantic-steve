@@ -23,6 +23,11 @@ import { ThreeDimOrientation } from "../../utils/orientation";
 import { OffsetBased3DArray } from "../../utils/array";
 import { ensureItemData } from "../../utils/item-entity";
 
+// TODO:
+// - Pathfinding resolution cases seem weird...
+// - Clean this up and archive the temp.html, yielding ray hits, & have this.visibleBlocks be the responsability of VicinitiesObserver?
+// - Implement mob entities in surroundings
+
 export class VicinitiesObserver {
   private bot: Bot;
   private visibilityRaycaster: VisibilityRaycaster;
@@ -84,6 +89,10 @@ export class VicinitiesObserver {
     for await (const [vecNorm, pBlock] of this.visibilityRaycaster.doRaycasting(
       fromEyeVoxel
     )) {
+      if (!vecNorm) {
+        // No more raycasts to process
+        break;
+      }
       const orientation = new ThreeDimOrientation(vecNorm);
       const { phi, theta } = orientation.sphericalAngles;
       let offset = null;

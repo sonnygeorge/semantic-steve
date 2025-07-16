@@ -29,7 +29,6 @@ class GetPlaceableCoordinates extends skill_1.Skill {
             }
             else {
                 const result = new results_1.GetPlaceableCoordinatesResults.Success(placeableCoords);
-                console.log(result);
                 this.resolve(result);
             }
         });

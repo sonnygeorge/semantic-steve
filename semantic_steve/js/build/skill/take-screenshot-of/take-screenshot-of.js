@@ -255,7 +255,7 @@ class TakeScreenshotOf extends skill_1.Skill {
             // Validate/ascertain atCoords
             if (atCoordinates) {
                 this.atCoords = new vec3_1.Vec3(atCoordinates[0], atCoordinates[1], atCoordinates[2]);
-                if (!this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords)) {
+                if (!(yield this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords))) {
                     const result = new results_1.TakeScreenshotOfResults.InvalidCoords(thing);
                     this.resolve(result);
                     return;

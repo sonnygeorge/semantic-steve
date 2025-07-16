@@ -79,6 +79,9 @@ class VicinitiesObserver {
     constructor(bot, radii) {
         this.allSpawnedItemEntities = new Map();
         this.itemEntitiesGoneBeforeAdd = new Set();
+        // Outer contexts can set this to something and wait for it to be set to back to null to
+        // know that a cycle has completed. Lol, there's probably a better way to do this.
+        this.thisGetsSetToNullAtEndOfObservationCycle = null;
         this.bot = bot;
         this.radii = radii;
         this.visibilityRaycaster = new visibility_raycaster_1.VisibilityRaycaster(bot, this.radii.distantSurroundingsRadius);
@@ -104,6 +107,10 @@ class VicinitiesObserver {
                     _c = _f.value;
                     _d = false;
                     const [vecNorm, pBlock] = _c;
+                    if (!vecNorm) {
+                        // No more raycasts to process
+                        break;
+                    }
                     const orientation = new orientation_1.ThreeDimOrientation(vecNorm);
                     const { phi, theta } = orientation.sphericalAngles;
                     let offset = null;
@@ -133,33 +140,17 @@ class VicinitiesObserver {
                 finally { if (e_1) throw e_1.error; }
             }
             fs.writeFileSync("raycasts.json", JSON.stringify(raycasts));
+            this.thisGetsSetToNullAtEndOfObservationCycle = null;
         });
     }
     beginObservation() {
         return __awaiter(this, void 0, void 0, function* () {
             // Do an initial complete observation cycle
             yield this.doObservationCycle(this.bot.entity.position);
-            // // Start tracking entities that are already spawned
-            // for (const entity of Object.values(this.bot.entities)) {
-            //   if (entity.name === "item") {
-            //     // Ensure the loading of its uuid and PItem data
-            //     const itemEntityWithData = await ensureItemData(this.bot, entity);
-            //     this.allSpawnedItemEntities.set(
-            //       itemEntityWithData.entity.uuid!,
-            //       itemEntityWithData
-            //     );
-            //   }
-            // }
-            // console.log(
-            //   this.allSpawnedItemEntities.size,
-            //   "item entities already spawned."
-            // );
             // Setup listeners
             this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
             this.bot.on("move", this.handleBotMove.bind(this));
-            // this.bot.on("entitySpawn", this.handleEntitySpawn.bind(this));
-            // this.bot.on("entityGone", this.handleEntityGone.bind(this));
-            // Not needed for now (unless the itemEntityWithData.entity.position doesn't self-update?):
+            // NOTE handling below is useless unless the itemEntityWithData.entity.position doesn't self-update(?)
             // this.bot.on("entityMoved", this.handleEntityMoved.bind(this));
         });
     }
@@ -271,6 +262,7 @@ class VisibleVicinityContents {
         return __asyncGenerator(this, arguments, function* getDistinctItemNames_1() {
             const alreadyYielded = new Set();
             for (const entity of this.vicinity.iterVisibleEntities()) {
+                console.log(entity.name);
                 if (entity.name === "item") {
                     // Ensure the loading of its uuid and PItem data
                     const itemEntityWithData = yield __await((0, item_entity_1.ensureItemData)(this.bot, entity));
@@ -321,15 +313,20 @@ class VisibleVicinityContents {
     }
     getItemNamesToCounts() {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             const itemNamesToCounts = new Map();
-            for (const itemEntity of this.vicinity.iterVisibleEntities()) {
-                if (itemEntity.name === "item") {
+            for (const entity of this.vicinity.iterVisibleEntities()) {
+                if (entity.name === "item") {
                     // Ensure the loading of its uuid and PItem data
-                    const itemEntityWithData = yield (0, item_entity_1.ensureItemData)(this.bot, itemEntity);
+                    const itemEntityWithData = yield (0, item_entity_1.ensureItemData)(this.bot, entity);
                     if (!itemNamesToCounts.has(itemEntityWithData.itemData.name)) {
                         itemNamesToCounts.set(itemEntityWithData.itemData.name, 0);
                     }
-                    itemNamesToCounts.set(itemEntityWithData.itemData.name, itemNamesToCounts.get(itemEntityWithData.itemData.name) + 1);
+                    const hasItemCount = (item) => {
+                        return item && typeof item === "object" && "itemCount" in item;
+                    };
+                    const itemCount = ((_a = itemEntityWithData.entity.metadata.find(hasItemCount)) === null || _a === void 0 ? void 0 : _a.itemCount) || 1;
+                    itemNamesToCounts.set(itemEntityWithData.itemData.name, itemNamesToCounts.get(itemEntityWithData.itemData.name) + itemCount);
                 }
             }
             return itemNamesToCounts;
@@ -359,8 +356,10 @@ class Vicinity {
         }
     }
     *iterVisibleEntities() {
+        const voxelOfBotPos = this.bot.entity.position.floor();
         for (const entity of Object.values(this.bot.entities)) {
-            const voxelOffsetOffPosition = entity.position.floor();
+            const voxelOfPosition = entity.position.floor();
+            const voxelOffsetOffPosition = voxelOfPosition.minus(voxelOfBotPos);
             if (this.offsets.has((0, generic_1.serializeVec3)(voxelOffsetOffPosition)) &&
                 this.vicinitiesObserver.visibilityMask.getFromOffset(voxelOffsetOffPosition)) {
                 yield entity;

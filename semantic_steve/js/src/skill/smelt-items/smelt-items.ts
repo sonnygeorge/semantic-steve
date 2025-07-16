@@ -311,7 +311,7 @@ export class SmeltItems extends Skill {
         furnaceItemType.getTotalCountInInventory() > 0;
 
       let nearestImmediateSurroundingsFurnaceCoords =
-        furnaceBlockType.locateNearestInImmediateSurroundings();
+        await furnaceBlockType.locateNearestInImmediateSurroundings();
 
       if (!nearestImmediateSurroundingsFurnaceCoords && !furnaceIsInInventory) {
         // No furnace available
@@ -329,7 +329,7 @@ export class SmeltItems extends Skill {
           return; // Exit on pause or stop
         }
         nearestImmediateSurroundingsFurnaceCoords =
-          furnaceBlockType.locateNearestInImmediateSurroundings();
+          await furnaceBlockType.locateNearestInImmediateSurroundings();
       }
       assert(nearestImmediateSurroundingsFurnaceCoords); // Should always be set by now
 
@@ -450,16 +450,13 @@ export class SmeltItems extends Skill {
     }
 
     // Check if a furnace is available
-    const furnaceIsAvailable = () => {
-      const furnaceItemType = new ItemType(this.bot, "furnace");
-      const furnaceBlockType = new BlockType(this.bot, "furnace");
-      return (
-        furnaceBlockType.isVisibleInImmediateSurroundings() ||
-        furnaceItemType.getTotalCountInInventory() > 0
-      );
-    };
+    const furnaceItemType = new ItemType(this.bot, "furnace");
+    const furnaceBlockType = new BlockType(this.bot, "furnace");
+    const furnaceIsAvailable =
+      (await furnaceBlockType.isVisibleInImmediateSurroundings()) ||
+      (await furnaceItemType.getTotalCountInInventory()) > 0;
 
-    if (!furnaceIsAvailable()) {
+    if (!furnaceIsAvailable) {
       this.resolve(
         new SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name)
       );

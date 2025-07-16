@@ -98,8 +98,8 @@ class CraftItems extends skill_1.Skill {
             (0, assert_1.default)(this.useCraftingTable);
             const craftingTableBlockType = new thing_type_1.BlockType(this.bot, "crafting_table");
             const craftingTableItemType = new thing_type_1.ItemType(this.bot, "crafting_table");
-            const craftingTableIsInInventory = craftingTableItemType.getTotalCountInInventory() > 0;
-            let nearestImmediateSurroundingsTableCoords = craftingTableBlockType.locateNearestInImmediateSurroundings();
+            const craftingTableIsInInventory = (yield craftingTableItemType.getTotalCountInInventory()) > 0;
+            let nearestImmediateSurroundingsTableCoords = yield craftingTableBlockType.locateNearestInImmediateSurroundings();
             if (!nearestImmediateSurroundingsTableCoords &&
                 !craftingTableIsInInventory) {
                 // The only reason this could happen is if, during a pause, the bot moved away
@@ -137,24 +137,26 @@ class CraftItems extends skill_1.Skill {
                     return;
                 }
                 nearestImmediateSurroundingsTableCoords =
-                    craftingTableBlockType.locateNearestInImmediateSurroundings();
+                    yield craftingTableBlockType.locateNearestInImmediateSurroundings();
             }
             (0, assert_1.default)(nearestImmediateSurroundingsTableCoords); // Should always be set by now
-            const tableIsReachable = () => {
-                const eyePosition = (0, misc_1.getEyePos)(this.bot);
-                nearestImmediateSurroundingsTableCoords =
-                    craftingTableBlockType.locateNearestInImmediateSurroundings();
-                (0, assert_1.default)(nearestImmediateSurroundingsTableCoords);
-                const distanceToCraftingTable = eyePosition.distanceTo(nearestImmediateSurroundingsTableCoords);
-                return distanceToCraftingTable <= constants_1.MAX_PLACEMENT_REACH;
-            };
-            if (!tableIsReachable()) {
+            function tableIsReachable(bot) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    const eyePosition = (0, misc_1.getEyePos)(bot);
+                    nearestImmediateSurroundingsTableCoords =
+                        yield craftingTableBlockType.locateNearestInImmediateSurroundings();
+                    (0, assert_1.default)(nearestImmediateSurroundingsTableCoords);
+                    const distanceToCraftingTable = eyePosition.distanceTo(nearestImmediateSurroundingsTableCoords);
+                    return distanceToCraftingTable <= constants_1.MAX_PLACEMENT_REACH;
+                });
+            }
+            if (!(yield tableIsReachable(this.bot))) {
                 // Pathfind to the crafting table
                 let tableIsInRangeAfterPathfinding = undefined;
                 function handlePathfindingResolution(result) {
                     return __awaiter(this, void 0, void 0, function* () {
                         this.activeSubskill = undefined;
-                        tableIsInRangeAfterPathfinding = tableIsReachable();
+                        tableIsInRangeAfterPathfinding = yield tableIsReachable(this.bot);
                     });
                 }
                 this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, handlePathfindingResolution.bind(this));
@@ -174,7 +176,10 @@ class CraftItems extends skill_1.Skill {
                     return;
                 }
             }
-            (0, assert_1.default)(tableIsReachable());
+            // TODO: I think this can break the program if the crafting table, e.g., is broken
+            // in the split second since the last check (assuming the event loop is released for
+            // raycasting to observe this).
+            (0, assert_1.default)(yield tableIsReachable(this.bot));
             // Finally, we craft the item
             const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
             (0, assert_1.default)(table);
@@ -239,15 +244,12 @@ class CraftItems extends skill_1.Skill {
                 this.resolve(new results_1.CraftItemsResults.NonCraftableItem(this.itemToCraft.name));
                 return;
             }
-            // Check if the item requires a crafting table but none are available
-            const craftingTableIsAvailable = () => {
-                const craftingTableItemType = new thing_type_1.ItemType(this.bot, "crafting_table");
-                const craftingTableBlockType = new thing_type_1.BlockType(this.bot, "crafting_table");
-                return (craftingTableBlockType.isVisibleInImmediateSurroundings() ||
-                    craftingTableItemType.getTotalCountInInventory() > 0);
-            };
+            const craftingTableItemType = new thing_type_1.ItemType(this.bot, "crafting_table");
+            const craftingTableBlockType = new thing_type_1.BlockType(this.bot, "crafting_table");
+            const craftingTableIsAvailable = (yield craftingTableBlockType.isVisibleInImmediateSurroundings()) ||
+                craftingTableItemType.getTotalCountInInventory() > 0;
             const requiresCraftingTable = nonTableRecipes.length === 0;
-            if (requiresCraftingTable && !craftingTableIsAvailable()) {
+            if (requiresCraftingTable && !craftingTableIsAvailable) {
                 this.resolve(new results_1.CraftItemsResults.NoCraftingTable(this.itemToCraft.name));
                 return;
             }
@@ -262,7 +264,7 @@ class CraftItems extends skill_1.Skill {
                 // 1. that produce at least the requested quantity of items
                 // 2. for which the bot has sufficient ingredients
                 const isFeasibleNonTableRecipe = !recipe.requiresTable;
-                const isFeasibleTableRecipe = recipe.requiresTable && craftingTableIsAvailable();
+                const isFeasibleTableRecipe = recipe.requiresTable && craftingTableIsAvailable;
                 if (isFeasibleNonTableRecipe) {
                     lastFeasibleNonTableRecipe = recipe;
                 }

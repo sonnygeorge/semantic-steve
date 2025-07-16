@@ -9,11 +9,3 @@ Object.defineProperty(exports, "Vicinity", { enumerable: true, get: function () 
 Object.defineProperty(exports, "VicinitiesObserver", { enumerable: true, get: function () { return vicinity_1.VicinitiesObserver; } });
 const surroundings_1 = require("./surroundings");
 Object.defineProperty(exports, "Surroundings", { enumerable: true, get: function () { return surroundings_1.Surroundings; } });
-// TODO:
-// - Update VicinitiesObserver to:
-//   - Keep track of item itentities and mob entities
-//   - For each vicinity, store distance-sorted, offset-based idxs for accessing the `OffsetBased3DArray`s
-// - Write the Vicinity class to expose the expected API for querying the surroundings's vicinities
-// - Write the ImmediateSurroundings and DistantSurroundingsInADirection classes to implement getDTO methods
-// - Add MobType to thing-type implementations and test approaching mobs
-// - Add KillMob skill

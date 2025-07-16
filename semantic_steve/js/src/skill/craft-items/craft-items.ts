@@ -123,9 +123,9 @@ export class CraftItems extends Skill {
     const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
     const craftingTableItemType = new ItemType(this.bot, "crafting_table");
     const craftingTableIsInInventory =
-      craftingTableItemType.getTotalCountInInventory() > 0;
+      (await craftingTableItemType.getTotalCountInInventory()) > 0;
     let nearestImmediateSurroundingsTableCoords =
-      craftingTableBlockType.locateNearestInImmediateSurroundings();
+      await craftingTableBlockType.locateNearestInImmediateSurroundings();
 
     if (
       !nearestImmediateSurroundingsTableCoords &&
@@ -183,23 +183,23 @@ export class CraftItems extends Skill {
         return;
       }
       nearestImmediateSurroundingsTableCoords =
-        craftingTableBlockType.locateNearestInImmediateSurroundings();
+        await craftingTableBlockType.locateNearestInImmediateSurroundings();
     }
 
     assert(nearestImmediateSurroundingsTableCoords); // Should always be set by now
 
-    const tableIsReachable = () => {
-      const eyePosition = getEyePos(this.bot);
+    async function tableIsReachable(bot: Bot): Promise<boolean> {
+      const eyePosition = getEyePos(bot);
       nearestImmediateSurroundingsTableCoords =
-        craftingTableBlockType.locateNearestInImmediateSurroundings();
+        await craftingTableBlockType.locateNearestInImmediateSurroundings();
       assert(nearestImmediateSurroundingsTableCoords);
       const distanceToCraftingTable = eyePosition.distanceTo(
         nearestImmediateSurroundingsTableCoords
       );
       return distanceToCraftingTable <= MAX_PLACEMENT_REACH;
-    };
+    }
 
-    if (!tableIsReachable()) {
+    if (!(await tableIsReachable(this.bot))) {
       // Pathfind to the crafting table
       let tableIsInRangeAfterPathfinding: boolean | undefined = undefined;
 
@@ -208,7 +208,7 @@ export class CraftItems extends Skill {
         result: SkillResult
       ): Promise<void> {
         this.activeSubskill = undefined;
-        tableIsInRangeAfterPathfinding = tableIsReachable();
+        tableIsInRangeAfterPathfinding = await tableIsReachable(this.bot);
       }
 
       this.activeSubskill = new PathfindToCoordinates(
@@ -237,7 +237,10 @@ export class CraftItems extends Skill {
       }
     }
 
-    assert(tableIsReachable());
+    // TODO: I think this can break the program if the crafting table, e.g., is broken
+    // in the split second since the last check (assuming the event loop is released for
+    // raycasting to observe this).
+    assert(await tableIsReachable(this.bot));
 
     // Finally, we craft the item
     const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
@@ -330,18 +333,14 @@ export class CraftItems extends Skill {
       return;
     }
 
-    // Check if the item requires a crafting table but none are available
-    const craftingTableIsAvailable = () => {
-      const craftingTableItemType = new ItemType(this.bot, "crafting_table");
-      const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
-      return (
-        craftingTableBlockType.isVisibleInImmediateSurroundings() ||
-        craftingTableItemType.getTotalCountInInventory() > 0
-      );
-    };
+    const craftingTableItemType = new ItemType(this.bot, "crafting_table");
+    const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
+    const craftingTableIsAvailable =
+      (await craftingTableBlockType.isVisibleInImmediateSurroundings()) ||
+      craftingTableItemType.getTotalCountInInventory() > 0;
 
     const requiresCraftingTable = nonTableRecipes.length === 0;
-    if (requiresCraftingTable && !craftingTableIsAvailable()) {
+    if (requiresCraftingTable && !craftingTableIsAvailable) {
       this.resolve(
         new CraftItemsResults.NoCraftingTable(this.itemToCraft.name)
       );
@@ -364,7 +363,7 @@ export class CraftItems extends Skill {
       // 2. for which the bot has sufficient ingredients
       const isFeasibleNonTableRecipe = !recipe.requiresTable;
       const isFeasibleTableRecipe =
-        recipe.requiresTable && craftingTableIsAvailable();
+        recipe.requiresTable && craftingTableIsAvailable;
       if (isFeasibleNonTableRecipe) {
         lastFeasibleNonTableRecipe = recipe;
       }

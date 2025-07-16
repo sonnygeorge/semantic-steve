@@ -275,7 +275,7 @@ class MineBlocks extends skill_1.Skill {
             catch (err) {
                 return this.resolve(new results_1.MineBlocksResults.InvalidBlock(block));
             }
-            if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
+            if (!(yield this.blockTypeToMine.isVisibleInImmediateSurroundings())) {
                 return this.resolve(new results_1.MineBlocksResults.BlockNotInImmediateSurroundings(block));
             }
             const [canMine, _] = this.blockTypeToMine.assessMineabilityWithCurrentTools();

@@ -3,9 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OffsetBased3DArray = exports.Symmetrical3DArray = void 0;
 const vec3_1 = require("vec3");
 /**
- * A symmetrical 3D array data structure that stores values in a cubic grid.
- * The array has equal dimensions in all three axes and supports tracking
- * of which indices have been explicitly set with non-default values.
+ * A symmetrical 3D array data structure that stores values in a cubic grid using a Map for lazy initialization.
+ * The array has equal dimensions in all three axes and supports tracking of explicitly set values.
  *
  * @template T The type of elements stored in the array
  */
@@ -17,13 +16,13 @@ class Symmetrical3DArray {
      * @param defaultValue The default value for unset positions, or a factory function to create default values
      */
     constructor(dimension, defaultValue) {
-        /** Map storing serialized indices of positions that have been explicitly set */
         this.idxsWithSetValues = new Map();
+        if (dimension <= 0 || !Number.isInteger(dimension)) {
+            throw new Error("Dimension must be a positive integer");
+        }
+        this.dimension = dimension;
         this.defaultValue = defaultValue;
-        const defaultFactory = typeof defaultValue === "function"
-            ? defaultValue
-            : () => defaultValue;
-        this.array = Array.from({ length: dimension }, () => Array.from({ length: dimension }, () => Array.from({ length: dimension }, () => defaultFactory())));
+        this.data = new Map(); // O(1) initialization
     }
     /**
      * Converts 3D coordinates to a string key for efficient storage and lookup.
@@ -47,21 +46,44 @@ class Symmetrical3DArray {
         return [Number(parts[0]), Number(parts[1]), Number(parts[2])];
     }
     /**
+     * Validates that the provided coordinates are within bounds.
+     *
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @param z The z coordinate
+     * @throws Error if any coordinate is out of bounds
+     */
+    validateIndices(x, y, z) {
+        if (!Number.isInteger(x) ||
+            !Number.isInteger(y) ||
+            !Number.isInteger(z) ||
+            x < 0 ||
+            x >= this.dimension ||
+            y < 0 ||
+            y >= this.dimension ||
+            z < 0 ||
+            z >= this.dimension) {
+            throw new Error(`Index out of bounds: (${x}, ${y}, ${z}) for dimension ${this.dimension}`);
+        }
+    }
+    /**
      * Retrieves the value at the specified 3D coordinates.
      *
      * @param x The x coordinate
      * @param y The y coordinate
      * @param z The z coordinate
-     * @returns The value stored at the given coordinates
+     * @returns The value stored at the given coordinates, or the default value if unset
      */
     get(x, y, z) {
-        try {
-            return this.array[x][y][z];
+        this.validateIndices(x, y, z);
+        const key = this.serializeIdx(x, y, z);
+        const value = this.data.get(key);
+        if (value !== undefined) {
+            return value;
         }
-        catch (_a) {
-            console.log("crap");
-            return this.array[x][y][z];
-        }
+        return typeof this.defaultValue === "function"
+            ? this.defaultValue()
+            : this.defaultValue;
     }
     /**
      * Sets a value at the specified 3D coordinates and tracks it as an explicitly set value.
@@ -72,11 +94,16 @@ class Symmetrical3DArray {
      * @param value The value to store at the given coordinates
      */
     set(x, y, z, value) {
-        if (value === this.defaultValue) {
+        this.validateIndices(x, y, z);
+        const defaultValue = typeof this.defaultValue === "function"
+            ? this.defaultValue()
+            : this.defaultValue;
+        if (value === defaultValue) {
             throw new Error("Cannot set a value equal to the default value. Use unset() to reset.");
         }
-        this.array[x][y][z] = value;
-        this.idxsWithSetValues.set(this.serializeIdx(x, y, z), [x, y, z]);
+        const key = this.serializeIdx(x, y, z);
+        this.data.set(key, value);
+        this.idxsWithSetValues.set(key, [x, y, z]);
     }
     /**
      * Resets a position to its default value and removes it from the set values tracking.
@@ -86,11 +113,10 @@ class Symmetrical3DArray {
      * @param z The z coordinate
      */
     unset(x, y, z) {
-        const defaultFactory = typeof this.defaultValue === "function"
-            ? this.defaultValue
-            : () => this.defaultValue;
-        this.array[x][y][z] = defaultFactory();
-        this.idxsWithSetValues.delete(this.serializeIdx(x, y, z));
+        this.validateIndices(x, y, z);
+        const key = this.serializeIdx(x, y, z);
+        this.data.delete(key);
+        this.idxsWithSetValues.delete(key);
     }
 }
 exports.Symmetrical3DArray = Symmetrical3DArray;

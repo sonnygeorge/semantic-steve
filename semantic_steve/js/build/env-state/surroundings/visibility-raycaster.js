@@ -49,9 +49,8 @@ class VisibilityRaycaster {
         this.bot = bot;
         this.radius = radiusOfInterest;
         this.getOrientationsAndPenetrations();
-        const arrayDimension = 2 * this.radius + 1; // To enclose the sphere of interest
-        this.visibleBlocks = new array_1.OffsetBased3DArray(arrayDimension, null);
-        this.visibilityMask = new array_1.OffsetBased3DArray(arrayDimension, false);
+        this.visibleBlocks = new array_1.OffsetBased3DArray(this.radius, null);
+        this.visibilityMask = new array_1.OffsetBased3DArray(this.radius, false);
     }
     /**
      * Generates a list of in-radius voxel offsets sorted by distance from origin
@@ -167,39 +166,30 @@ class VisibilityRaycaster {
      * @returns A tuple containing the first block hit by the raycast and the face it hit,
      *          or null if no block was hit.
      */
-    doRaycast(from, direction, alreadyAscertainedVoxels) {
+    doRaycast(from, direction, alreadyAscertainedVoxels, visibleBlocks, visibilityMask) {
         const iter = new prismarine_world_1.iterators.RaycastIterator(from, direction, this.radius + 0.5);
         let pos = iter.next();
-        let hit = null;
         while (pos) {
             const position = new vec3_1.Vec3(pos.x, pos.y, pos.z);
             const serializedPosition = (0, generic_1.serializeVec3)(position);
-            const offset = position.floored().minus(from);
-            if (hit && !alreadyAscertainedVoxels.has(serializedPosition)) {
-                // This offset should be provisionally considered invisible.
-                // "Provisionally" since we are not adding it to the set of already ascertained
-                // voxels, meaning, the offset voxel can be hit later via a different entry face.
-                this.visibleBlocks.unsetFromOffset(offset);
-                this.visibilityMask.unsetFromOffset(offset);
-            }
-            else if (!hit && !alreadyAscertainedVoxels.has(serializedPosition)) {
+            const offset = position.floored().minus(from.floored());
+            if (!alreadyAscertainedVoxels.has(serializedPosition)) {
                 const block = this.bot.world.getBlock(position);
+                alreadyAscertainedVoxels.add(serializedPosition);
                 // Any air/null that we hit is just an unobstructed (see-through) voxel
                 if (block === null || block.name === "air") {
-                    this.visibleBlocks.unsetFromOffset(offset); // No block at this offset
-                    this.visibilityMask.setFromOffset(offset, true); // Rays pass through = visible
+                    visibilityMask.setFromOffset(offset, true); // Rays pass through = visible
                 }
                 else {
-                    // The first block has been reached by this raycast and is our hit!
-                    this.visibleBlocks.setFromOffset(offset, block); // Add block to visible blocks
-                    this.visibilityMask.setFromOffset(offset, true); // Mark offset as visible
-                    hit = [block, pos.face];
+                    // A block has been reached by this raycast and is our hit!
+                    visibleBlocks.setFromOffset(offset, block); // Add block to visible blocks
+                    visibilityMask.setFromOffset(offset, true); // Mark offset as visible
+                    return [block, pos.face];
                 }
-                alreadyAscertainedVoxels.add(serializedPosition); // Mark this voxel as checked
             }
             pos = iter.next();
         }
-        return hit !== null && hit !== void 0 ? hit : [null, null];
+        return [null, null];
     }
     /**
      * Performs raycasting with occlusion culling from a given voxel position.
@@ -220,6 +210,8 @@ class VisibilityRaycaster {
             const fromVoxelCenter = fromVoxel.offset(0.5, 0.5, 0.5);
             const orientationsToSkip = new Set();
             const alreadyAscertainedVoxels = new Set();
+            const newVisibleBlocks = new array_1.OffsetBased3DArray(this.visibleBlocks.radiusOfInterest, null);
+            const newVisibilityMask = new array_1.OffsetBased3DArray(this.visibilityMask.radiusOfInterest, false);
             // Inner helper function to release event loop every N raycasts
             function releaseEventLoopIfNecessary() {
                 return __awaiter(this, void 0, void 0, function* () {
@@ -237,12 +229,12 @@ class VisibilityRaycaster {
                 if (orientationsToSkip.has(originalRayOrientationKey)) {
                     continue;
                 }
-                const [hit, face] = this.doRaycast(fromVoxelCenter, OriginalRayOrientation.vecNorm, alreadyAscertainedVoxels);
+                const [hit, face] = this.doRaycast(fromVoxelCenter, OriginalRayOrientation.vecNorm, alreadyAscertainedVoxels, newVisibleBlocks, newVisibilityMask);
                 nRaycastsPerformed++;
                 yield yield __await([OriginalRayOrientation.vecNorm, hit]);
                 yield __await(releaseEventLoopIfNecessary());
                 // Once we've hit a face, we can skip the other orientations that penetrate this face
-                if (hit && face) {
+                if (hit && face !== null) {
                     const hitBlockOffset = hit.position.minus(fromVoxel);
                     const faceKey = (0, voxel_1.serializeVoxelOffsetFace)(hitBlockOffset, face);
                     const castOrientationsThatPenetrateHitBlockFace = this.facesToCastOrientationsThatPenetrateThem.get(faceKey);
@@ -261,6 +253,9 @@ class VisibilityRaycaster {
             console.log(`${msElapsedWhileRaycasting}ms spent raycasting | ` +
                 `${totalMsElapsed - msElapsedWhileRaycasting}ms spent elsewhere`);
             this.isRaycasting = false;
+            this.visibleBlocks = newVisibleBlocks;
+            this.visibilityMask = newVisibilityMask;
+            yield yield __await([null, null]); // Indicate end of raycasting
         });
     }
 }

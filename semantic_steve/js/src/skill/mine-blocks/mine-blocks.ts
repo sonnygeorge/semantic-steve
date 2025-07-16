@@ -372,7 +372,7 @@ export class MineBlocks extends Skill {
       return this.resolve(new MineBlocksResults.InvalidBlock(block));
     }
 
-    if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
+    if (!(await this.blockTypeToMine.isVisibleInImmediateSurroundings())) {
       return this.resolve(
         new MineBlocksResults.BlockNotInImmediateSurroundings(block)
       );

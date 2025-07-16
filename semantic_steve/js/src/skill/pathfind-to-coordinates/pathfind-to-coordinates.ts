@@ -97,18 +97,19 @@ export class PathfindToCoordinates extends Skill {
    * If any of them are found, it returns appropriate result. Otherwise, it returns undefined.
    * @returns The result of the check, or undefined if no stopIfFound things are found.
    */
-  private getResultIfAnyStopIfFoundThingInSurroundings():
+  private async getResultIfAnyStopIfFoundThingInSurroundings(): Promise<
     | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
     | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
-    | undefined {
+    | undefined
+  > {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     for (const thing of this.pathingParams.stopIfFound!) {
-      if (thing.isVisibleInImmediateSurroundings()) {
+      if (await thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
           this.pathingParams.targetCoords!,
           thing.name
         );
-      } else if (thing.isVisibleInDistantSurroundings()) {
+      } else if (await thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
           this.pathingParams.targetCoords!,
           thing.name
@@ -160,14 +161,14 @@ export class PathfindToCoordinates extends Skill {
     this.resolve(result);
   }
 
-  private resolvePathfindingSuccess(): void {
+  private async resolvePathfindingSuccess(): Promise<void> {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     console.log("Resolving pathfinding as success");
     this.cleanupListeners();
     // NOTE: We prefer telling the LLM/user that they stopped early because they found
     // something from stopIfFound, even if they reached their pathfinding goal as well.
     const result =
-      this.getResultIfAnyStopIfFoundThingInSurroundings() ??
+      (await this.getResultIfAnyStopIfFoundThingInSurroundings()) ??
       new PathfindToCoordinatesResults.Success(
         this.pathingParams.targetCoords!
       );
@@ -175,12 +176,14 @@ export class PathfindToCoordinates extends Skill {
     this.resolve(result);
   }
 
-  private checkForStopIfFoundThingsAndHandle(lastMove: Vec3): void {
+  private async checkForStopIfFoundThingsAndHandle(
+    lastMove: Vec3
+  ): Promise<void> {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     if (this.pathingParams.stopIfFound!.length === 0) {
       return;
     }
-    const result = this.getResultIfAnyStopIfFoundThingInSurroundings();
+    const result = await this.getResultIfAnyStopIfFoundThingInSurroundings();
     if (result) {
       this.resolveThingFound(result);
     }

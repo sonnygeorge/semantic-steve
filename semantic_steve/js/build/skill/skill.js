@@ -34,7 +34,7 @@ class Skill {
         (0, assert_1.default)(this.status === SkillStatus.ACTIVE_RUNNING ||
             this.status === SkillStatus.STOPPED, `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`);
         this.status = SkillStatus.PENDING_INVOCATION;
-        const onResolution = this.onResolution.bind(this).bind(result);
+        const onResolution = this.onResolution.bind(this, result);
         setTimeout(onResolution, 0);
     }
     /**

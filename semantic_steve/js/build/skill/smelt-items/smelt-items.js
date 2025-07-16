@@ -246,7 +246,7 @@ class SmeltItems extends skill_1.Skill {
                 const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
                 const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
                 const furnaceIsInInventory = furnaceItemType.getTotalCountInInventory() > 0;
-                let nearestImmediateSurroundingsFurnaceCoords = furnaceBlockType.locateNearestInImmediateSurroundings();
+                let nearestImmediateSurroundingsFurnaceCoords = yield furnaceBlockType.locateNearestInImmediateSurroundings();
                 if (!nearestImmediateSurroundingsFurnaceCoords && !furnaceIsInInventory) {
                     // No furnace available
                     this.shouldBeDoingStuff = false;
@@ -260,7 +260,7 @@ class SmeltItems extends skill_1.Skill {
                         return; // Exit on pause or stop
                     }
                     nearestImmediateSurroundingsFurnaceCoords =
-                        furnaceBlockType.locateNearestInImmediateSurroundings();
+                        yield furnaceBlockType.locateNearestInImmediateSurroundings();
                 }
                 (0, assert_1.default)(nearestImmediateSurroundingsFurnaceCoords); // Should always be set by now
                 // Pathfind to the furnace if not reachable
@@ -363,13 +363,11 @@ class SmeltItems extends skill_1.Skill {
                 return;
             }
             // Check if a furnace is available
-            const furnaceIsAvailable = () => {
-                const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
-                const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
-                return (furnaceBlockType.isVisibleInImmediateSurroundings() ||
-                    furnaceItemType.getTotalCountInInventory() > 0);
-            };
-            if (!furnaceIsAvailable()) {
+            const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
+            const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
+            const furnaceIsAvailable = (yield furnaceBlockType.isVisibleInImmediateSurroundings()) ||
+                (yield furnaceItemType.getTotalCountInInventory()) > 0;
+            if (!furnaceIsAvailable) {
                 this.resolve(new results_1.SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name));
                 return;
             }

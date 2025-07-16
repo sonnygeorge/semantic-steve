@@ -32,6 +32,7 @@ class SemanticSteve:
             should_rebuild_typescript=_should_rebuild_typescript
         )
         self._should_run_js_process = _should_run_js_process
+        self._should_rebuild_typescript = _should_rebuild_typescript
         os.environ[SCREENSHORT_DIR_ENV_VAR_NAME] = str(screenshot_dir)
         self.zmq_port = zmq_port
         self.socket: zmq.Socket | None = None
@@ -77,6 +78,8 @@ class SemanticSteve:
     def __enter__(self):
         if self._should_run_js_process:
             self.js_process_manager.__enter__()
+        elif self._should_rebuild_typescript:
+            self.js_process_manager.rebuild_typescript()
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PAIR)
         self.socket.connect(f"tcp://localhost:{self.zmq_port}")

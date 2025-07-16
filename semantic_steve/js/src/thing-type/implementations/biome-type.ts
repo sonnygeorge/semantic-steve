@@ -25,7 +25,7 @@ export class BiomeType implements ThingType {
     }
     assert(
       this.id !== -1,
-      `This should be impossible. We should have thrown an error above.`,
+      `This should be impossible. We should have thrown an error above.`
     );
   }
 
@@ -33,7 +33,7 @@ export class BiomeType implements ThingType {
   // Implementation of ThingType API
   // ================================
 
-  isVisibleInImmediateSurroundings(): boolean {
+  public async isVisibleInImmediateSurroundings(): Promise<boolean> {
     for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
       if (biomeName === this.name) {
         return true;
@@ -42,7 +42,7 @@ export class BiomeType implements ThingType {
     return false;
   }
 
-  isVisibleInDistantSurroundings(): boolean {
+  public async isVisibleInDistantSurroundings(): Promise<boolean> {
     for (const dir of this.bot.envState.surroundings.distant.values()) {
       for (const biomeName of dir.visible.getDistinctBiomeNames()) {
         if (biomeName === this.name) {
@@ -53,7 +53,7 @@ export class BiomeType implements ThingType {
     return false;
   }
 
-  locateNearest(): Vec3 | undefined {
+  public async locateNearest(): Promise<Vec3 | undefined> {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult !== null) {
@@ -64,7 +64,9 @@ export class BiomeType implements ThingType {
     return this.locateNearestInDistantSurroundings();
   }
 
-  locateNearestInImmediateSurroundings(): Vec3 | undefined {
+  public async locateNearestInImmediateSurroundings(): Promise<
+    Vec3 | undefined
+  > {
     for (const [
       name,
       closestCoords,
@@ -75,9 +77,9 @@ export class BiomeType implements ThingType {
     }
   }
 
-  locateNearestInDistantSurroundings(
-    direction?: DirectionName,
-  ): Vec3 | undefined {
+  public async locateNearestInDistantSurroundings(
+    direction?: DirectionName
+  ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const vicinity = this.bot.envState.surroundings.distant.get(direction)!;
@@ -94,7 +96,7 @@ export class BiomeType implements ThingType {
 
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
 
     // Find the closest coordinates across all directions
@@ -119,9 +121,11 @@ export class BiomeType implements ThingType {
     return closestOfClosestCoords;
   }
 
-  isVisibleInImmediateSurroundingsAt(coords: Vec3): boolean {
+  public async isVisibleInImmediateSurroundingsAt(
+    coords: Vec3
+  ): Promise<boolean> {
     throw new Error(
-      "Method not implemented. This method is yet not usable for biomes.",
+      "Method not implemented. This method is yet not usable for biomes."
     );
   }
 }

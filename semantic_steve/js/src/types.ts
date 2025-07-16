@@ -1,8 +1,6 @@
 import { Entity as PEntity } from "prismarine-entity";
 import type { Item as PItem } from "prismarine-item";
 
-export type MaybePromise<T, E = undefined> = Promise<T | E> | T | E;
-
 export interface SemanticSteveConfigOptions {
   selfPreservationCheckThrottleMS?: number;
   immediateSurroundingsRadius?: number;

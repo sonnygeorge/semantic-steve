@@ -23,7 +23,7 @@ class SemanticSteveJsProcessManager:
 
     def __enter__(self):
         if self.should_rebuild_typescript and not self.debug:  # Unneeded step if debugging
-            self._rebuild_typescript()
+            self.rebuild_typescript()
         self.js_process = subprocess.Popen(
             CMD_TO_START_JS_PROCESS,
             stderr=subprocess.PIPE,
@@ -40,7 +40,7 @@ class SemanticSteveJsProcessManager:
     ## Private helpers ##
     #####################
 
-    def _rebuild_typescript(self) -> None:
+    def rebuild_typescript(self) -> None:
         print("Rebuilding typescript...")
         try:
             subprocess.run(

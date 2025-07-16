@@ -3,13 +3,13 @@ import { Bot } from "mineflayer";
 import { Block as PBlock } from "prismarine-block";
 import { Vec3 } from "vec3";
 import { MAX_PLACEMENT_REACH, ADJACENT_OFFSETS } from "../constants";
-import { CubedMeter } from "./cubed-meter";
+import { VoxelAroundBot } from "./voxel";
 import {
   areContentsOfCoordsVisible,
-  canRaycastToOrBeyondCubedMeterFace,
+  canRaycastToOrBeyondVoxelFace,
 } from "./visibility";
 import { blockExistsAt, isBlock } from "./block";
-import { ConnectingSide } from "../types";
+import { VoxelFace } from "../types";
 
 export function isBotOccupyingCoords(bot: Bot, coords: Vec3): boolean {
   // Get the bot's actual position (which can be fractional)
@@ -58,8 +58,8 @@ export function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
     return;
   }
 
-  const cubedMeter: CubedMeter = new CubedMeter(bot, coords);
-  for (const [side, offset] of Object.entries(ADJACENT_OFFSETS)) {
+  const voxel: VoxelAroundBot = new VoxelAroundBot(bot, coords);
+  for (const [face, offset] of ADJACENT_OFFSETS) {
     const adjacentCoords = coords.clone().add(offset);
     const adjacentBlock = bot.blockAt(adjacentCoords);
     if (!isBlock(adjacentBlock)) {
@@ -67,7 +67,7 @@ export function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
     }
     assert(adjacentBlock !== null);
 
-    const connectingFace = cubedMeter.faces.get(side as ConnectingSide);
+    const connectingFace = voxel.faces.get(face);
     assert(connectingFace !== undefined);
 
     // Skip if out of reach for placement
@@ -76,7 +76,7 @@ export function getViableReferenceBlockAndFaceVectorIfCoordsArePlaceable(
     }
 
     // Skip if the bot's line of sight can't reach
-    if (!canRaycastToOrBeyondCubedMeterFace(bot, connectingFace)) {
+    if (!canRaycastToOrBeyondVoxelFace(bot, connectingFace)) {
       continue;
     }
 

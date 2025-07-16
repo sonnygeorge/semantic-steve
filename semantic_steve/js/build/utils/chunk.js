@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.applyFuncToCoordsInChunk = applyFuncToCoordsInChunk;
+exports.isChunkAtLeastPartiallyWithinRadius = isChunkAtLeastPartiallyWithinRadius;
 const vec3_1 = require("vec3");
 /**
  * Applies a function to all coordinates in a chunk.
@@ -21,4 +22,11 @@ function applyFuncToCoordsInChunk(bot, fn, chunkPoint) {
             }
         }
     }
+}
+function isChunkAtLeastPartiallyWithinRadius(bot, chunkPoint, radius) {
+    const closestX = Math.max(chunkPoint.x, Math.min(bot.entity.position.x, chunkPoint.x + 15));
+    const closestZ = Math.max(chunkPoint.z, Math.min(bot.entity.position.z, chunkPoint.z + 15));
+    const horizontalDistance = Math.sqrt(Math.pow(closestX - bot.entity.position.x, 2) +
+        Math.pow(closestZ - bot.entity.position.z, 2));
+    return horizontalDistance <= radius;
 }

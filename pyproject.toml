@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.11.1,<3",
     "tenacity>=9.1.2",
     "openai>=1.76.2",
+    "healpy>=1.18.1",
 ]
 [project.optional-dependencies]
 dev = [
@@ -33,6 +34,7 @@ extend-exclude = [
     "venv",
     ".git",
     "__pycache__",
+    "eai25_experiments",
 ]
 
 [tool.ruff.lint]

@@ -17,8 +17,8 @@ import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
 import { InvalidThingError } from "../../types";
 import { TakeScreenshotOfResults } from "./results";
 import { asyncSleep } from "../../utils/generic";
-import { BOT_EYE_HEIGHT } from "../../constants";
 import { MC_COMMAND_WAIT_MS, SCREENSHOT_WAIT_MS } from "../../constants";
+import { getEyePos } from "../../utils/misc";
 
 // TODO: Currently this skill isn't pausable/resumable like it should be.
 
@@ -48,7 +48,7 @@ export class TakeScreenshotOf extends Skill {
       /**
        * Attempts to take a screenshot of the specified thing, assuming it is in the
        * immediate surroundings.
-       * 
+       *
        * @param thing - The thing to take a screenshot of.
        * @param atCoordinates - Optional coordinates to disambiguate where the
        * thing is located.
@@ -63,6 +63,11 @@ export class TakeScreenshotOf extends Skill {
   constructor(bot: Bot, onResolution: SkillResolutionHandler) {
     super(bot, onResolution);
     this.screenshotDir = process.env.SEMANTIC_STEVE_SCREENSHOT_DIR as string;
+    if (!this.screenshotDir) {
+      throw new Error(
+        "SEMANTIC_STEVE_SCREENSHOT_DIR environment variable is not set.",
+      );
+    }
     // Ensure screenshot directory exists
     if (!fs.existsSync(this.screenshotDir)) {
       fs.mkdirSync(this.screenshotDir, { recursive: true });
@@ -97,7 +102,7 @@ export class TakeScreenshotOf extends Skill {
       );
     }
 
-    const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+    const eyePosition = getEyePos(this.bot);
 
     // Create world view
     const worldView = new WorldView(
@@ -291,7 +296,9 @@ export class TakeScreenshotOf extends Skill {
         atCoordinates[1],
         atCoordinates[2],
       );
-      if (!this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords)) {
+      if (
+        !(await this.thing.isVisibleInImmediateSurroundingsAt(this.atCoords))
+      ) {
         const result = new TakeScreenshotOfResults.InvalidCoords(thing);
         this.resolve(result);
         return;

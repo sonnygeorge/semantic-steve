@@ -4,11 +4,10 @@ import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { Approach } from "../approach/approach";
 import { isApproachResult } from "../approach/results";
-import { Vicinity } from "../../env-state/surroundings";
 import { PickupItemResults } from "./results";
 import { ItemType } from "../../thing-type";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { InvalidThingError, SkillResult } from "../../types";
+import { InvalidThingError, SkillResult, VicinityName } from "../../types";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
 import { asyncSleep } from "../../utils/generic";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
@@ -62,7 +61,9 @@ export class PickupItem extends Skill {
         this.targetItemCoords,
       );
 
-    if (vicinityOfOriginalTargetCoords !== Vicinity.IMMEDIATE_SURROUNDINGS) {
+    if (
+      vicinityOfOriginalTargetCoords !== VicinityName.IMMEDIATE_SURROUNDINGS
+    ) {
       const result =
         new PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(
           this.itemEntity.name,

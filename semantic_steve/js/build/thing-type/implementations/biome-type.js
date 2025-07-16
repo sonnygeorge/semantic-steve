@@ -1,15 +1,25 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BiomeType = void 0;
 const assert_1 = __importDefault(require("assert"));
+const types_1 = require("../../types");
 class BiomeType {
     constructor(bot, name) {
         const biomeNames = Object.values(bot.registry.biomes).map((b) => b.name);
         if (!biomeNames.includes(name)) {
-            throw new Error(`Invalid biome type: ${name}.`);
+            throw new types_1.InvalidThingError(`Invalid biome type: ${name}.`);
         }
         this.bot = bot;
         this.name = name;
@@ -25,72 +35,81 @@ class BiomeType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        for (const biomeName of this.bot.envState.surroundings.immediate.getDistinctBiomeNames()) {
-            if (biomeName === this.name) {
-                return true;
-            }
-        }
-        return false;
-    }
-    isVisibleInDistantSurroundings() {
-        for (const dir of this.bot.envState.surroundings.distant.values()) {
-            for (const biomeName of dir.getDistinctBiomeNames()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
                 if (biomeName === this.name) {
                     return true;
                 }
             }
-        }
-        return false;
+            return false;
+        });
+    }
+    isVisibleInDistantSurroundings() {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const dir of this.bot.envState.surroundings.distant.values()) {
+                for (const biomeName of dir.visible.getDistinctBiomeNames()) {
+                    if (biomeName === this.name) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
     }
     locateNearest() {
-        // Try immediate surroundings first
-        const immediateResult = this.locateNearestInImmediateSurroundings();
-        if (immediateResult !== null) {
-            return immediateResult;
-        }
-        // If not found in immediate surroundings, try distant surroundings
-        return this.locateNearestInDistantSurroundings();
+        return __awaiter(this, void 0, void 0, function* () {
+            // Try immediate surroundings first
+            const immediateResult = this.locateNearestInImmediateSurroundings();
+            if (immediateResult !== null) {
+                return immediateResult;
+            }
+            // If not found in immediate surroundings, try distant surroundings
+            return this.locateNearestInDistantSurroundings();
+        });
     }
     locateNearestInImmediateSurroundings() {
-        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getBiomeNamesToClosestCoords()) {
-            if (name === this.name) {
-                return closestCoords.clone();
-            }
-        }
-    }
-    locateNearestInDistantSurroundings(direction) {
-        // If a specific direction is provided, check only that direction
-        if (direction) {
-            const vicinity = this.bot.envState.surroundings.distant.get(direction);
-            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getBiomeNamesToClosestCoords()) {
                 if (name === this.name) {
                     return closestCoords.clone();
                 }
             }
-            return undefined; // Not found in the specified direction
-        }
-        // If no direction specified, check all directions
-        const directions = Array.from(this.bot.envState.surroundings.distant.keys());
-        // Find the closest coordinates across all directions
-        let closestOfClosestCoords = undefined;
-        let smallestDistance = Infinity;
-        for (const dir of directions) {
-            const vicinity = this.bot.envState.surroundings.distant.get(dir);
-            for (const [name, closestCoords,] of vicinity.getBiomeNamesToClosestCoords()) {
-                if (name === this.name) {
-                    const distance = closestCoords.distanceTo(this.bot.entity.position);
-                    if (distance < smallestDistance) {
-                        smallestDistance = distance;
-                        closestOfClosestCoords = closestCoords.clone();
+        });
+    }
+    locateNearestInDistantSurroundings(direction) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // If a specific direction is provided, check only that direction
+            if (direction) {
+                const vicinity = this.bot.envState.surroundings.distant.get(direction);
+                for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+                    if (name === this.name) {
+                        return closestCoords.clone();
                     }
-                    break;
+                }
+                return undefined; // Not found in the specified direction
+            }
+            // If no direction specified, find the closest coordinates across all directions
+            let closestOfClosestCoords = undefined;
+            let smallestDistance = Infinity;
+            for (const vicinity of this.bot.envState.surroundings.distant.values()) {
+                for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+                    if (name === this.name) {
+                        const distance = closestCoords.distanceTo(this.bot.entity.position);
+                        if (distance < smallestDistance) {
+                            smallestDistance = distance;
+                            closestOfClosestCoords = closestCoords.clone();
+                        }
+                        break;
+                    }
                 }
             }
-        }
-        return closestOfClosestCoords;
+            return closestOfClosestCoords;
+        });
     }
     isVisibleInImmediateSurroundingsAt(coords) {
-        throw new Error("Method not implemented. This method is yet not usable for biomes.");
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error("Method not implemented. This method doesn't really make sense for biomes.");
+        });
     }
 }
 exports.BiomeType = BiomeType;

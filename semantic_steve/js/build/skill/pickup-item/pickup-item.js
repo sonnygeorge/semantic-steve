@@ -17,7 +17,6 @@ const assert_1 = __importDefault(require("assert"));
 const pathfind_to_coordinates_1 = require("../pathfind-to-coordinates/pathfind-to-coordinates");
 const approach_1 = require("../approach/approach");
 const results_1 = require("../approach/results");
-const surroundings_1 = require("../../env-state/surroundings");
 const results_2 = require("./results");
 const thing_type_1 = require("../../thing-type");
 const skill_1 = require("../skill");
@@ -43,7 +42,7 @@ class PickupItem extends skill_1.Skill {
             (0, assert_1.default)(this.itemTotalAtPathingStart !== undefined);
             (0, assert_1.default)(this.targetItemCoords);
             const vicinityOfOriginalTargetCoords = this.bot.envState.surroundings.getVicinityForPosition(this.targetItemCoords);
-            if (vicinityOfOriginalTargetCoords !== surroundings_1.Vicinity.IMMEDIATE_SURROUNDINGS) {
+            if (vicinityOfOriginalTargetCoords !== types_1.VicinityName.IMMEDIATE_SURROUNDINGS) {
                 const result = new results_2.PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(this.itemEntity.name);
                 this.resolve(result);
                 return;

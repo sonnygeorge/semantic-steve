@@ -162,11 +162,13 @@ class SmeltItems extends skill_1.Skill {
                 return; // Already in range
             }
             let furnaceIsInRangeAfterPathfinding = undefined;
-            const handlePathfindingResolution = (result) => {
-                this.activeSubskill = undefined;
-                furnaceIsInRangeAfterPathfinding =
-                    result instanceof results_1.SmeltItemsResults.Success;
-            };
+            function handlePathfindingResolution(result) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    this.activeSubskill = undefined;
+                    furnaceIsInRangeAfterPathfinding =
+                        result instanceof results_1.SmeltItemsResults.Success;
+                });
+            }
             this.activeSubskill = new pathfind_to_coordinates_1.PathfindToCoordinates(this.bot, handlePathfindingResolution.bind(this));
             yield this.activeSubskill.invoke(furnaceCoords);
             // Wait for the pathfinding to finish
@@ -185,10 +187,12 @@ class SmeltItems extends skill_1.Skill {
     placeFurnace() {
         return __awaiter(this, void 0, void 0, function* () {
             let placeFurnaceResult = undefined;
-            const handlePlaceFurnaceResolution = (result) => {
-                this.activeSubskill = undefined;
-                placeFurnaceResult = result;
-            };
+            function handlePlaceFurnaceResolution(result) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    this.activeSubskill = undefined;
+                    placeFurnaceResult = result;
+                });
+            }
             this.activeSubskill = new place_block_1.PlaceBlock(this.bot, handlePlaceFurnaceResolution.bind(this));
             yield this.activeSubskill.invoke("furnace");
             // Wait for the placement to finish
@@ -207,10 +211,12 @@ class SmeltItems extends skill_1.Skill {
     }
     mineFurnaceAfterSmeltingIfNeededAndResolve() {
         return __awaiter(this, void 0, void 0, function* () {
-            const handleMineBlocksResolution = (mineBlocksResult) => {
-                this.activeSubskill = undefined;
-                this.resolveAfterSmelting(mineBlocksResult);
-            };
+            function handleMineBlocksResolution(mineBlocksResult) {
+                return __awaiter(this, void 0, void 0, function* () {
+                    this.activeSubskill = undefined;
+                    this.resolveAfterSmelting(mineBlocksResult);
+                });
+            }
             this.activeSubskill = new mine_blocks_1.MineBlocks(this.bot, handleMineBlocksResolution.bind(this));
             yield this.activeSubskill.invoke("furnace", 1);
             // Wait for the mining to finish
@@ -240,7 +246,7 @@ class SmeltItems extends skill_1.Skill {
                 const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
                 const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
                 const furnaceIsInInventory = furnaceItemType.getTotalCountInInventory() > 0;
-                let nearestImmediateSurroundingsFurnaceCoords = furnaceBlockType.locateNearestInImmediateSurroundings();
+                let nearestImmediateSurroundingsFurnaceCoords = yield furnaceBlockType.locateNearestInImmediateSurroundings();
                 if (!nearestImmediateSurroundingsFurnaceCoords && !furnaceIsInInventory) {
                     // No furnace available
                     this.shouldBeDoingStuff = false;
@@ -254,7 +260,7 @@ class SmeltItems extends skill_1.Skill {
                         return; // Exit on pause or stop
                     }
                     nearestImmediateSurroundingsFurnaceCoords =
-                        furnaceBlockType.locateNearestInImmediateSurroundings();
+                        yield furnaceBlockType.locateNearestInImmediateSurroundings();
                 }
                 (0, assert_1.default)(nearestImmediateSurroundingsFurnaceCoords); // Should always be set by now
                 // Pathfind to the furnace if not reachable
@@ -357,13 +363,11 @@ class SmeltItems extends skill_1.Skill {
                 return;
             }
             // Check if a furnace is available
-            const furnaceIsAvailable = () => {
-                const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
-                const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
-                return (furnaceBlockType.isVisibleInImmediateSurroundings() ||
-                    furnaceItemType.getTotalCountInInventory() > 0);
-            };
-            if (!furnaceIsAvailable()) {
+            const furnaceItemType = new thing_type_1.ItemType(this.bot, "furnace");
+            const furnaceBlockType = new thing_type_1.BlockType(this.bot, "furnace");
+            const furnaceIsAvailable = (yield furnaceBlockType.isVisibleInImmediateSurroundings()) ||
+                (yield furnaceItemType.getTotalCountInInventory()) > 0;
+            if (!furnaceIsAvailable) {
                 this.resolve(new results_1.SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name));
                 return;
             }

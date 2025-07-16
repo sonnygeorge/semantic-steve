@@ -1,8 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getEyePos = getEyePos;
 exports.getCurrentDimensionYLimits = getCurrentDimensionYLimits;
-exports.getAllCoordsWithinRadiusToBot = getAllCoordsWithinRadiusToBot;
+exports.getAllCoordsWithinRadiusToPos = getAllCoordsWithinRadiusToPos;
 const vec3_1 = require("vec3");
+function getEyePos(bot, botPos) {
+    if (botPos === undefined) {
+        botPos = bot.entity.position;
+    }
+    return botPos.plus(new vec3_1.Vec3(0, 1.68, 0));
+    // return botPos.plus(new Vec3(0, bot.entity.height, 0));
+}
 function getCurrentDimensionYLimits(bot) {
     if (bot.version < "1.18")
         return { minY: 0, maxY: 255 };
@@ -13,9 +21,9 @@ function getCurrentDimensionYLimits(bot) {
     };
     return limits[bot.game.dimension] || limits.overworld;
 }
-function* getAllCoordsWithinRadiusToBot(bot, radius) {
+function* getAllCoordsWithinRadiusToPos(pos, radius, bot) {
     const { minY: dimensionBottom, maxY: dimensionTop } = getCurrentDimensionYLimits(bot);
-    const botPos = bot.entity.position.floored();
+    pos = pos.floored();
     const radiusSquared = radius * radius;
     // Iterate through a square and filter by circular bounds
     for (let x = -radius; x <= radius; x++) {
@@ -28,10 +36,10 @@ function* getAllCoordsWithinRadiusToBot(bot, radius) {
             const remainingRadiusSquared = radiusSquared - xSquared - zSquared;
             const maxYOffset = Math.floor(Math.sqrt(remainingRadiusSquared));
             // Clip to dimension limits
-            const minY = Math.max(dimensionBottom, botPos.y - maxYOffset);
-            const maxY = Math.min(dimensionTop, botPos.y + maxYOffset);
+            const minY = Math.max(dimensionBottom, pos.y - maxYOffset);
+            const maxY = Math.min(dimensionTop, pos.y + maxYOffset);
             for (let y = minY; y <= maxY; y++) {
-                yield new vec3_1.Vec3(botPos.x + x, y, botPos.z + z);
+                yield new vec3_1.Vec3(pos.x + x, y, pos.z + z);
             }
         }
     }

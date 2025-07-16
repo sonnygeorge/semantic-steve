@@ -16,6 +16,7 @@ import {
 } from "./skill";
 import { SkillResult, SemanticSteveConfig } from "./types";
 import { getInventoryChangesDTO } from "./utils/inventory-changes";
+import { asyncSleep } from "./utils/generic";
 
 export class SemanticSteve {
   private bot: Bot;
@@ -82,7 +83,7 @@ export class SemanticSteve {
           skillInvocation.skillName
         );
         // NOTE: Faux skill-resolution w/out ever ever having an active skill
-        this.handleSkillResolution(result);
+        await this.handleSkillResolution(result);
         return;
       }
       const skillToInvoke = this.skills[skillInvocation.skillName];
@@ -119,7 +120,7 @@ export class SemanticSteve {
     }, 0);
   }
 
-  private handleSkillResolution(result: SkillResult): void {
+  private async handleSkillResolution(result: SkillResult): Promise<void> {
     // Unset fields that are only to be set while skills are running
     console.log(
       `Skill ${this.activeSkill?.constructor.name} resolved with result: ${result.message}`
@@ -130,9 +131,29 @@ export class SemanticSteve {
     // Get Inventory changes since the skill was invoked
     const invChanges = this.getInventoryChanges();
 
+    // Wait for the running observation cycle to complete
+    this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+      "I'm going to wait for this to be null and indicate the observation cycle has completed";
+    while (
+      this.bot.envState.surroundings.vicinitiesObserver
+        .thisGetsSetToNullAtEndOfObservationCycle !== null
+    ) {
+      await asyncSleep(10);
+    }
+    // Wait for the next observation cycle that we know started after the skill resolved to complete
+    // (ensuring surroundings DTO will be up-to-date from the bot's POV after the skill resolved)
+    this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+      "I'm going to wait for this to be null and indicate the observation cycle has completed";
+    while (
+      this.bot.envState.surroundings.vicinitiesObserver
+        .thisGetsSetToNullAtEndOfObservationCycle !== null
+    ) {
+      await asyncSleep(10);
+    }
+
     // Prepare the data to send to Python
     const toSendToPython: DataFromMinecraft = {
-      envState: this.bot.envState.getDTO(),
+      envState: await this.bot.envState.getDTO(),
       skillInvocationResults: result.message,
       inventoryChanges: getInventoryChangesDTO(this.bot, invChanges),
     };
@@ -226,8 +247,17 @@ export class SemanticSteve {
   }
 
   private async getAndSendInitialState(): Promise<void> {
+    // Wait for the running observation cycle to complete
+    this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+      "I'm going to wait for this to be null and indicate the observation cycle has completed";
+    while (
+      this.bot.envState.surroundings.vicinitiesObserver
+        .thisGetsSetToNullAtEndOfObservationCycle !== null
+    ) {
+      await asyncSleep(10);
+    }
     let toSendToPython: DataFromMinecraft = {
-      envState: this.bot.envState.getDTO(),
+      envState: await this.bot.envState.getDTO(),
       // NOTE: No skill invocation results yet
       // NOTE: No inventory changes yet
     };
@@ -258,7 +288,7 @@ export class SemanticSteve {
             skillInvocation.skillName
           );
           // NOTE: Faux skill-resolution w/out ever ever having an active skill
-          this.handleSkillResolution(result);
+          await this.handleSkillResolution(result);
         } else {
           this.invokeSkill(skillInvocation);
         }

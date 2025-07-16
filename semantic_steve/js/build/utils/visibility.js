@@ -2,16 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.areContentsOfCoordsVisible = areContentsOfCoordsVisible;
 exports.isBlockVisible = isBlockVisible;
-exports.canRaycastToOrBeyondCubedMeterFace = canRaycastToOrBeyondCubedMeterFace;
-const mineflayer_util_plugin_1 = require("@nxg-org/mineflayer-util-plugin");
-const constants_1 = require("../constants");
+exports.canRaycastToOrBeyondVoxelFace = canRaycastToOrBeyondVoxelFace;
+const mineflayer_util_plugin_1 = require("@nxg-org/mineflayer-util-plugin"); // TODO: Remove this dependency
 const generic_1 = require("./generic");
 const block_1 = require("./block");
-const cubed_meter_1 = require("./cubed-meter");
-const constants_2 = require("../constants");
+const voxel_1 = require("./voxel");
+const constants_1 = require("../constants");
+const misc_1 = require("./misc");
 /**
  * Checks if the bot can see the contents of any given coordinates, i.e., its line of
- * sight can reach or penetrate the 3 closest faces of the cubed meter.
+ * sight can reach or penetrate the 3 closest faces of the voxel.
  *
  * Crucially, this function does NOT raycast to the extreme edges of the faces which can
  * hit through corners of diagonally adjacent encasing neighbor blocks and lead to false
@@ -23,12 +23,12 @@ const constants_2 = require("../constants");
  */
 function areContentsOfCoordsVisible(bot, coords, strategy = "cheap") {
     // Get bot position with eye height
-    const cubedMeter = new cubed_meter_1.CubedMeter(bot, coords);
-    const threeClosestFaces = cubedMeter.getThreeClosestFaces();
+    const voxel = new voxel_1.VoxelAroundBot(bot, coords);
+    const threeClosestFaces = voxel.getThreeClosestFaces();
     // Check if the bot can raycast to or beyond any of the three closest faces
     const nRaycastPoints = strategy === "cheap" ? 10 : 24;
     for (const [side, face] of threeClosestFaces) {
-        if (canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints)) {
+        if (canRaycastToOrBeyondVoxelFace(bot, face, nRaycastPoints)) {
             return true;
         }
     }
@@ -36,15 +36,15 @@ function areContentsOfCoordsVisible(bot, coords, strategy = "cheap") {
 }
 function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
     var _a;
-    const cubedMeter = new cubed_meter_1.CubedMeter(bot, blockCoords);
+    const voxel = new voxel_1.VoxelAroundBot(bot, blockCoords);
     let isExposed = false;
-    for (const [side, face] of cubedMeter.getThreeClosestFaces()) {
+    for (const [side, face] of voxel.getThreeClosestFaces()) {
         if (strategy === "cheap") {
             // Cheap strategy: If block has three closest faces covered by full blocks
             // NOTE: We will still attempt to raycast to the block if the faces are fully
             // covered by non-full blocks—e.g., slabs, stairs, etc.—leading to false positives
             // if the raycast reaches the corner the block (despite being covered)
-            const offset = constants_2.ADJACENT_OFFSETS[side];
+            const offset = constants_1.ADJACENT_OFFSETS.get(side);
             const adjacentCoords = blockCoords.offset(offset.x, offset.y, offset.z);
             const allowedBoundingBoxes = ["block"];
             if (!(0, block_1.blockExistsAt)(bot, adjacentCoords, allowedBoundingBoxes)) {
@@ -57,7 +57,7 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
             // NOTE: This way, we will have already weeded out corner-based false positives by the
             // time we reach raycasting.
             const nRaycastPoints = 10; // Low-ish value to not incur high cost.
-            if (!canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints)) {
+            if (!canRaycastToOrBeyondVoxelFace(bot, face, nRaycastPoints)) {
                 isExposed = true;
                 break;
             }
@@ -66,7 +66,7 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
     if (!isExposed)
         return false;
     // Try raycasting to all vertices of the block's shapes
-    const eyePosition = bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+    const eyePosition = (0, misc_1.getEyePos)(bot);
     for (const shape of block.shapes) {
         const bb = mineflayer_util_plugin_1.AABB.fromShape(shape, blockCoords); // TODO: Remove dependency on AABB
         const vertices = bb.expand(-1e-3, -1e-3, -1e-3).toVertices();
@@ -87,15 +87,15 @@ function isBlockVisible(bot, block, blockCoords, strategy = "cheap") {
  * corner-based false positives when checking visibility.
  *
  * @param bot - The Mineflayer bot instance
- * @param face - The CubedMeterFace to check if the bots line of sight can reach
+ * @param face - The voxel face to check if the bots line of sight can reach
  * @param nRaycastPoints - Number of points to interpolate on the face (default: 24)
  * @returns true if any raycast hits something beyond the face, false otherwise
  */
-function canRaycastToOrBeyondCubedMeterFace(bot, face, nRaycastPoints = 24) {
+function canRaycastToOrBeyondVoxelFace(bot, face, nRaycastPoints = 24) {
     const [c1, c2, c3, c4] = face.corners;
     const widthPoints = Math.ceil(Math.sqrt(nRaycastPoints));
     const heightPoints = widthPoints; // Should always be a square
-    const eyePosition = bot.entity.position.offset(0, constants_1.BOT_EYE_HEIGHT, 0);
+    const eyePosition = (0, misc_1.getEyePos)(bot);
     // Relative padding that adapts to the grid size prevents points from being flush
     const padding = 1 / (widthPoints * 2);
     // Generate points uniformly distributed on the face with padding

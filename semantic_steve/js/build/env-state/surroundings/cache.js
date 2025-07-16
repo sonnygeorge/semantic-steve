@@ -1,21 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AllLoadedBlocksCache = exports.AllSpawnedItemEntitiesCache = void 0;
+exports.BlocksCache = exports.ItemEntitiesCache = void 0;
 const vec3_1 = require("vec3");
 /**
- * Cache for all spawned item entities indexed by their UUIDs.
+ * Cache for item entities indexed by their UUIDs.
  */
-class AllSpawnedItemEntitiesCache extends Map {
+class ItemEntitiesCache extends Map {
     constructor(bot) {
         super();
         this.bot = bot;
     }
 }
-exports.AllSpawnedItemEntitiesCache = AllSpawnedItemEntitiesCache;
+exports.ItemEntitiesCache = ItemEntitiesCache;
 /**
- * Cache for all loaded blocks indexed by stringified Vec3 positions.
+ * Cache for blocks indexed by stringified Vec3 positions.
  */
-class AllLoadedBlocksCache extends Map {
+class BlocksCache extends Map {
     constructor(bot) {
         super();
         this.bot = bot;
@@ -31,4 +31,4 @@ class AllLoadedBlocksCache extends Map {
         return new vec3_1.Vec3(x, y, z);
     }
 }
-exports.AllLoadedBlocksCache = AllLoadedBlocksCache;
+exports.BlocksCache = BlocksCache;

@@ -1,4 +1,5 @@
 import { Vec3 } from "vec3";
+import { SerializedVec3 } from "../types";
 
 export const asyncSleep = (ms: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -47,4 +48,13 @@ export function bilinearInterpolate(
     interpolateComponent("y"),
     interpolateComponent("z"),
   );
+}
+
+export function serializeVec3(vec: Vec3): SerializedVec3 {
+  return `${vec.x},${vec.y},${vec.z}`;
+}
+
+export function deserializeVec3(str: SerializedVec3): Vec3 {
+  const [x, y, z] = str.split(",").map(Number);
+  return new Vec3(x, y, z);
 }

@@ -1,4 +1,20 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ItemType = void 0;
 const types_1 = require("../../types");
@@ -35,81 +51,120 @@ class ItemType {
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
-        for (const itemName of this.bot.envState.surroundings.immediate.getDistinctItemNames()) {
-            if (itemName === this.name) {
-                return true;
-            }
-        }
-        return false;
-    }
-    isVisibleInDistantSurroundings() {
-        for (const dir of this.bot.envState.surroundings.distant.values()) {
-            for (const itemName of dir.getDistinctItemNames()) {
-                if (itemName === this.name) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    locateNearest() {
-        // Try immediate surroundings first
-        const immediateResult = this.locateNearestInImmediateSurroundings();
-        if (immediateResult) {
-            return immediateResult;
-        }
-        // If not found in immediate surroundings, try distant surroundings
-        return this.locateNearestInDistantSurroundings();
-    }
-    locateNearestInImmediateSurroundings() {
-        for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.getItemNamesToClosestCoords()) {
-            if (name === this.name) {
-                return closestCoords.clone();
-            }
-        }
-    }
-    locateNearestInDistantSurroundings(direction) {
-        // If a specific direction is provided, check only that direction
-        if (direction) {
-            const vicinity = this.bot.envState.surroundings.distant.get(direction);
-            for (const [name, closestCoords,] of vicinity.getItemNamesToClosestCoords()) {
-                if (name === this.name) {
-                    return closestCoords.clone();
-                }
-            }
-            return undefined; // Not found in the specified direction
-        }
-        // If no direction specified, check all directions
-        const directions = Array.from(this.bot.envState.surroundings.distant.keys());
-        // Find the closest coordinates across all directions
-        let closestOfClosestCoords = undefined;
-        let smallestDistance = Infinity;
-        for (const dir of directions) {
-            const vicinity = this.bot.envState.surroundings.distant.get(dir);
-            for (const [name, closestCoords,] of vicinity.getItemNamesToClosestCoords()) {
-                if (name === this.name) {
-                    const distance = this.bot.entity.position.distanceTo(closestCoords);
-                    if (distance < smallestDistance) {
-                        smallestDistance = distance;
-                        closestOfClosestCoords = closestCoords.clone();
-                    }
-                    break;
-                }
-            }
-        }
-        return closestOfClosestCoords;
-    }
-    isVisibleInImmediateSurroundingsAt(coords) {
-        for (const [name, coordsIterable,] of this.bot.envState.surroundings.immediate.getItemNamesToAllCoords()) {
-            if (name === this.name) {
-                for (const itemCoords of coordsIterable) {
-                    if (itemCoords.equals(coords)) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_1, _b, _c;
+            try {
+                for (var _d = true, _e = __asyncValues(this.bot.envState.surroundings.immediate.visible.getDistinctItemNames()), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const itemName = _c;
+                    if (itemName === this.name) {
                         return true;
                     }
                 }
             }
-        }
-        return false;
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return false;
+        });
+    }
+    isVisibleInDistantSurroundings() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_2, _b, _c;
+            for (const dir of this.bot.envState.surroundings.distant.values()) {
+                try {
+                    for (var _d = true, _e = (e_2 = void 0, __asyncValues(dir.visible.getDistinctItemNames())), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                        _c = _f.value;
+                        _d = false;
+                        const itemName = _c;
+                        if (itemName === this.name) {
+                            return true;
+                        }
+                    }
+                }
+                catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                finally {
+                    try {
+                        if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                    }
+                    finally { if (e_2) throw e_2.error; }
+                }
+            }
+            return false;
+        });
+    }
+    locateNearest() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Try immediate surroundings first
+            const immediateResult = yield this.locateNearestInImmediateSurroundings();
+            if (immediateResult) {
+                return immediateResult;
+            }
+            // If not found in immediate surroundings, try distant surroundings
+            return yield this.locateNearestInDistantSurroundings();
+        });
+    }
+    locateNearestInImmediateSurroundings() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const itemNamesToClosestCoords = yield this.bot.envState.surroundings.immediate.visible.getItemNamesToClosestCoords();
+            for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
+                if (name === this.name) {
+                    return closestCoords.clone();
+                }
+            }
+        });
+    }
+    locateNearestInDistantSurroundings(direction) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // If a specific direction is provided, check only that direction
+            if (direction) {
+                const vicinity = this.bot.envState.surroundings.distant.get(direction);
+                const itemNamesToClosestCoords = yield vicinity.visible.getItemNamesToClosestCoords();
+                for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
+                    if (name === this.name) {
+                        return closestCoords.clone();
+                    }
+                }
+                return undefined; // Not found in the specified direction
+            }
+            // If no direction specified, find the closest coordinates across all directions
+            let closestOfClosestCoords = undefined;
+            let smallestDistance = Infinity;
+            for (const vicinity of this.bot.envState.surroundings.distant.values()) {
+                const itemNamesToClosestCoords = yield vicinity.visible.getItemNamesToClosestCoords();
+                for (const [name, closestCoords] of itemNamesToClosestCoords.entries()) {
+                    if (name === this.name) {
+                        const distance = this.bot.entity.position.distanceTo(closestCoords);
+                        if (distance < smallestDistance) {
+                            smallestDistance = distance;
+                            closestOfClosestCoords = closestCoords.clone();
+                        }
+                        break;
+                    }
+                }
+            }
+            return closestOfClosestCoords;
+        });
+    }
+    isVisibleInImmediateSurroundingsAt(coords) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const itemNamesToAllCoords = yield this.bot.envState.surroundings.immediate.visible.getItemNamesToAllCoords();
+            for (const [name, coordsIterable] of itemNamesToAllCoords.entries()) {
+                if (name === this.name) {
+                    for (const itemCoords of coordsIterable) {
+                        if (itemCoords.equals(coords)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        });
     }
 }
 exports.ItemType = ItemType;

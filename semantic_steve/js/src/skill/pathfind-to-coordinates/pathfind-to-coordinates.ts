@@ -4,13 +4,38 @@ import { Bot, BotEvents } from "mineflayer";
 import { PartiallyComputedPath, goals } from "mineflayer-pathfinder";
 import { PathfindToCoordinatesResults } from "./results";
 import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
-import { InvalidThingError } from "../../types";
+import { InvalidThingError, VicinityName } from "../../types";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { getGoodPathfindingTarget } from "./utils";
 import { getCurrentDimensionYLimits } from "../../utils/misc";
+import { MAX_ALLOWED_PATHFINDING_TIME_MS } from "../../constants";
+
+class PathfindingParams {
+  public readonly goal: goals.GoalBlock | goals.GoalGetToBlock;
+  public readonly targetCoords: Vec3;
+  public readonly stopIfFound: ThingType[];
+
+  constructor(bot: Bot, targetCoords: Vec3, stopIfFound: ThingType[]) {
+    this.targetCoords = targetCoords;
+    this.stopIfFound = stopIfFound;
+    const blockAtTargetCoords = bot.world.getBlock(targetCoords.floor());
+    if (blockAtTargetCoords !== null && blockAtTargetCoords.name !== "air") {
+      this.goal = new goals.GoalGetToBlock(
+        targetCoords.x,
+        targetCoords.y,
+        targetCoords.z
+      );
+    } else {
+      this.goal = new goals.GoalBlock(
+        targetCoords.x,
+        targetCoords.y,
+        targetCoords.z
+      );
+    }
+  }
+}
 
 export class PathfindToCoordinates extends Skill {
-  public static readonly TIMEOUT_MS: number = 25000; // 25 seconds
+  public static readonly TIMEOUT_MS: number = MAX_ALLOWED_PATHFINDING_TIME_MS;
   public static readonly METADATA: SkillMetadata = {
     name: "pathfindToCoordinates",
     signature:
@@ -34,8 +59,7 @@ export class PathfindToCoordinates extends Skill {
     `,
   };
 
-  private targetCoords?: Vec3;
-  private stopIfFound: ThingType[] = [];
+  private pathingParams?: PathfindingParams;
   private activeListeners: {
     event: keyof BotEvents;
     listener: (...args: any[]) => void;
@@ -51,19 +75,15 @@ export class PathfindToCoordinates extends Skill {
   // =======================
 
   private beginPathfinding(): void {
-    assert(this.targetCoords);
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     this.setupListeners();
-    const goal: goals.GoalBlock = new goals.GoalBlock(
-      this.targetCoords.x,
-      this.targetCoords.y,
-      this.targetCoords.z
-    );
-    this.bot.pathfinder.setGoal(goal);
+    this.bot.pathfinder.setGoal(this.pathingParams.goal!);
     console.log("Goal set. Beginning pathfinding...");
   }
 
   private manuallyStopPathfinder(): void {
-    assert(this.targetCoords);
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
+    console.log("Manually stopping pathfinder...");
     this.bot.pathfinder.stop();
     this.cleanupListeners();
   }
@@ -72,30 +92,26 @@ export class PathfindToCoordinates extends Skill {
   // Misc. helpers
   // ==============
 
-  private unsetPathfindingParams(): void {
-    this.targetCoords = undefined;
-    this.stopIfFound = [];
-  }
-
   /**
    * Checks the bot's surroundings for any of the things in the stopIfFound list.
    * If any of them are found, it returns appropriate result. Otherwise, it returns undefined.
    * @returns The result of the check, or undefined if no stopIfFound things are found.
    */
-  private getResultIfAnyStopIfFoundThingInSurroundings():
+  private async getResultIfAnyStopIfFoundThingInSurroundings(): Promise<
     | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
     | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
-    | undefined {
-    assert(this.targetCoords);
-    for (const thing of this.stopIfFound) {
-      if (thing.isVisibleInImmediateSurroundings()) {
+    | undefined
+  > {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
+    for (const thing of this.pathingParams.stopIfFound!) {
+      if (await thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
-          this.targetCoords,
+          this.pathingParams.targetCoords!,
           thing.name
         );
-      } else if (thing.isVisibleInDistantSurroundings()) {
+      } else if (await thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
-          this.targetCoords,
+          this.pathingParams.targetCoords!,
           thing.name
         );
       }
@@ -125,60 +141,93 @@ export class PathfindToCoordinates extends Skill {
       | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
       | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
   ): void {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     console.log("Resolving pathfinding as thing found");
-    assert(this.targetCoords);
-    this.cleanupListeners();
     this.manuallyStopPathfinder();
-    this.unsetPathfindingParams();
+    this.pathingParams = undefined;
     this.resolve(result);
   }
 
   private resolvePathfindingPartialSuccess(): void {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     console.log("Resolving pathfinding as partial success");
-    assert(this.targetCoords);
     this.cleanupListeners();
     const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
-      this.targetCoords
+      this.pathingParams.targetCoords!
     );
-    this.unsetPathfindingParams();
+    this.pathingParams = undefined;
     this.resolve(result);
   }
 
-  private resolvePathfindingSuccess(): void {
+  private async resolvePathfindingSuccess(): Promise<void> {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     console.log("Resolving pathfinding as success");
-    assert(this.targetCoords);
     this.cleanupListeners();
     // NOTE: We prefer telling the LLM/user that they stopped early because they found
     // something from stopIfFound, even if they reached their pathfinding goal as well.
     const result =
-      this.getResultIfAnyStopIfFoundThingInSurroundings() ??
-      new PathfindToCoordinatesResults.Success(this.targetCoords);
-    this.unsetPathfindingParams();
+      (await this.getResultIfAnyStopIfFoundThingInSurroundings()) ??
+      new PathfindToCoordinatesResults.Success(
+        this.pathingParams.targetCoords!
+      );
+    this.pathingParams = undefined;
     this.resolve(result);
   }
 
-  private checkForStopIfFoundThingsAndHandle(lastMove: Vec3): void {
-    if (this.stopIfFound.length === 0) {
+  private async checkForStopIfFoundThingsAndHandle(
+    lastMove: Vec3
+  ): Promise<void> {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
+    if (this.pathingParams.stopIfFound!.length === 0) {
       return;
     }
-    const result = this.getResultIfAnyStopIfFoundThingInSurroundings();
+    const result = await this.getResultIfAnyStopIfFoundThingInSurroundings();
     if (result) {
       this.resolveThingFound(result);
     }
   }
 
-  private checkForTimeoutStatusAndHandle(path: PartiallyComputedPath): void {
-    if (path.status === "timeout") {
-      console.log("path.status was 'timeout'");
-      this.resolvePathfindingPartialSuccess();
+  private checkForStatusWeShouldManuallyStopAndResolveOn(
+    path: PartiallyComputedPath
+  ): void {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
+    if (path.status === "timeout" || path.status === "noPath") {
+      console.log(`path.status was '${path.status}'`);
+
+      // This stops the bot from continuing to move along the remainder of partial path
+      this.manuallyStopPathfinder();
+
+      if (
+        this.bot.envState.surroundings.getVicinityForPosition(
+          this.pathingParams.targetCoords!
+        ) === VicinityName.IMMEDIATE_SURROUNDINGS
+      ) {
+        this.resolvePathfindingSuccess();
+      } else {
+        this.resolvePathfindingPartialSuccess();
+      }
     }
   }
 
-  private checkForNoPathStatusAndHandle(path: PartiallyComputedPath): void {
-    if (path.status === "noPath") {
-      console.log("path.status was 'noPath'");
-      this.resolvePathfindingPartialSuccess();
+  private handlePathStop(): void {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
+    // As far as I know in my study of mineflayer-pathfinder, 'path_stop' is only emitted
+    // in these cases:
+    // - When a goal becomes invalid
+    // - The pathfind module user calls `pathfinder.stop()`
+    // We only want to resolve when the goal becomes invalid, since, e.g. on skill pause
+    // (which can result in a 'path_stop' emission), we don't want to resolve the skill.
+    if (!this.pathingParams.goal?.isValid()) {
+      if (
+        this.bot.envState.surroundings.getVicinityForPosition(
+          this.pathingParams.targetCoords!
+        ) === VicinityName.IMMEDIATE_SURROUNDINGS
+      ) {
+        this.resolvePathfindingSuccess();
+      } else {
+        this.resolvePathfindingPartialSuccess();
+      }
     }
   }
 
@@ -206,16 +255,9 @@ export class PathfindToCoordinates extends Skill {
     );
     this.setupListener(
       "path_update",
-      this.checkForNoPathStatusAndHandle.bind(this)
+      this.checkForStatusWeShouldManuallyStopAndResolveOn.bind(this)
     );
-    this.setupListener(
-      "path_update",
-      this.checkForTimeoutStatusAndHandle.bind(this)
-    );
-    this.setupListener(
-      "path_stop",
-      this.resolvePathfindingPartialSuccess.bind(this)
-    );
+    this.setupListener("path_stop", this.handlePathStop.bind(this));
   }
 
   private cleanupListeners(): void {
@@ -223,7 +265,7 @@ export class PathfindToCoordinates extends Skill {
     for (const { event, listener } of this.activeListeners) {
       this.bot.off(event, listener);
     }
-    this.activeListeners = []; // Clear the array
+    this.activeListeners = []; // Clear the local-state array
   }
 
   // ============================
@@ -251,15 +293,13 @@ export class PathfindToCoordinates extends Skill {
       this.resolveInvalidCoords([coords.x, coords.y, coords.z]);
       return;
     }
-    this.targetCoords = getGoodPathfindingTarget(this.bot, coords);
-
     // Pre-process stopIfFound
-    this.stopIfFound = [];
+    const processedStopIfFound: ThingType[] = [];
     if (stopIfFound?.length) {
       for (const thingName of stopIfFound) {
         try {
           const thing = this.bot.thingTypeFactory.createThingType(thingName);
-          this.stopIfFound.push(thing);
+          processedStopIfFound.push(thing);
         } catch (error) {
           if (error instanceof InvalidThingError) {
             this.resolveInvalidThing(thingName);
@@ -268,25 +308,31 @@ export class PathfindToCoordinates extends Skill {
         }
       }
     }
-
     // Begin pathfinding
+    this.pathingParams = new PathfindingParams(
+      this.bot,
+      coords,
+      processedStopIfFound
+    );
     this.beginPathfinding();
   }
 
   public async doPause(): Promise<void> {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     this.cleanupListeners();
     this.manuallyStopPathfinder();
     // NOTE: We don't call unsetPathfindingParams (we need to be able to resume)
   }
 
   public async doResume(): Promise<void> {
-    assert(this.targetCoords);
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     this.beginPathfinding();
   }
 
   public async doStop(): Promise<void> {
+    assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     this.cleanupListeners();
     this.manuallyStopPathfinder();
-    this.unsetPathfindingParams();
+    this.pathingParams = undefined;
   }
 }

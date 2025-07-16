@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InvalidThingError = exports.ConnectingSide = exports.SemanticSteveConfig = void 0;
+exports.VicinityName = exports.DirectionName = exports.VoxelFace = exports.BlockFace = exports.InvalidThingError = exports.SemanticSteveConfig = void 0;
 class SemanticSteveConfig {
     constructor(options = {}) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -16,16 +16,6 @@ class SemanticSteveConfig {
     }
 }
 exports.SemanticSteveConfig = SemanticSteveConfig;
-// Six sides of a cubed meter in minecraft
-var ConnectingSide;
-(function (ConnectingSide) {
-    ConnectingSide["WEST"] = "west";
-    ConnectingSide["EAST"] = "east";
-    ConnectingSide["BOTTOM"] = "bottom";
-    ConnectingSide["TOP"] = "top";
-    ConnectingSide["NORTH"] = "north";
-    ConnectingSide["SOUTH"] = "south";
-})(ConnectingSide || (exports.ConnectingSide = ConnectingSide = {}));
 class InvalidThingError extends Error {
     constructor(message) {
         super(message);
@@ -33,3 +23,60 @@ class InvalidThingError extends Error {
     }
 }
 exports.InvalidThingError = InvalidThingError;
+// BlockFace as used in prismarine-world... TODO: Can we not import this somehow?
+exports.BlockFace = {
+    UNKNOWN: -999,
+    BOTTOM: 0,
+    TOP: 1,
+    NORTH: 2,
+    SOUTH: 3,
+    WEST: 4,
+    EAST: 5,
+};
+// prismarine-world's Blockface, but as an enum
+var VoxelFace;
+(function (VoxelFace) {
+    VoxelFace[VoxelFace["UNKNOWN"] = exports.BlockFace.UNKNOWN] = "UNKNOWN";
+    VoxelFace[VoxelFace["BOTTOM"] = exports.BlockFace.BOTTOM] = "BOTTOM";
+    VoxelFace[VoxelFace["TOP"] = exports.BlockFace.TOP] = "TOP";
+    VoxelFace[VoxelFace["NORTH"] = exports.BlockFace.NORTH] = "NORTH";
+    VoxelFace[VoxelFace["SOUTH"] = exports.BlockFace.SOUTH] = "SOUTH";
+    VoxelFace[VoxelFace["WEST"] = exports.BlockFace.WEST] = "WEST";
+    VoxelFace[VoxelFace["EAST"] = exports.BlockFace.EAST] = "EAST";
+})(VoxelFace || (exports.VoxelFace = VoxelFace = {}));
+/**
+ * Keys identifying the 10 "directions" that slice the *distant* surroundings.
+ *
+ * A subset of the 11 "vicinities" in the bot's surroundings (which additionally includes
+ * the immediate surroundings vicinity).
+ */
+var DirectionName;
+(function (DirectionName) {
+    DirectionName["UP"] = "up";
+    DirectionName["DOWN"] = "down";
+    DirectionName["NORTH"] = "north";
+    DirectionName["NORTHEAST"] = "northeast";
+    DirectionName["EAST"] = "east";
+    DirectionName["SOUTHEAST"] = "southeast";
+    DirectionName["SOUTH"] = "south";
+    DirectionName["SOUTHWEST"] = "southwest";
+    DirectionName["WEST"] = "west";
+    DirectionName["NORTHWEST"] = "northwest";
+})(DirectionName || (exports.DirectionName = DirectionName = {}));
+/**
+ * Keys used to identify the 11 regions of space around the bot.
+ */
+var VicinityName;
+(function (VicinityName) {
+    VicinityName["IMMEDIATE_SURROUNDINGS"] = "immediate";
+    VicinityName["DISTANT_SURROUNDINGS_UP"] = "up";
+    VicinityName["DISTANT_SURROUNDINGS_DOWN"] = "down";
+    VicinityName["DISTANT_SURROUNDINGS_NORTH"] = "north";
+    VicinityName["DISTANT_SURROUNDINGS_NORTHEAST"] = "northeast";
+    VicinityName["DISTANT_SURROUNDINGS_EAST"] = "east";
+    VicinityName["DISTANT_SURROUNDINGS_SOUTHEAST"] = "southeast";
+    VicinityName["DISTANT_SURROUNDINGS_SOUTH"] = "south";
+    VicinityName["DISTANT_SURROUNDINGS_SOUTHWEST"] = "southwest";
+    VicinityName["DISTANT_SURROUNDINGS_WEST"] = "west";
+    VicinityName["DISTANT_SURROUNDINGS_NORTHWEST"] = "northwest";
+})(VicinityName || (exports.VicinityName = VicinityName = {}));

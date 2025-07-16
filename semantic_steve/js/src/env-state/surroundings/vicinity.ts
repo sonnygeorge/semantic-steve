@@ -23,11 +23,6 @@ import { ThreeDimOrientation } from "../../utils/orientation";
 import { OffsetBased3DArray } from "../../utils/array";
 import { ensureItemData } from "../../utils/item-entity";
 
-// TODO:
-// - Pathfinding resolution cases seem weird...
-// - Clean this up and archive the temp.html, yielding ray hits, & have this.visibleBlocks be the responsability of VicinitiesObserver?
-// - Implement mob entities in surroundings
-
 export class VicinitiesObserver {
   private bot: Bot;
   private visibilityRaycaster: VisibilityRaycaster;
@@ -121,27 +116,10 @@ export class VicinitiesObserver {
   public async beginObservation(): Promise<void> {
     // Do an initial complete observation cycle
     await this.doObservationCycle(this.bot.entity.position);
-    // // Start tracking entities that are already spawned
-    // for (const entity of Object.values(this.bot.entities)) {
-    //   if (entity.name === "item") {
-    //     // Ensure the loading of its uuid and PItem data
-    //     const itemEntityWithData = await ensureItemData(this.bot, entity);
-    //     this.allSpawnedItemEntities.set(
-    //       itemEntityWithData.entity.uuid!,
-    //       itemEntityWithData
-    //     );
-    //   }
-    // }
-    // console.log(
-    //   this.allSpawnedItemEntities.size,
-    //   "item entities already spawned."
-    // );
     // Setup listeners
     this.bot.on("blockUpdate", this.handleBlockUpdate.bind(this));
     this.bot.on("move", this.handleBotMove.bind(this));
-    // this.bot.on("entitySpawn", this.handleEntitySpawn.bind(this));
-    // this.bot.on("entityGone", this.handleEntityGone.bind(this));
-    // Not needed for now (unless the itemEntityWithData.entity.position doesn't self-update?):
+    // NOTE handling below is useless unless the itemEntityWithData.entity.position doesn't self-update(?)
     // this.bot.on("entityMoved", this.handleEntityMoved.bind(this));
   }
 
@@ -161,37 +139,6 @@ export class VicinitiesObserver {
 
     // TODO: Implement
   }
-
-  // public async handleEntitySpawn(entity: any): Promise<void> {
-  //   if (entity.name === "Item") {
-  //     // Ensure the loading of its uuid and PItem data
-  //     const itemEntityWithData = await ensureItemData(this.bot, entity);
-  //     // Defensive programming: If the entityGone somehow already happened before getting here...
-  //     if (this.itemEntitiesGoneBeforeAdd.has(itemEntityWithData.entity.uuid!)) {
-  //       return; // Don't process this as a newly spawned item entity
-  //     } else {
-  //       this.allSpawnedItemEntities.set(entity.uuid, itemEntityWithData);
-  //     }
-  //   }
-  // }
-
-  // public async handleEntityGone(entity: any): Promise<void> {
-  //   if (entity.name === "Item") {
-  //     // Ensure the loading of its uuid and PItem data
-  //     const itemEntityWithData = await ensureItemData(this.bot, entity);
-  //     // Defensive programming: If entityGone somehow happened before processing the spawn event...
-  //     if (!this.allSpawnedItemEntities.has(itemEntityWithData.entity.uuid!)) {
-  //       // Any spawned item entity with a UUID should have already been added...
-  //       // HOWEVER, on the off chance the event loop gets here before adding the entity...
-  //       // (which I don't *think* is possible/realistic?, but better safe than sorry!),
-  //       // let's prevent this UUID from ever being added if the event loop does try to do so later.
-  //       this.itemEntitiesGoneBeforeAdd.add(itemEntityWithData.entity.uuid!);
-  //     } else {
-  //       // Normal case: remove it.
-  //       this.allSpawnedItemEntities.delete(itemEntityWithData.entity.uuid!);
-  //     }
-  //   }
-  // }
 }
 
 export class VisibleVicinityContents {

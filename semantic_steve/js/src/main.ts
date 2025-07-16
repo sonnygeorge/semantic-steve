@@ -10,6 +10,7 @@ import { mineflayer as mfViewer } from "prismarine-viewer";
 import { SemanticSteve } from "./semantic-steve";
 import { SemanticSteveConfig, SemanticSteveConfigOptions } from "./types";
 import { isValidEmail } from "./utils/generic";
+import { MAX_ALLOWED_PATHFINDING_TIME_MS } from "./constants";
 
 console.log("Starting SemanticSteve javascript process...");
 
@@ -50,9 +51,18 @@ bot.once("login", () => {
 bot.once("spawn", async () => {
   // Set the max time used by pathfinder for thinking to a low value to allow more frequent
   // interleaving between pathfinding and visibility raycasting.
-  bot.pathfinder.tickTimeout = 8;
+  bot.pathfinder.tickTimeout = 10; // 10 milliseconds
+  // This is a weird parameter; it essentially the max amount before the AStar computer
+  // shuts off and doesn't allow any more new branching paths to be computed. Therefore,
+  // We set it to the same value that we allow for a single pathfinding run--so it doesn't
+  // shut off (triggering a 'timeout' status which we handle by resolving the skill) and
+  // end our pathfinding preumaturely to this decided amount of allowed pathfinding time.
+  bot.pathfinder.thinkTimeout = MAX_ALLOWED_PATHFINDING_TIME_MS + 500; // 500ms buffer to avoid race conditions
+  // Since we set the thinkTimeout so high, we should conversely limit the search radius
+  // to keep from taking up the entire time to think about a path beyond a reasonable radius
+  // (allowing the AStar computer to return a 'noPath' status without infinite search).
+  (bot.pathfinder as any).searchRadius = 70; // searchRadius not in index.d.ts, cast to any
 
-  await bot.waitForChunksToLoad();
   await bot.envState.surroundings.beginObservation();
 
   mfViewer(bot, { port: config.mfViewerPort, firstPerson: true });

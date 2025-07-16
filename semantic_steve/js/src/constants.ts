@@ -1,6 +1,9 @@
 import { Vec3 } from "vec3";
 import { VoxelFace } from "./types";
 
+// Max time to allow a single pathfinding run to take
+export const MAX_ALLOWED_PATHFINDING_TIME_MS = 27000; // 27 seconds
+
 // Amount of wait that should lead to an item entity pickup if the bot is in range for pickup
 export const ITEM_PICKUP_WAIT_MS = 400;
 

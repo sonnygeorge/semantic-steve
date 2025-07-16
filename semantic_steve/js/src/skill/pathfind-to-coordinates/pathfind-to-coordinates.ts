@@ -6,34 +6,31 @@ import { PathfindToCoordinatesResults } from "./results";
 import { SUPPORTED_THING_TYPES, ThingType } from "../../thing-type";
 import { InvalidThingError, VicinityName } from "../../types";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { getGoodPathfindingTarget } from "./utils";
 import { getCurrentDimensionYLimits } from "../../utils/misc";
 import { MAX_ALLOWED_PATHFINDING_TIME_MS } from "../../constants";
 
-// TODO: Use GoalGetToBlock instead of getGoodPathfindingTarget when being invoked from approach skill
-
 class PathfindingParams {
-  public readonly goalBlock: goals.GoalBlock;
-  public readonly chosenTargetCoords: Vec3;
-  public readonly originallyPassedTargetCoords: Vec3;
+  public readonly goal: goals.GoalBlock | goals.GoalGetToBlock;
+  public readonly targetCoords: Vec3;
   public readonly stopIfFound: ThingType[];
 
-  constructor(
-    bot: Bot,
-    originallyPassedTargetCoords: Vec3,
-    stopIfFound: ThingType[]
-  ) {
-    this.originallyPassedTargetCoords = originallyPassedTargetCoords;
+  constructor(bot: Bot, targetCoords: Vec3, stopIfFound: ThingType[]) {
+    this.targetCoords = targetCoords;
     this.stopIfFound = stopIfFound;
-    this.chosenTargetCoords = getGoodPathfindingTarget(
-      bot,
-      originallyPassedTargetCoords
-    );
-    this.goalBlock = new goals.GoalBlock(
-      this.chosenTargetCoords.x,
-      this.chosenTargetCoords.y,
-      this.chosenTargetCoords.z
-    );
+    const blockAtTargetCoords = bot.world.getBlock(targetCoords.floor());
+    if (blockAtTargetCoords !== null && blockAtTargetCoords.name !== "air") {
+      this.goal = new goals.GoalGetToBlock(
+        targetCoords.x,
+        targetCoords.y,
+        targetCoords.z
+      );
+    } else {
+      this.goal = new goals.GoalBlock(
+        targetCoords.x,
+        targetCoords.y,
+        targetCoords.z
+      );
+    }
   }
 }
 
@@ -80,7 +77,7 @@ export class PathfindToCoordinates extends Skill {
   private beginPathfinding(): void {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     this.setupListeners();
-    this.bot.pathfinder.setGoal(this.pathingParams.goalBlock!);
+    this.bot.pathfinder.setGoal(this.pathingParams.goal!);
     console.log("Goal set. Beginning pathfinding...");
   }
 
@@ -108,12 +105,12 @@ export class PathfindToCoordinates extends Skill {
     for (const thing of this.pathingParams.stopIfFound!) {
       if (thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
-          this.pathingParams.originallyPassedTargetCoords!,
+          this.pathingParams.targetCoords!,
           thing.name
         );
       } else if (thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
-          this.pathingParams.originallyPassedTargetCoords!,
+          this.pathingParams.targetCoords!,
           thing.name
         );
       }
@@ -157,7 +154,7 @@ export class PathfindToCoordinates extends Skill {
     this.cleanupListeners();
     const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
-      this.pathingParams.originallyPassedTargetCoords!
+      this.pathingParams.targetCoords!
     );
     this.pathingParams = undefined;
     this.resolve(result);
@@ -172,7 +169,7 @@ export class PathfindToCoordinates extends Skill {
     const result =
       this.getResultIfAnyStopIfFoundThingInSurroundings() ??
       new PathfindToCoordinatesResults.Success(
-        this.pathingParams.originallyPassedTargetCoords!
+        this.pathingParams.targetCoords!
       );
     this.pathingParams = undefined;
     this.resolve(result);
@@ -201,7 +198,7 @@ export class PathfindToCoordinates extends Skill {
 
       if (
         this.bot.envState.surroundings.getVicinityForPosition(
-          this.pathingParams.originallyPassedTargetCoords!
+          this.pathingParams.targetCoords!
         ) === VicinityName.IMMEDIATE_SURROUNDINGS
       ) {
         this.resolvePathfindingSuccess();
@@ -219,10 +216,10 @@ export class PathfindToCoordinates extends Skill {
     // - The pathfind module user calls `pathfinder.stop()`
     // We only want to resolve when the goal becomes invalid, since, e.g. on skill pause
     // (which can result in a 'path_stop' emission), we don't want to resolve the skill.
-    if (!this.pathingParams.goalBlock?.isValid()) {
+    if (!this.pathingParams.goal?.isValid()) {
       if (
         this.bot.envState.surroundings.getVicinityForPosition(
-          this.pathingParams.originallyPassedTargetCoords!
+          this.pathingParams.targetCoords!
         ) === VicinityName.IMMEDIATE_SURROUNDINGS
       ) {
         this.resolvePathfindingSuccess();

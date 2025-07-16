@@ -8,36 +8,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BiomeType = void 0;
-const assert_1 = __importDefault(require("assert"));
+exports.MobType = void 0;
 const types_1 = require("../../types");
-class BiomeType {
+const constants_1 = require("../../constants");
+class MobType {
     constructor(bot, name) {
-        const biomeNames = Object.values(bot.registry.biomes).map((b) => b.name);
-        if (!biomeNames.includes(name)) {
-            throw new types_1.InvalidThingError(`Invalid biome type: ${name}.`);
+        const entity = bot.registry.entitiesByName[name];
+        if (!entity || !constants_1.MOB_ENTITY_TYPES.includes(entity.type)) {
+            throw new types_1.InvalidThingError(`Invalid mob entity type: ${name}.`);
         }
-        this.bot = bot;
         this.name = name;
-        this.id = -1;
-        for (const [id, biome] of Object.entries(this.bot.registry.biomes)) {
-            if (biome.name === this.name) {
-                this.id = parseInt(id);
-            }
-        }
-        (0, assert_1.default)(this.id !== -1, `This should be impossible. We should have thrown an error above.`);
+        this.bot = bot;
     }
     // ================================
     // Implementation of ThingType API
     // ================================
     isVisibleInImmediateSurroundings() {
         return __awaiter(this, void 0, void 0, function* () {
-            for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
-                if (biomeName === this.name) {
+            for (const entityName of this.bot.envState.surroundings.immediate.visible.getDistinctMobNames()) {
+                if (entityName === this.name) {
                     return true;
                 }
             }
@@ -47,8 +37,8 @@ class BiomeType {
     isVisibleInDistantSurroundings() {
         return __awaiter(this, void 0, void 0, function* () {
             for (const dir of this.bot.envState.surroundings.distant.values()) {
-                for (const biomeName of dir.visible.getDistinctBiomeNames()) {
-                    if (biomeName === this.name) {
+                for (const entityName of dir.visible.getDistinctMobNames()) {
+                    if (entityName === this.name) {
                         return true;
                     }
                 }
@@ -60,7 +50,7 @@ class BiomeType {
         return __awaiter(this, void 0, void 0, function* () {
             // Try immediate surroundings first
             const immediateResult = this.locateNearestInImmediateSurroundings();
-            if (immediateResult !== null) {
+            if (immediateResult) {
                 return immediateResult;
             }
             // If not found in immediate surroundings, try distant surroundings
@@ -69,7 +59,7 @@ class BiomeType {
     }
     locateNearestInImmediateSurroundings() {
         return __awaiter(this, void 0, void 0, function* () {
-            for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getBiomeNamesToClosestCoords()) {
+            for (const [name, closestCoords,] of this.bot.envState.surroundings.immediate.visible.getMobNamesToClosestCoords()) {
                 if (name === this.name) {
                     return closestCoords.clone();
                 }
@@ -81,7 +71,7 @@ class BiomeType {
             // If a specific direction is provided, check only that direction
             if (direction) {
                 const vicinity = this.bot.envState.surroundings.distant.get(direction);
-                for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+                for (const [name, closestCoords,] of vicinity.visible.getMobNamesToClosestCoords()) {
                     if (name === this.name) {
                         return closestCoords.clone();
                     }
@@ -92,9 +82,9 @@ class BiomeType {
             let closestOfClosestCoords = undefined;
             let smallestDistance = Infinity;
             for (const vicinity of this.bot.envState.surroundings.distant.values()) {
-                for (const [name, closestCoords,] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+                for (const [name, closestCoords,] of vicinity.visible.getMobNamesToClosestCoords()) {
                     if (name === this.name) {
-                        const distance = closestCoords.distanceTo(this.bot.entity.position);
+                        const distance = this.bot.entity.position.distanceTo(closestCoords);
                         if (distance < smallestDistance) {
                             smallestDistance = distance;
                             closestOfClosestCoords = closestCoords.clone();
@@ -106,10 +96,11 @@ class BiomeType {
             return closestOfClosestCoords;
         });
     }
-    isVisibleInImmediateSurroundingsAt(coords) {
+    isVisibleInImmediateSurroundingsAt(position) {
         return __awaiter(this, void 0, void 0, function* () {
-            throw new Error("Method not implemented. This method doesn't really make sense for biomes.");
+            throw new Error("Writing code that relies on constantly-moving mobs being in a specific " +
+                "position probably shouldn't be written.");
         });
     }
 }
-exports.BiomeType = BiomeType;
+exports.MobType = MobType;

@@ -69,7 +69,7 @@ export class BlockType implements ThingType {
           this.pblock.id,
           itemID,
           item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
-          this.bot.entity.effects,
+          this.bot.entity.effects
         );
         if (digTime < fastestDigTime) {
           fastestDigTime = digTime;
@@ -135,7 +135,7 @@ export class BlockType implements ThingType {
   }
 
   public async locateNearestInDistantSurroundings(
-    direction?: DirectionName,
+    direction?: DirectionName
   ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {
@@ -151,16 +151,10 @@ export class BlockType implements ThingType {
       return undefined; // Not found in the specified direction
     }
 
-    // If no direction specified, check all directions
-    const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
-    );
-
-    // Find the closest coordinates across all directions
+    // If no direction specified, find the closest coordinates across all directions
     let closestOfClosestCoords: Vec3 | undefined = undefined;
     let smallestDistance = Infinity;
-    for (const dir of directions) {
-      const vicinity = this.bot.envState.surroundings.distant.get(dir)!;
+    for (const vicinity of this.bot.envState.surroundings.distant.values()) {
       for (const [
         name,
         closestCoords,
@@ -179,7 +173,7 @@ export class BlockType implements ThingType {
   }
 
   public async isVisibleInImmediateSurroundingsAt(
-    coords: Vec3,
+    coords: Vec3
   ): Promise<boolean> {
     for (const [
       name,

@@ -5,7 +5,13 @@ const block_type_1 = require("./implementations/block-type");
 const biome_type_1 = require("./implementations/biome-type");
 const item_type_1 = require("./implementations/item-type");
 const types_1 = require("../types");
-exports.SUPPORTED_THING_TYPES = ["block", "biome", "item"];
+const mob_type_1 = require("./implementations/mob-type");
+exports.SUPPORTED_THING_TYPES = [
+    "block",
+    "biome",
+    "item",
+    "mob",
+];
 class ThingTypeFactory {
     constructor(bot) {
         this.bot = bot;
@@ -22,7 +28,7 @@ class ThingTypeFactory {
             }
         };
         // Try each type in order of precedence
-        const types = [block_type_1.BlockType, item_type_1.ItemType, biome_type_1.BiomeType];
+        const types = [block_type_1.BlockType, item_type_1.ItemType, biome_type_1.BiomeType, mob_type_1.MobType];
         for (const Type of types) {
             const result = attemptCreate(Type);
             if (result)

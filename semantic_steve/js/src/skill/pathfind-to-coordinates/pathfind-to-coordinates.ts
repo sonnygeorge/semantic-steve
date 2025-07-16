@@ -22,13 +22,13 @@ class PathfindingParams {
       this.goal = new goals.GoalGetToBlock(
         targetCoords.x,
         targetCoords.y,
-        targetCoords.z,
+        targetCoords.z
       );
     } else {
       this.goal = new goals.GoalBlock(
         targetCoords.x,
         targetCoords.y,
-        targetCoords.z,
+        targetCoords.z
       );
     }
   }
@@ -107,12 +107,12 @@ export class PathfindToCoordinates extends Skill {
       if (await thing.isVisibleInImmediateSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInImmediateSurroundings(
           this.pathingParams.targetCoords!,
-          thing.name,
+          thing.name
         );
       } else if (await thing.isVisibleInDistantSurroundings()) {
         return new PathfindToCoordinatesResults.FoundThingInDistantSurroundings(
           this.pathingParams.targetCoords!,
-          thing.name,
+          thing.name
         );
       }
     }
@@ -131,7 +131,7 @@ export class PathfindToCoordinates extends Skill {
     console.log("Resolving pathfinding as invalid thing");
     const result = new PathfindToCoordinatesResults.InvalidThing(
       thingName,
-      SUPPORTED_THING_TYPES.toString(),
+      SUPPORTED_THING_TYPES.toString()
     );
     this.resolve(result);
   }
@@ -139,11 +139,10 @@ export class PathfindToCoordinates extends Skill {
   private resolveThingFound(
     result:
       | PathfindToCoordinatesResults.FoundThingInDistantSurroundings
-      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings,
+      | PathfindToCoordinatesResults.FoundThingInImmediateSurroundings
   ): void {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     console.log("Resolving pathfinding as thing found");
-    this.cleanupListeners();
     this.manuallyStopPathfinder();
     this.pathingParams = undefined;
     this.resolve(result);
@@ -155,7 +154,7 @@ export class PathfindToCoordinates extends Skill {
     this.cleanupListeners();
     const result = new PathfindToCoordinatesResults.PartialSuccess(
       this.bot.entity.position,
-      this.pathingParams.targetCoords!,
+      this.pathingParams.targetCoords!
     );
     this.pathingParams = undefined;
     this.resolve(result);
@@ -170,14 +169,14 @@ export class PathfindToCoordinates extends Skill {
     const result =
       (await this.getResultIfAnyStopIfFoundThingInSurroundings()) ??
       new PathfindToCoordinatesResults.Success(
-        this.pathingParams.targetCoords!,
+        this.pathingParams.targetCoords!
       );
     this.pathingParams = undefined;
     this.resolve(result);
   }
 
   private async checkForStopIfFoundThingsAndHandle(
-    lastMove: Vec3,
+    lastMove: Vec3
   ): Promise<void> {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     if (this.pathingParams.stopIfFound!.length === 0) {
@@ -190,7 +189,7 @@ export class PathfindToCoordinates extends Skill {
   }
 
   private checkForStatusWeShouldManuallyStopAndResolveOn(
-    path: PartiallyComputedPath,
+    path: PartiallyComputedPath
   ): void {
     assert(this.pathingParams, "Shouldn't be called w/out set pathing params");
     if (path.status === "timeout" || path.status === "noPath") {
@@ -201,7 +200,7 @@ export class PathfindToCoordinates extends Skill {
 
       if (
         this.bot.envState.surroundings.getVicinityForPosition(
-          this.pathingParams.targetCoords!,
+          this.pathingParams.targetCoords!
         ) === VicinityName.IMMEDIATE_SURROUNDINGS
       ) {
         this.resolvePathfindingSuccess();
@@ -222,7 +221,7 @@ export class PathfindToCoordinates extends Skill {
     if (!this.pathingParams.goal?.isValid()) {
       if (
         this.bot.envState.surroundings.getVicinityForPosition(
-          this.pathingParams.targetCoords!,
+          this.pathingParams.targetCoords!
         ) === VicinityName.IMMEDIATE_SURROUNDINGS
       ) {
         this.resolvePathfindingSuccess();
@@ -238,7 +237,7 @@ export class PathfindToCoordinates extends Skill {
 
   private setupListener(
     event: keyof BotEvents,
-    listener: (...args: any[]) => void,
+    listener: (...args: any[]) => void
   ): void {
     this.bot.on(event, listener);
     this.activeListeners.push({ event, listener });
@@ -248,15 +247,15 @@ export class PathfindToCoordinates extends Skill {
     console.log("Setting up pathfinding listeners");
     this.setupListener(
       "goal_reached",
-      this.resolvePathfindingSuccess.bind(this),
+      this.resolvePathfindingSuccess.bind(this)
     );
     this.setupListener(
       "move",
-      this.checkForStopIfFoundThingsAndHandle.bind(this),
+      this.checkForStopIfFoundThingsAndHandle.bind(this)
     );
     this.setupListener(
       "path_update",
-      this.checkForStatusWeShouldManuallyStopAndResolveOn.bind(this),
+      this.checkForStatusWeShouldManuallyStopAndResolveOn.bind(this)
     );
     this.setupListener("path_stop", this.handlePathStop.bind(this));
   }
@@ -275,7 +274,7 @@ export class PathfindToCoordinates extends Skill {
 
   public async doInvoke(
     coords: [number, number, number] | Vec3,
-    stopIfFound?: string[],
+    stopIfFound?: string[]
   ): Promise<void> {
     // Pre-process coordinates
     if (Array.isArray(coords)) {
@@ -313,7 +312,7 @@ export class PathfindToCoordinates extends Skill {
     this.pathingParams = new PathfindingParams(
       this.bot,
       coords,
-      processedStopIfFound,
+      processedStopIfFound
     );
     this.beginPathfinding();
   }

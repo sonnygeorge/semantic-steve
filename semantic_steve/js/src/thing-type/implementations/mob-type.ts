@@ -1,32 +1,21 @@
-import assert from "assert";
 import { Bot } from "mineflayer";
 import { ThingType } from "../thing-type";
 import { Vec3 } from "vec3";
-import { DirectionName, InvalidThingError } from "../../types";
+import { DirectionName } from "../../types";
+import { InvalidThingError } from "../../types";
+import { MOB_ENTITY_TYPES } from "../../constants";
 
-export class BiomeType implements ThingType {
+export class MobType implements ThingType {
   bot: Bot;
-  name: string;
-  id: number;
+  name: string; // "villager", "zombie", etc.
 
   constructor(bot: Bot, name: string) {
-    const biomeNames = Object.values(bot.registry.biomes).map((b) => b.name);
-    if (!biomeNames.includes(name)) {
-      throw new InvalidThingError(`Invalid biome type: ${name}.`);
+    const entity = bot.registry.entitiesByName[name];
+    if (!entity || !MOB_ENTITY_TYPES.includes(entity.type)) {
+      throw new InvalidThingError(`Invalid mob entity type: ${name}.`);
     }
-
-    this.bot = bot;
     this.name = name;
-    this.id = -1;
-    for (const [id, biome] of Object.entries(this.bot.registry.biomes)) {
-      if (biome.name === this.name) {
-        this.id = parseInt(id);
-      }
-    }
-    assert(
-      this.id !== -1,
-      `This should be impossible. We should have thrown an error above.`
-    );
+    this.bot = bot;
   }
 
   // ================================
@@ -34,8 +23,8 @@ export class BiomeType implements ThingType {
   // ================================
 
   public async isVisibleInImmediateSurroundings(): Promise<boolean> {
-    for (const biomeName of this.bot.envState.surroundings.immediate.visible.getDistinctBiomeNames()) {
-      if (biomeName === this.name) {
+    for (const entityName of this.bot.envState.surroundings.immediate.visible.getDistinctMobNames()) {
+      if (entityName === this.name) {
         return true;
       }
     }
@@ -44,8 +33,8 @@ export class BiomeType implements ThingType {
 
   public async isVisibleInDistantSurroundings(): Promise<boolean> {
     for (const dir of this.bot.envState.surroundings.distant.values()) {
-      for (const biomeName of dir.visible.getDistinctBiomeNames()) {
-        if (biomeName === this.name) {
+      for (const entityName of dir.visible.getDistinctMobNames()) {
+        if (entityName === this.name) {
           return true;
         }
       }
@@ -56,7 +45,7 @@ export class BiomeType implements ThingType {
   public async locateNearest(): Promise<Vec3 | undefined> {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
-    if (immediateResult !== null) {
+    if (immediateResult) {
       return immediateResult;
     }
 
@@ -70,7 +59,7 @@ export class BiomeType implements ThingType {
     for (const [
       name,
       closestCoords,
-    ] of this.bot.envState.surroundings.immediate.visible.getBiomeNamesToClosestCoords()) {
+    ] of this.bot.envState.surroundings.immediate.visible.getMobNamesToClosestCoords()) {
       if (name === this.name) {
         return closestCoords.clone();
       }
@@ -86,7 +75,7 @@ export class BiomeType implements ThingType {
       for (const [
         name,
         closestCoords,
-      ] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+      ] of vicinity.visible.getMobNamesToClosestCoords()) {
         if (name === this.name) {
           return closestCoords.clone();
         }
@@ -101,9 +90,9 @@ export class BiomeType implements ThingType {
       for (const [
         name,
         closestCoords,
-      ] of vicinity.visible.getBiomeNamesToClosestCoords()) {
+      ] of vicinity.visible.getMobNamesToClosestCoords()) {
         if (name === this.name) {
-          const distance = closestCoords.distanceTo(this.bot.entity.position);
+          const distance = this.bot.entity.position.distanceTo(closestCoords);
           if (distance < smallestDistance) {
             smallestDistance = distance;
             closestOfClosestCoords = closestCoords.clone();
@@ -116,10 +105,11 @@ export class BiomeType implements ThingType {
   }
 
   public async isVisibleInImmediateSurroundingsAt(
-    coords: Vec3
+    position: Vec3
   ): Promise<boolean> {
     throw new Error(
-      "Method not implemented. This method doesn't really make sense for biomes."
+      "Writing code that relies on constantly-moving mobs being in a specific " +
+        "position probably shouldn't be written."
     );
   }
 }

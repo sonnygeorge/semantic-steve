@@ -133,13 +133,10 @@ class BlockType {
                 }
                 return undefined; // Not found in the specified direction
             }
-            // If no direction specified, check all directions
-            const directions = Array.from(this.bot.envState.surroundings.distant.keys());
-            // Find the closest coordinates across all directions
+            // If no direction specified, find the closest coordinates across all directions
             let closestOfClosestCoords = undefined;
             let smallestDistance = Infinity;
-            for (const dir of directions) {
-                const vicinity = this.bot.envState.surroundings.distant.get(dir);
+            for (const vicinity of this.bot.envState.surroundings.distant.values()) {
                 for (const [name, closestCoords,] of vicinity.visible.getBlockNamesToClosestCoords()) {
                     if (name === this.name) {
                         const distance = closestCoords.distanceTo(this.bot.entity.position);

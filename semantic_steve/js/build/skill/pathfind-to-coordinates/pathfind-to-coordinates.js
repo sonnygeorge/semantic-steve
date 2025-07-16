@@ -91,7 +91,6 @@ class PathfindToCoordinates extends skill_1.Skill {
     resolveThingFound(result) {
         (0, assert_1.default)(this.pathingParams, "Shouldn't be called w/out set pathing params");
         console.log("Resolving pathfinding as thing found");
-        this.cleanupListeners();
         this.manuallyStopPathfinder();
         this.pathingParams = undefined;
         this.resolve(result);

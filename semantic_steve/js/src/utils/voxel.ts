@@ -1,24 +1,70 @@
+import assert from "assert";
 import { Vec3 } from "vec3";
 import { Bot } from "mineflayer";
-import { ConnectingSide } from "../types";
 import { MAX_PLACEMENT_REACH } from "../constants";
+import { SerializedVoxelOffset, VoxelFace } from "../types";
+import { serializeVec3 } from "./generic";
+
+export function isVoxel(vec: Vec3): boolean {
+  return (
+    Number.isInteger(vec.x) &&
+    Number.isInteger(vec.y) &&
+    Number.isInteger(vec.z)
+  );
+}
 
 /**
- * Represents a face connecting two adjacent cubed meters in the Minecraft world.
+ * Helper function to serialize a face consistently
+ * Uses the voxel that the face is the bottom, north, or west face of
+ *
+ * @returns A string in the format "${serializeVec3(voxelOffset)},${BlockFace}"
  */
-export class CubedMeterFace {
+export function serializeVoxelOffsetFace(
+  voxelPos: Vec3,
+  face: number,
+): SerializedVoxelOffset {
+  let canonicalVoxel: Vec3;
+
+  switch (face) {
+    case VoxelFace.BOTTOM:
+    case VoxelFace.TOP:
+      // For vertical faces, use the lower voxel (smaller Y)
+      canonicalVoxel =
+        face === VoxelFace.BOTTOM
+          ? new Vec3(voxelPos.x, voxelPos.y - 1, voxelPos.z)
+          : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+      return `${serializeVec3(canonicalVoxel)},${VoxelFace.BOTTOM}`;
+
+    case VoxelFace.NORTH:
+    case VoxelFace.SOUTH:
+      // For north-south faces, use the northern voxel (smaller Z)
+      canonicalVoxel =
+        face === VoxelFace.NORTH
+          ? new Vec3(voxelPos.x, voxelPos.y, voxelPos.z - 1)
+          : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+      return `${serializeVec3(canonicalVoxel)},${VoxelFace.NORTH}`;
+
+    case VoxelFace.WEST:
+    case VoxelFace.EAST:
+      // For east-west faces, use the western voxel (smaller X)
+      canonicalVoxel =
+        face === VoxelFace.WEST
+          ? new Vec3(voxelPos.x - 1, voxelPos.y, voxelPos.z)
+          : new Vec3(voxelPos.x, voxelPos.y, voxelPos.z);
+      return `${serializeVec3(canonicalVoxel)},${VoxelFace.WEST}`;
+
+    default:
+      throw new Error(`Unknown face: ${face}`);
+  }
+}
+
+export class VoxelFaceAroundBot {
   private bot: Bot;
   public readonly corners: [Vec3, Vec3, Vec3, Vec3];
 
   constructor(bot: Bot, c1: Vec3, c2: Vec3, c3: Vec3, c4: Vec3) {
     for (const corner of [c1, c2, c3, c4]) {
-      if (
-        !Number.isInteger(corner.x) ||
-        !Number.isInteger(corner.y) ||
-        !Number.isInteger(corner.z)
-      ) {
-        throw new Error("All corner coordinates must be integers");
-      }
+      assert(isVoxel(corner));
     }
     this.bot = bot;
     this.corners = [c1, c2, c3, c4];
@@ -40,28 +86,19 @@ export class CubedMeterFace {
   }
 }
 
-/**
- * Represents a cubic meter in the Minecraft world, with connections to its adjacent blocks.
- */
-export class CubedMeter {
+export class VoxelAroundBot {
   private bot: Bot;
   public readonly coords: Vec3;
-  public readonly faces: Map<ConnectingSide, CubedMeterFace>;
+  public readonly faces: Map<VoxelFace, VoxelFaceAroundBot>;
 
   constructor(bot: Bot, coords: Vec3) {
-    if (
-      !Number.isInteger(coords.x) ||
-      !Number.isInteger(coords.y) ||
-      !Number.isInteger(coords.z)
-    ) {
-      throw new Error("Cubed meter coords must be integers");
-    }
+    assert(isVoxel(coords));
     this.bot = bot;
     this.coords = coords;
     this.faces = this.createFaces();
   }
 
-  private createFaces(): Map<ConnectingSide, CubedMeterFace> {
+  private createFaces(): Map<VoxelFace, VoxelFaceAroundBot> {
     const x = this.coords.x;
     const y = this.coords.y;
     const z = this.coords.z;
@@ -75,10 +112,10 @@ export class CubedMeter {
       new Vec3(x + 1, y + 1, z + 1), // 6: top, south, east
       new Vec3(x, y + 1, z + 1), // 7: top, south, west
     ];
-    const sideToFaceMapping: [ConnectingSide, CubedMeterFace][] = [
+    const sideToFaceMapping: [VoxelFace, VoxelFaceAroundBot][] = [
       [
-        ConnectingSide.WEST,
-        new CubedMeterFace(
+        VoxelFace.WEST,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[0],
           corners[3],
@@ -87,8 +124,8 @@ export class CubedMeter {
         ),
       ],
       [
-        ConnectingSide.EAST,
-        new CubedMeterFace(
+        VoxelFace.EAST,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[1],
           corners[5],
@@ -97,8 +134,8 @@ export class CubedMeter {
         ),
       ],
       [
-        ConnectingSide.BOTTOM,
-        new CubedMeterFace(
+        VoxelFace.BOTTOM,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[0],
           corners[1],
@@ -107,8 +144,8 @@ export class CubedMeter {
         ),
       ],
       [
-        ConnectingSide.TOP,
-        new CubedMeterFace(
+        VoxelFace.TOP,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[4],
           corners[7],
@@ -117,8 +154,8 @@ export class CubedMeter {
         ),
       ],
       [
-        ConnectingSide.NORTH,
-        new CubedMeterFace(
+        VoxelFace.NORTH,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[0],
           corners[4],
@@ -127,8 +164,8 @@ export class CubedMeter {
         ),
       ],
       [
-        ConnectingSide.SOUTH,
-        new CubedMeterFace(
+        VoxelFace.SOUTH,
+        new VoxelFaceAroundBot(
           this.bot,
           corners[3],
           corners[2],
@@ -137,22 +174,22 @@ export class CubedMeter {
         ),
       ],
     ];
-    const facesMap = new Map<ConnectingSide, CubedMeterFace>();
+    const facesMap = new Map<VoxelFace, VoxelFaceAroundBot>();
     for (const [side, face] of sideToFaceMapping) {
       facesMap.set(side, face);
     }
     return facesMap;
   }
 
-  public getThreeClosestFaces(): Map<ConnectingSide, CubedMeterFace> {
-    const faceDistances: { side: ConnectingSide; distance: number }[] = [];
+  public getThreeClosestFaces(): Map<VoxelFace, VoxelFaceAroundBot> {
+    const faceDistances: { side: VoxelFace; distance: number }[] = [];
     for (const [side, face] of this.faces) {
       const center = face.getCenter();
       const distance = this.bot.entity.position.distanceTo(center);
       faceDistances.push({ side, distance });
     }
     faceDistances.sort((a, b) => a.distance - b.distance);
-    const closestFaces = new Map<ConnectingSide, CubedMeterFace>();
+    const closestFaces = new Map<VoxelFace, VoxelFaceAroundBot>();
     for (let i = 0; i < 3; i++) {
       const { side } = faceDistances[i];
       closestFaces.set(side, this.faces.get(side)!);

@@ -4,20 +4,16 @@ import type { Recipe } from "prismarine-recipe";
 import { Block as PBlock } from "prismarine-block";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { CraftItemsResults } from "./results";
-import { ItemEntity } from "../../thing/item-entity";
-import { Block } from "../../thing/block";
+import { ItemType, BlockType } from "../../thing-type";
 import { InvalidThingError, SkillResult } from "../../types";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PlaceBlock } from "../place-block/place-block";
 import { MineBlocks } from "../mine-blocks/mine-blocks";
 import { asyncSleep } from "../../utils/generic";
-import {
-  BOT_EYE_HEIGHT,
-  CRAFTING_WAIT_MS,
-  MAX_PLACEMENT_REACH,
-} from "../../constants";
+import { CRAFTING_WAIT_MS, MAX_PLACEMENT_REACH } from "../../constants";
 import { PlaceBlockResults } from "../place-block/results";
 import { MineBlocksResults } from "../mine-blocks/results";
+import { getEyePos } from "../../utils/misc";
 
 // TODO: Resolve w/ a failure result if there is no space in the inventory for the crafted
 // items to be received in the inventory.
@@ -31,6 +27,7 @@ export class CraftItems extends Skill {
         /**
          * Crafts one or more of an item, assuming a crafting table (if necessary for the
          * recipe) is either in inventory or in the immediate surroundings.
+         *
          * @param item - The item to craft.
          * @param quantity - Optional quantity to craft. Defaults to 1.
          */
@@ -40,7 +37,7 @@ export class CraftItems extends Skill {
   private activeSubskill?: PathfindToCoordinates | PlaceBlock | MineBlocks;
   private shouldBeDoingStuff: boolean = false;
   private shouldTerminateSubskillWaiting: boolean = false;
-  private itemToCraft?: ItemEntity;
+  private itemToCraft?: ItemType;
   private quantityToCraft?: number;
   private selectedRecipe?: Recipe;
   private quantityInInventoryBeforeCrafting?: number;
@@ -123,12 +120,12 @@ export class CraftItems extends Skill {
 
     // Crafting table case
     assert(this.useCraftingTable);
-    const craftingTableBlockType = new Block(this.bot, "crafting_table");
-    const craftingTableItemType = new ItemEntity(this.bot, "crafting_table");
+    const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
+    const craftingTableItemType = new ItemType(this.bot, "crafting_table");
     const craftingTableIsInInventory =
-      craftingTableItemType.getTotalCountInInventory() > 0;
+      (await craftingTableItemType.getTotalCountInInventory()) > 0;
     let nearestImmediateSurroundingsTableCoords =
-      craftingTableBlockType.locateNearestInImmediateSurroundings();
+      await craftingTableBlockType.locateNearestInImmediateSurroundings();
 
     if (
       !nearestImmediateSurroundingsTableCoords &&
@@ -149,10 +146,13 @@ export class CraftItems extends Skill {
     ) {
       let placeCraftingTableResult: SkillResult | undefined = undefined;
 
-      const handlePlaceCraftingTableResolution = (result: SkillResult) => {
+      async function handlePlaceCraftingTableResolution(
+        this: CraftItems,
+        result: SkillResult,
+      ): Promise<void> {
         this.activeSubskill = undefined;
         placeCraftingTableResult = result;
-      };
+      }
 
       this.activeSubskill = new PlaceBlock(
         this.bot,
@@ -183,30 +183,33 @@ export class CraftItems extends Skill {
         return;
       }
       nearestImmediateSurroundingsTableCoords =
-        craftingTableBlockType.locateNearestInImmediateSurroundings();
+        await craftingTableBlockType.locateNearestInImmediateSurroundings();
     }
 
     assert(nearestImmediateSurroundingsTableCoords); // Should always be set by now
 
-    const tableIsReachable = () => {
-      const eyePosition = this.bot.entity.position.offset(0, BOT_EYE_HEIGHT, 0);
+    async function tableIsReachable(bot: Bot): Promise<boolean> {
+      const eyePosition = getEyePos(bot);
       nearestImmediateSurroundingsTableCoords =
-        craftingTableBlockType.locateNearestInImmediateSurroundings();
+        await craftingTableBlockType.locateNearestInImmediateSurroundings();
       assert(nearestImmediateSurroundingsTableCoords);
       const distanceToCraftingTable = eyePosition.distanceTo(
         nearestImmediateSurroundingsTableCoords,
       );
       return distanceToCraftingTable <= MAX_PLACEMENT_REACH;
-    };
+    }
 
-    if (!tableIsReachable()) {
+    if (!(await tableIsReachable(this.bot))) {
       // Pathfind to the crafting table
       let tableIsInRangeAfterPathfinding: boolean | undefined = undefined;
 
-      const handlePathfindingResolution = (result: SkillResult) => {
+      async function handlePathfindingResolution(
+        this: CraftItems,
+        result: SkillResult,
+      ): Promise<void> {
         this.activeSubskill = undefined;
-        tableIsInRangeAfterPathfinding = tableIsReachable();
-      };
+        tableIsInRangeAfterPathfinding = await tableIsReachable(this.bot);
+      }
 
       this.activeSubskill = new PathfindToCoordinates(
         this.bot,
@@ -234,7 +237,10 @@ export class CraftItems extends Skill {
       }
     }
 
-    assert(tableIsReachable());
+    // TODO: I think this can break the program if the crafting table, e.g., is broken
+    // in the split second since the last check (assuming the event loop is released for
+    // raycasting to observe this).
+    assert(await tableIsReachable(this.bot));
 
     // Finally, we craft the item
     const table = this.bot.blockAt(nearestImmediateSurroundingsTableCoords);
@@ -242,7 +248,10 @@ export class CraftItems extends Skill {
     await this.botCraft(table);
 
     // Always collect the crafting table after crafting
-    const handleMineBlocksResolution = (mineBlocksResult: SkillResult) => {
+    async function handleMineBlocksResolution(
+      this: CraftItems,
+      mineBlocksResult: SkillResult,
+    ): Promise<void> {
       this.activeSubskill = undefined;
       assert(this.itemToCraft);
       assert(this.quantityToCraft);
@@ -260,7 +269,7 @@ export class CraftItems extends Skill {
           );
       }
       this.resolve(craftItemsResult);
-    };
+    }
 
     this.activeSubskill = new MineBlocks(
       this.bot,
@@ -287,13 +296,13 @@ export class CraftItems extends Skill {
   // ============================
 
   public async doInvoke(
-    item: string | ItemEntity,
+    item: string | ItemType,
     quantity: number = 1,
   ): Promise<void> {
     if (typeof item === "string") {
       // Validate the item string
       try {
-        this.itemToCraft = new ItemEntity(this.bot, item);
+        this.itemToCraft = new ItemType(this.bot, item);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new CraftItemsResults.InvalidItem(item);
@@ -324,18 +333,14 @@ export class CraftItems extends Skill {
       return;
     }
 
-    // Check if the item requires a crafting table but none are available
-    const craftingTableIsAvailable = () => {
-      const craftingTableItemType = new ItemEntity(this.bot, "crafting_table");
-      const craftingTableBlockType = new Block(this.bot, "crafting_table");
-      return (
-        craftingTableBlockType.isVisibleInImmediateSurroundings() ||
-        craftingTableItemType.getTotalCountInInventory() > 0
-      );
-    };
+    const craftingTableItemType = new ItemType(this.bot, "crafting_table");
+    const craftingTableBlockType = new BlockType(this.bot, "crafting_table");
+    const craftingTableIsAvailable =
+      (await craftingTableBlockType.isVisibleInImmediateSurroundings()) ||
+      craftingTableItemType.getTotalCountInInventory() > 0;
 
     const requiresCraftingTable = nonTableRecipes.length === 0;
-    if (requiresCraftingTable && !craftingTableIsAvailable()) {
+    if (requiresCraftingTable && !craftingTableIsAvailable) {
       this.resolve(
         new CraftItemsResults.NoCraftingTable(this.itemToCraft.name),
       );
@@ -358,7 +363,7 @@ export class CraftItems extends Skill {
       // 2. for which the bot has sufficient ingredients
       const isFeasibleNonTableRecipe = !recipe.requiresTable;
       const isFeasibleTableRecipe =
-        recipe.requiresTable && craftingTableIsAvailable();
+        recipe.requiresTable && craftingTableIsAvailable;
       if (isFeasibleNonTableRecipe) {
         lastFeasibleNonTableRecipe = recipe;
       }

@@ -4,11 +4,10 @@ import { Bot } from "mineflayer";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { Approach } from "../approach/approach";
 import { isApproachResult } from "../approach/results";
-import { Vicinity } from "../../env-state/surroundings/types";
 import { PickupItemResults } from "./results";
-import { ItemEntity } from "../../thing";
+import { ItemType } from "../../thing-type";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
-import { InvalidThingError, SkillResult } from "../../types";
+import { InvalidThingError, SkillResult, VicinityName } from "../../types";
 import { ITEM_PICKUP_WAIT_MS } from "../../constants";
 import { asyncSleep } from "../../utils/generic";
 import { PathfindToCoordinatesResults } from "../pathfind-to-coordinates/results";
@@ -32,7 +31,7 @@ export class PickupItem extends Skill {
   };
 
   private activeSubskill?: PathfindToCoordinates | Approach;
-  private itemEntity?: ItemEntity;
+  private itemEntity?: ItemType;
   private itemTotalAtPathingStart?: number;
   private targetItemCoords?: Vec3;
 
@@ -42,7 +41,6 @@ export class PickupItem extends Skill {
 
   private async resolveFromSubskillResolution(
     result: SkillResult,
-    envStateIsHydrated?: boolean,
   ): Promise<void> {
     assert(this.itemEntity);
     assert(this.activeSubskill);
@@ -50,7 +48,7 @@ export class PickupItem extends Skill {
 
     // Propogate result if we are resolving from Approach
     if (isApproachResult(result)) {
-      this.resolve(result, envStateIsHydrated);
+      this.resolve(result);
       return;
     }
 
@@ -63,12 +61,14 @@ export class PickupItem extends Skill {
         this.targetItemCoords,
       );
 
-    if (vicinityOfOriginalTargetCoords !== Vicinity.IMMEDIATE_SURROUNDINGS) {
+    if (
+      vicinityOfOriginalTargetCoords !== VicinityName.IMMEDIATE_SURROUNDINGS
+    ) {
       const result =
         new PickupItemResults.TargetCoordsNoLongerInImmediateSurroundings(
           this.itemEntity.name,
         );
-      this.resolve(result, envStateIsHydrated);
+      this.resolve(result);
       return;
     }
 
@@ -82,12 +82,12 @@ export class PickupItem extends Skill {
         this.itemEntity.name,
         netItemGain,
       );
-      this.resolve(result, envStateIsHydrated);
+      this.resolve(result);
     } else {
       const result = new PickupItemResults.CouldNotProgramaticallyVerify(
         this.itemEntity.name,
       );
-      this.resolve(result, envStateIsHydrated);
+      this.resolve(result);
     }
   }
 
@@ -96,13 +96,13 @@ export class PickupItem extends Skill {
   // ============================
 
   public async doInvoke(
-    item: string | ItemEntity,
+    item: string | ItemType,
     direction?: string,
   ): Promise<void> {
     // Validate the item string
     if (typeof item === "string") {
       try {
-        this.itemEntity = new ItemEntity(this.bot, item);
+        this.itemEntity = new ItemType(this.bot, item);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new PickupItemResults.InvalidItem(item);

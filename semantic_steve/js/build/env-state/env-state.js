@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnvState = void 0;
 const surroundings_1 = require("./surroundings");
@@ -44,31 +53,28 @@ class EnvState {
         }
         return equipped;
     }
-    hydrate(throttleMS) {
-        // For now, we just pass the throttleMS through to the surroundings
-        // since there's nothing computationally expensive to retrieve here.
-        this.surroundings.hydrate(throttleMS);
-    }
     getDTO() {
-        return {
-            playerCoordinates: [
-                // Round to 1 decimal place
-                Math.round(this.botCoords.x * 10) / 10,
-                Math.round(this.botCoords.y * 10) / 10,
-                Math.round(this.botCoords.z * 10) / 10,
-            ],
-            health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
-            hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
-            inventory: this.inventory.getDTO(),
-            equipped: Object.fromEntries(Object.entries(this.equipped).map(([key, item]) => {
-                var _a;
-                return [
-                    key,
-                    (_a = item === null || item === void 0 ? void 0 : item.name) !== null && _a !== void 0 ? _a : null,
-                ];
-            })),
-            surroundings: this.surroundings.getDTO(),
-        };
+        return __awaiter(this, void 0, void 0, function* () {
+            return {
+                playerCoordinates: [
+                    // Round to 1 decimal place
+                    Math.round(this.botCoords.x * 10) / 10,
+                    Math.round(this.botCoords.y * 10) / 10,
+                    Math.round(this.botCoords.z * 10) / 10,
+                ],
+                health: `${this.health}/20`, // NOTE: 20 is the max health in vanilla Minecraft
+                hunger: `${this.hunger}/20`, // NOTE: 20 is the max hunger in vanilla Minecraft
+                inventory: this.inventory.getDTO(),
+                equipped: Object.fromEntries(Object.entries(this.equipped).map(([key, item]) => {
+                    var _a;
+                    return [
+                        key,
+                        (_a = item === null || item === void 0 ? void 0 : item.name) !== null && _a !== void 0 ? _a : null,
+                    ];
+                })),
+                surroundings: yield this.surroundings.getDTO(),
+            };
+        });
     }
 }
 exports.EnvState = EnvState;

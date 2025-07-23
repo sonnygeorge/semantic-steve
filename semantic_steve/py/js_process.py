@@ -1,7 +1,6 @@
 import subprocess
 
 from semantic_steve.py.constants import (
-    CMD_TO_DEBUG_START_JS_PROCESS,
     CMD_TO_REBUILD_TYPESCRIPT,
     CMD_TO_START_JS_PROCESS,
     PATH_TO_JS_DIR,
@@ -23,12 +22,10 @@ class SemanticSteveJsProcessManager:
     ########################
 
     def __enter__(self):
-        if self.should_rebuild_typescript and not self.debug:  # unneeded step if debugging.
-            self._rebuild_typescript()
-
-        print(CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS)
+        if self.should_rebuild_typescript and not self.debug:  # Unneeded step if debugging
+            self.rebuild_typescript()
         self.js_process = subprocess.Popen(
-            CMD_TO_DEBUG_START_JS_PROCESS if self.debug else CMD_TO_START_JS_PROCESS,
+            CMD_TO_START_JS_PROCESS,
             stderr=subprocess.PIPE,
             cwd=PATH_TO_JS_DIR,
             text=True,
@@ -43,7 +40,7 @@ class SemanticSteveJsProcessManager:
     ## Private helpers ##
     #####################
 
-    def _rebuild_typescript(self) -> None:
+    def rebuild_typescript(self) -> None:
         print("Rebuilding typescript...")
         try:
             subprocess.run(

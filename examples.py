@@ -16,13 +16,14 @@ async def llm_example():
         "going on in the world.\nIMPORTANT: Make sure you are working in order, putting "
         "first things first, and considering your current inventory as well as the "
         "recent skillInvocationResults messages.\n"
-        "Goal: Smelt something. Think step by step:\n"
+        "Goal: Acquire iron. Think step by step:\n"
         "Thought: What do I observe? What does the state of the world/player tell me "
         "about my progress toward the goal?\n"
         "Action: [function_call]\n"
         "Only output your reasoning and ONE raw function call (with no backticks, "
         "fences, or other leading/trailing punctuation).\n\nAvailable functions:\n"
-        "\n\n".join(SemanticSteve.get_skills_docs()) + "\n\n"
+        "\n\n".join(SemanticSteve.get_skills_docs())
+        + "\n\n"
     )
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -35,7 +36,9 @@ async def llm_example():
             print(readable_minecraft_env_data)
             msgs = msgs[0:1] + msgs[1:][-8:]  # Keep last 4 exchanges
             msgs.append({"role": "user", "content": readable_minecraft_env_data})
-            response = client.chat.completions.create(model="gpt-4.1-2025-04-14", messages=msgs)
+            response = client.chat.completions.create(
+                model="gpt-4.1-2025-04-14", messages=msgs
+            )
             full_response = response.choices[0].message.content
             # Basic hacky parsing to extract the function call
             # (we recommend using constrained generation reliably get skill invocations)
@@ -45,7 +48,7 @@ async def llm_example():
 
 
 async def cli_example():
-    semantic_steve = SemanticSteve(_should_rebuild_typescript=True)
+    semantic_steve = SemanticSteve()
     await run_as_cli(semantic_steve)
 
 

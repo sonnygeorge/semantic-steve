@@ -1,15 +1,13 @@
-import openai
+import base64
 import os
 import re
-import base64
 from collections import defaultdict
 
+import openai
 import pandas as pd
-from tqdm import tqdm
+from constants import DATA_DIR, SCORE_MAP
 from tenacity import retry, stop_after_attempt
-
-from constants import SCORE_MAP, DATA_DIR
-
+from tqdm import tqdm
 
 MODEL = "gpt-4.1-2025-04-14"
 TEMPERATURE = 0.6
@@ -66,7 +64,7 @@ def run_experiment(n_gpt_samples_per_task: int = 10) -> pd.DataFrame:
     screenshot_subjects = list(annotations_df.columns)[1:]  # 1st col = annatator_name
     tasks = [f"Take a screenshot of {subject}" for subject in screenshot_subjects]
     scores: dict[str, list[float]] = defaultdict(list)
-    for task, subject in zip(tasks, screenshot_subjects):
+    for task, subject in zip(tasks, screenshot_subjects, strict=False):
         print(f"Getting sample scores for task, '{task}'...")
         screenshot_fpath = os.path.join(DATA_DIR, f"{subject}.png")
         assert os.path.exists(screenshot_fpath)

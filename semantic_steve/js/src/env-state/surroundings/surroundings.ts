@@ -1,35 +1,61 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
-import { _Surroundings, SurroundingsRadii, Vicinity } from "./types";
-import { SurroundingsHydrater } from "./hydrater";
+import { SurroundingsRadii, VicinityName, DirectionName } from "../../types";
+import { DistantSurroundingsInADirectionDTO, SurroundingsDTO } from "./dto";
+import {
+  VicinitiesObserver,
+  ImmediateSurroundings,
+  DistantSurroundingsInADirection,
+} from "./vicinity";
+import { classifyVicinityOfPosition } from "./classify-vicinity";
 
-class HydratableSurroundings extends _Surroundings {
-  private hydrater: SurroundingsHydrater;
-  private timeOfLastHydration: Date;
+export class Surroundings {
+  private bot: Bot;
+  public vicinitiesObserver: VicinitiesObserver;
+  public immediate: ImmediateSurroundings;
+  public distant: Map<DirectionName, DistantSurroundingsInADirection>;
+  public radii: SurroundingsRadii;
 
   constructor(bot: Bot, radii: SurroundingsRadii) {
-    super(bot, radii);
-    this.hydrater = new SurroundingsHydrater(bot, radii);
-    this.timeOfLastHydration = new Date(0); // Jan 1 1970
+    this.bot = bot;
+    this.vicinitiesObserver = new VicinitiesObserver(bot, radii);
+    this.immediate = this.vicinitiesObserver.immediate;
+    this.distant = this.vicinitiesObserver.distant;
+    this.radii = this.vicinitiesObserver.radii;
   }
 
-  public hydrate(throttleMS?: number): void {
-    const now = new Date().getTime();
-    const timeSinceLastHydrationMS = now - this.timeOfLastHydration.getTime();
-    throttleMS = throttleMS ? throttleMS : 0;
-    const shouldHydrate = timeSinceLastHydrationMS > throttleMS;
+  public async beginObservation(): Promise<void> {
+    await this.vicinitiesObserver.beginObservation();
+  }
 
-    if (shouldHydrate) {
-      console.log("Hydrating surroundings...");
-      const hydrated = this.hydrater.getHydration();
-      Object.assign(this, hydrated);
-      this.timeOfLastHydration = new Date();
+  public *iterVicinities(): Generator<
+    ImmediateSurroundings | DistantSurroundingsInADirection
+  > {
+    yield this.immediate;
+    for (const direction of Object.values(DirectionName)) {
+      yield this.distant.get(direction)!;
     }
   }
 
-  public getVicinityForPosition(pos: Vec3): Vicinity {
-    return this.hydrater.getVicinityForPosition(pos);
+  public getVicinityForPosition(position: Vec3): VicinityName | undefined {
+    return classifyVicinityOfPosition(
+      position,
+      this.bot.entity.position,
+      this.radii.immediateSurroundingsRadius,
+      this.radii.distantSurroundingsRadius,
+    );
+  }
+
+  async getDTO(): Promise<SurroundingsDTO> {
+    const distantDTOs: Map<DirectionName, DistantSurroundingsInADirectionDTO> =
+      new Map();
+    for (const direction of Object.values(DirectionName)) {
+      distantDTOs.set(direction, await this.distant.get(direction)!.getDTO());
+    }
+
+    return {
+      immediateSurroundings: await this.immediate.getDTO(),
+      distantSurroundings: Object.fromEntries(distantDTOs.entries()),
+    };
   }
 }
-
-export { HydratableSurroundings as Surroundings };

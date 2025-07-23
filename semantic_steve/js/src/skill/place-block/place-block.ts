@@ -4,7 +4,7 @@ import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { Vec3 } from "vec3";
 import { PlaceBlockResults } from "./results";
 import { GetPlaceableCoordinatesResults } from "../get-placeable-coordinates/results";
-import { Block } from "../../thing";
+import { BlockType } from "../../thing-type";
 import { InvalidThingError, SkillResult } from "../../types";
 import { Item as PItem } from "prismarine-item";
 import { asyncSleep } from "../../utils/generic";
@@ -31,7 +31,7 @@ export class PlaceBlock extends Skill {
   };
 
   private shouldBePlacing: boolean = false;
-  private blockToPlace?: Block;
+  private blockToPlace?: BlockType;
   private targetPosition?: Vec3;
   private itemToPlace?: PItem;
 
@@ -125,12 +125,12 @@ export class PlaceBlock extends Skill {
   // ============================
 
   public async doInvoke(
-    block: string | Block,
+    block: string | BlockType,
     atCoordinates?: [number, number, number],
   ): Promise<void> {
     if (typeof block === "string") {
       try {
-        this.blockToPlace = new Block(this.bot, block);
+        this.blockToPlace = new BlockType(this.bot, block);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           this.resolvePlacing(new PlaceBlockResults.InvalidBlock(block));

@@ -1,34 +1,23 @@
-import { Bot } from "mineflayer";
-import { Thing } from "./thing";
-import { Vec3 } from "vec3";
-import { Direction } from "../env-state/surroundings";
-import { MaybePromise, InvalidThingError } from "../types";
-import { IndexedBlock } from "minecraft-data";
-import { simplify as nbtSimplify } from "prismarine-nbt";
-import { Item as PItem } from "prismarine-item";
-import { getDigTimeMS } from "../utils/block";
-
-export class Block implements Thing {
-  bot: Bot;
-  name: string;
-  pblock: IndexedBlock;
-
-  constructor(bot: Bot, name: string) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Block = void 0;
+const types_1 = require("../types");
+const prismarine_nbt_1 = require("prismarine-nbt");
+const block_1 = require("../utils/block");
+class Block {
+  constructor(bot, name) {
     if (name in bot.registry.blocksByName) {
       this.name = name;
       this.pblock = bot.registry.blocksByName[name];
     } else {
-      throw new InvalidThingError(`Invalid block type: ${name}.`);
+      throw new types_1.InvalidThingError(`Invalid block type: ${name}.`);
     }
-
     this.bot = bot;
     this.name = name;
   }
-
   // =======================
   // Block-specific methods
   // =======================
-
   /**
    * Assess the current mineability of the block type generally.
    *
@@ -36,39 +25,41 @@ export class Block implements Thing {
    *   block is mineable and the second element is the best tool id to use (or null if no
    *   tool is needed).
    */
-  public assessCurrentMineability(): [boolean, number | null] {
+  assessCurrentMineability() {
     const pblock = this.pblock; // new PBlock(this.pblock.id, 0, 0); // Default metadata/stateId
     if (!pblock.diggable) {
       return [false, null];
     }
-
-    const canMine = (itemID: number | null): boolean => {
+    const canMine = (itemID) => {
       const pBlockHasNoDrops = !pblock.drops || pblock.drops.length === 0;
       const pBlockHasNoHarvestTools = !pblock.harvestTools;
       if (pBlockHasNoDrops || pBlockHasNoHarvestTools) {
-        return getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000; // 100 seconds
+        return (
+          (0, block_1.getDigTimeMS)(this.bot, this.pblock.id, itemID) < 100000
+        ); // 100 seconds
       } else {
         if (itemID === null || !pblock.harvestTools) {
           return false;
         }
         return (
           itemID in pblock.harvestTools &&
-          getDigTimeMS(this.bot, this.pblock.id, itemID) < 100000 // 100 seconds
+          (0, block_1.getDigTimeMS)(this.bot, this.pblock.id, itemID) < 100000 // 100 seconds
         );
       }
     };
-
     let fastestDigTime = Number.MAX_VALUE;
-    let bestTool: PItem | undefined = undefined;
+    let bestTool = undefined;
     for (const item of this.bot.envState.inventory.itemSlots) {
       const itemID = item.type;
       if (canMine(itemID)) {
-        const digTime = getDigTimeMS(
+        const digTime = (0, block_1.getDigTimeMS)(
           this.bot,
           this.pblock.id,
           itemID,
-          item && item.nbt ? nbtSimplify(item.nbt).Enchantments : [],
-          this.bot.entity.effects,
+          item && item.nbt
+            ? (0, prismarine_nbt_1.simplify)(item.nbt).Enchantments
+            : [],
+          this.bot.entity.effects
         );
         if (digTime < fastestDigTime) {
           fastestDigTime = digTime;
@@ -76,7 +67,6 @@ export class Block implements Thing {
         }
       }
     }
-
     if (bestTool) {
       return [true, bestTool.type];
     } else if (canMine(null)) {
@@ -84,35 +74,29 @@ export class Block implements Thing {
     }
     return [false, null]; // No viable tool and block can't be mined w/ hand
   }
-
   // ============================
-  // Implementation of Thing API
+  // Implementation of ThingType API
   // ============================
-
-  public isVisibleInImmediateSurroundings(): boolean {
+  isVisibleInImmediateSurroundings() {
     return this.bot.envState.surroundings.immediate.blocksToAllCoords.has(
-      this.name,
+      this.name
     );
   }
-
-  public isVisibleInDistantSurroundings(): boolean {
+  isVisibleInDistantSurroundings() {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.blocksToCounts.has(this.name),
+      dir.blocksToCounts.has(this.name)
     );
   }
-
-  public locateNearest(): Vec3 | undefined {
+  locateNearest() {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult) {
       return immediateResult;
     }
-
     // If not found in immediate surroundings, try distant surroundings
     return this.locateNearestInDistantSurroundings();
   }
-
-  public locateNearestInImmediateSurroundings(): Vec3 | undefined {
+  locateNearestInImmediateSurroundings() {
     const immediate =
       this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
     if (immediate && immediate.length > 0) {
@@ -126,8 +110,7 @@ export class Block implements Thing {
       return immediate[0];
     }
   }
-
-  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
+  locateNearestInDistantSurroundings(direction) {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =
@@ -140,14 +123,12 @@ export class Block implements Thing {
       }
       return undefined; // No blocks found in the specified direction
     }
-
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
-
     // Find the closest coordinates across all directions
-    let closestCoords: Vec3 | undefined = undefined;
+    let closestCoords = undefined;
     let minDistance = Infinity;
     for (const dir of directions) {
       const surroundingsInDir = this.bot.envState.surroundings.distant.get(dir);
@@ -165,11 +146,9 @@ export class Block implements Thing {
         }
       }
     }
-
     return closestCoords;
   }
-
-  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+  isVisibleInImmediateSurroundingsAt(coords) {
     const immediate =
       this.bot.envState.surroundings.immediate.blocksToAllCoords.get(this.name);
     if (immediate) {
@@ -178,3 +157,4 @@ export class Block implements Thing {
     return false;
   }
 }
+exports.Block = Block;

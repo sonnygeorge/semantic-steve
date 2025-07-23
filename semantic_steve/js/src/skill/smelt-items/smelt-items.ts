@@ -4,8 +4,7 @@ import { Vec3 } from "vec3";
 import { Block as PBlock } from "prismarine-block";
 import { Skill, SkillMetadata, SkillResolutionHandler } from "../skill";
 import { SmeltItemsResults } from "./results";
-import { ItemEntity } from "../../thing/item-entity";
-import { Block } from "../../thing/block";
+import { BlockType, ItemType } from "../../thing-type";
 import { InvalidThingError, SkillResult } from "../../types";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PlaceBlock } from "../place-block/place-block";
@@ -72,12 +71,12 @@ export class SmeltItems extends Skill {
   private shouldBeDoingStuff: boolean = false;
   private shouldTerminateSubskillWaiting: boolean = false;
 
-  private itemToSmelt?: ItemEntity;
+  private itemToSmelt?: ItemType;
   private quantityToSmelt?: number;
 
-  private fuelItem?: ItemEntity;
+  private fuelItem?: ItemType;
 
-  private expectedResultItem?: ItemEntity;
+  private expectedResultItem?: ItemType;
   private expectedResultItemQuantity?: number;
 
   private resultQuantityInInventoryBeforeSmelting?: number;
@@ -117,7 +116,7 @@ export class SmeltItems extends Skill {
     if (!this.hasAcquiredExpectedResult()) {
       assert(this.fuelItem.getTotalCountInInventory() == 0);
       result = new SmeltItemsResults.RanOutOfFuelBeforeFullCompletion(
-        this.fuelItem.name,
+        this.fuelItem.name
       );
     }
     if (
@@ -195,15 +194,19 @@ export class SmeltItems extends Skill {
     }
 
     let furnaceIsInRangeAfterPathfinding: boolean | undefined = undefined;
-    const handlePathfindingResolution = (result: SkillResult) => {
+
+    async function handlePathfindingResolution(
+      this: SmeltItems,
+      result: SkillResult
+    ): Promise<void> {
       this.activeSubskill = undefined;
       furnaceIsInRangeAfterPathfinding =
         result instanceof SmeltItemsResults.Success;
-    };
+    }
 
     this.activeSubskill = new PathfindToCoordinates(
       this.bot,
-      handlePathfindingResolution.bind(this),
+      handlePathfindingResolution.bind(this)
     );
     await this.activeSubskill.invoke(furnaceCoords);
 
@@ -218,7 +221,7 @@ export class SmeltItems extends Skill {
     if (!furnaceIsInRangeAfterPathfinding) {
       this.shouldBeDoingStuff = false;
       const result = new SmeltItemsResults.FailedToGetCloseEnoughToFurnace(
-        furnaceCoords,
+        furnaceCoords
       );
       this.resolve(result);
       return;
@@ -228,14 +231,17 @@ export class SmeltItems extends Skill {
   private async placeFurnace(): Promise<void> {
     let placeFurnaceResult: SkillResult | undefined = undefined;
 
-    const handlePlaceFurnaceResolution = (result: SkillResult) => {
+    async function handlePlaceFurnaceResolution(
+      this: SmeltItems,
+      result: SkillResult
+    ): Promise<void> {
       this.activeSubskill = undefined;
       placeFurnaceResult = result;
-    };
+    }
 
     this.activeSubskill = new PlaceBlock(
       this.bot,
-      handlePlaceFurnaceResolution.bind(this),
+      handlePlaceFurnaceResolution.bind(this)
     );
     await this.activeSubskill.invoke("furnace");
 
@@ -252,7 +258,7 @@ export class SmeltItems extends Skill {
     if (!wasSuccess) {
       this.shouldBeDoingStuff = false;
       const result = new SmeltItemsResults.FurnacePlacementFailed(
-        placeFurnaceResult,
+        placeFurnaceResult
       );
       this.resolve(result);
       return;
@@ -260,14 +266,17 @@ export class SmeltItems extends Skill {
   }
 
   private async mineFurnaceAfterSmeltingIfNeededAndResolve(): Promise<void> {
-    const handleMineBlocksResolution = (mineBlocksResult: SkillResult) => {
+    async function handleMineBlocksResolution(
+      this: SmeltItems,
+      mineBlocksResult: SkillResult
+    ): Promise<void> {
       this.activeSubskill = undefined;
       this.resolveAfterSmelting(mineBlocksResult);
-    };
+    }
 
     this.activeSubskill = new MineBlocks(
       this.bot,
-      handleMineBlocksResolution.bind(this),
+      handleMineBlocksResolution.bind(this)
     );
     await this.activeSubskill.invoke("furnace", 1);
 
@@ -296,19 +305,19 @@ export class SmeltItems extends Skill {
 
     if (!this.furnaceWithItems) {
       // Handle case of a having moved away from placed furnace (before inputting items) during a pause
-      const furnaceBlockType = new Block(this.bot, "furnace");
-      const furnaceItemType = new ItemEntity(this.bot, "furnace");
+      const furnaceBlockType = new BlockType(this.bot, "furnace");
+      const furnaceItemType = new ItemType(this.bot, "furnace");
       const furnaceIsInInventory =
         furnaceItemType.getTotalCountInInventory() > 0;
 
       let nearestImmediateSurroundingsFurnaceCoords =
-        furnaceBlockType.locateNearestInImmediateSurroundings();
+        await furnaceBlockType.locateNearestInImmediateSurroundings();
 
       if (!nearestImmediateSurroundingsFurnaceCoords && !furnaceIsInInventory) {
         // No furnace available
         this.shouldBeDoingStuff = false;
         this.resolve(
-          new SmeltItemsResults.FurnaceNoLongerInImmediateSurroundings(),
+          new SmeltItemsResults.FurnaceNoLongerInImmediateSurroundings()
         );
         return;
       }
@@ -320,13 +329,13 @@ export class SmeltItems extends Skill {
           return; // Exit on pause or stop
         }
         nearestImmediateSurroundingsFurnaceCoords =
-          furnaceBlockType.locateNearestInImmediateSurroundings();
+          await furnaceBlockType.locateNearestInImmediateSurroundings();
       }
       assert(nearestImmediateSurroundingsFurnaceCoords); // Should always be set by now
 
       // Pathfind to the furnace if not reachable
       await this.pathfindToFurnaceIfNeeded(
-        nearestImmediateSurroundingsFurnaceCoords,
+        nearestImmediateSurroundingsFurnaceCoords
       );
       if (!this.shouldBeDoingStuff) {
         return; // Exit on pause or stop
@@ -334,7 +343,7 @@ export class SmeltItems extends Skill {
 
       // Input items into the furnace
       const furnace = this.bot.blockAt(
-        nearestImmediateSurroundingsFurnaceCoords,
+        nearestImmediateSurroundingsFurnaceCoords
       );
       assert(furnace);
 
@@ -374,14 +383,14 @@ export class SmeltItems extends Skill {
   // ============================
 
   public async doInvoke(
-    item: string | ItemEntity,
-    withFuelItem: string | ItemEntity,
-    quantityToSmelt: number = 1,
+    item: string | ItemType,
+    withFuelItem: string | ItemType,
+    quantityToSmelt: number = 1
   ): Promise<void> {
     if (typeof item === "string") {
       // Validate the item string
       try {
-        this.itemToSmelt = new ItemEntity(this.bot, item);
+        this.itemToSmelt = new ItemType(this.bot, item);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new SmeltItemsResults.InvalidItem(item);
@@ -399,7 +408,7 @@ export class SmeltItems extends Skill {
     // Validate the fuel item string
     if (typeof withFuelItem === "string") {
       try {
-        this.fuelItem = new ItemEntity(this.bot, withFuelItem);
+        this.fuelItem = new ItemType(this.bot, withFuelItem);
       } catch (err) {
         if (err instanceof InvalidThingError) {
           const result = new SmeltItemsResults.InvalidFuelItem(withFuelItem);
@@ -416,21 +425,21 @@ export class SmeltItems extends Skill {
 
     // Check if the item is smeltable
     const expectedResultItemName = getSmeltingProductName(
-      this.itemToSmelt.name,
+      this.itemToSmelt.name
     );
     if (!expectedResultItemName) {
       this.resolve(
-        new SmeltItemsResults.NonSmeltableItem(this.itemToSmelt.name),
+        new SmeltItemsResults.NonSmeltableItem(this.itemToSmelt.name)
       );
       return;
     }
-    this.expectedResultItem = new ItemEntity(this.bot, expectedResultItemName);
+    this.expectedResultItem = new ItemType(this.bot, expectedResultItemName);
     this.expectedResultItemQuantity = quantityToSmelt; // Always 1:1 in Minecraft
 
     // Check if the fuel item is usable as fuel
     if (!isFuel(this.fuelItem.name)) {
       this.resolve(
-        new SmeltItemsResults.FuelItemNotUsableAsFuel(this.fuelItem.name),
+        new SmeltItemsResults.FuelItemNotUsableAsFuel(this.fuelItem.name)
       );
       return;
     }
@@ -441,42 +450,41 @@ export class SmeltItems extends Skill {
     }
 
     // Check if a furnace is available
-    const furnaceIsAvailable = () => {
-      const furnaceItemType = new ItemEntity(this.bot, "furnace");
-      const furnaceBlockType = new Block(this.bot, "furnace");
-      return (
-        furnaceBlockType.isVisibleInImmediateSurroundings() ||
-        furnaceItemType.getTotalCountInInventory() > 0
-      );
-    };
+    const furnaceItemType = new ItemType(this.bot, "furnace");
+    const furnaceBlockType = new BlockType(this.bot, "furnace");
+    const furnaceIsAvailable =
+      (await furnaceBlockType.isVisibleInImmediateSurroundings()) ||
+      (await furnaceItemType.getTotalCountInInventory()) > 0;
 
-    if (!furnaceIsAvailable()) {
+    if (!furnaceIsAvailable) {
       this.resolve(
-        new SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name),
+        new SmeltItemsResults.NoFurnaceAvailable(this.itemToSmelt.name)
       );
       return;
     }
 
     // Check if we have enough of the item to smelt
-    const itemCount = this.itemToSmelt.getTotalCountInInventory();
-    if (itemCount < quantityToSmelt) {
+    const numSmeltItemInInventory = this.itemToSmelt.getTotalCountInInventory();
+    if (numSmeltItemInInventory < quantityToSmelt) {
       this.resolve(
         new SmeltItemsResults.InsufficientToSmeltItems(
           quantityToSmelt,
-          this.itemToSmelt.name,
-        ),
+          this.itemToSmelt.name
+        )
       );
       return;
     }
 
-    this.fuelItem.getTotalCountInInventory();
-    if (this.fuelItem.getTotalCountInInventory() < 1) {
-      this.resolve(
-        new SmeltItemsResults.FuelItemNotInventory(
-          this.fuelItem,
-          this.itemToSmelt.name,
-        ),
-      );
+    // Check if we have at least one available fuel item
+    const numFuelItemInInventory = this.fuelItem.getTotalCountInInventory();
+    if (
+      // no fuel item in inventory
+      numFuelItemInInventory < 1 ||
+      // Or, we want to smelt a # of the fuelItem that leaves none leftover for fuel
+      (this.fuelItem.name === this.itemToSmelt.name &&
+        numFuelItemInInventory < quantityToSmelt + 1)
+    ) {
+      this.resolve(new SmeltItemsResults.NoAvailableFuelItem(this.fuelItem));
       return;
     }
 

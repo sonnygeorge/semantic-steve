@@ -63,12 +63,12 @@ var SmeltItemsResults;
         }
     }
     SmeltItemsResults.InsufficientToSmeltItems = InsufficientToSmeltItems;
-    class FuelItemNotInventory {
-        constructor(fuelItem, itemToSmelt) {
-            this.message = `SkillInvocationError: You need to have at least one the specified fuel item '${fuelItem.name}' in your inventory.`;
+    class NoAvailableFuelItem {
+        constructor(fuelItem) {
+            this.message = `To begin smelting, you need to have at least one available '${fuelItem.name}' in your inventory (on top of any you are aiming to smelt).`;
         }
     }
-    SmeltItemsResults.FuelItemNotInventory = FuelItemNotInventory;
+    SmeltItemsResults.NoAvailableFuelItem = NoAvailableFuelItem;
     class Success {
         constructor() {
             this.message = `Smelting attempt complete.`;

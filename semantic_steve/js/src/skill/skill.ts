@@ -1,6 +1,7 @@
 import assert from "assert";
 import { Bot } from "mineflayer";
 import { SkillResult } from "../types";
+import { on } from "events";
 
 export enum SkillStatus {
   PENDING_INVOCATION = "PENDING_INVOCATION",
@@ -9,10 +10,7 @@ export enum SkillStatus {
   STOPPED = "STOPPED",
 }
 
-export type SkillResolutionHandler = (
-  result: SkillResult,
-  envStateIsHydrated?: boolean,
-) => void;
+export type SkillResolutionHandler = (result: SkillResult) => Promise<void>;
 
 /**
  * The documentation we use to communicate to LLMs/users how to invoke the skills.
@@ -39,16 +37,15 @@ export abstract class Skill {
     this.status = SkillStatus.PENDING_INVOCATION;
   }
 
-  public resolve(result: SkillResult, envStateIsHydrated?: boolean): void {
+  public resolve(result: SkillResult): void {
     assert(
       this.status === SkillStatus.ACTIVE_RUNNING ||
         this.status === SkillStatus.STOPPED,
       `Skill must be in ACTIVE or STOPPED state to resolve, but was in ${this.status}`,
     );
     this.status = SkillStatus.PENDING_INVOCATION;
-    setTimeout(() => {
-      this.onResolution(result, envStateIsHydrated);
-    }, 0);
+    const onResolution = this.onResolution.bind(this, result);
+    setTimeout(onResolution, 0);
   }
 
   /**

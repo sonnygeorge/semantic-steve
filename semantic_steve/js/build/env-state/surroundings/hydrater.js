@@ -25,6 +25,7 @@ class SurroundingsHydrater {
             distantSurroundingsRadius: radii.distantSurroundingsRadius,
         };
         this.surroundings = new types_1._Surroundings(bot, this.radii);
+        this.lastBotPosition = bot.entity.position.clone();
         this.setupEventListeners();
     }
     setupEventListeners() {
@@ -61,6 +62,14 @@ class SurroundingsHydrater {
         });
         // Recalculate when bot moves
         this.bot.on("move", () => {
+            const newPosition = this.bot.entity.position;
+            if (newPosition.equals(this.lastBotPosition))
+                return; // No movement
+            if (newPosition.distanceTo(this.lastBotPosition) < 0.05)
+                return; // Ignore teensy movements
+            this.lastBotPosition = newPosition.clone(); // Update last position
+            console.log("Bot moved...");
+            console.log("Bot position:", this.bot.entity.position);
             this.recalculateVicinities();
         });
     }
@@ -384,6 +393,7 @@ class SurroundingsHydrater {
         }
     }
     recalculateVicinities() {
+        console.log("Recalculating vicinities...");
         // Recalculate blocks
         for (const [blockKey, data] of this.blockLookup.entries()) {
             const [x, y, z] = blockKey.split(",").map(Number);
@@ -407,7 +417,6 @@ class SurroundingsHydrater {
             else {
                 this.removeBlock(pos);
             }
-            // }
         }
         // Recalculate items
         for (const [entityId, data] of this.entityLookup.entries()) {

@@ -12,12 +12,11 @@ import {
   MineBlocksResults,
   MineBlocksPartialSuccessReason as PartialSuccessReason,
 } from "./results";
-import { Block } from "../../thing";
 import { PathfindToCoordinates } from "../pathfind-to-coordinates/pathfind-to-coordinates";
 import { PickupItem } from "../pickup-item/pickup-item";
 import { SkillResult } from "../../types";
 import { asyncSleep } from "../../utils/generic";
-import { ItemEntity } from "../../thing/item-entity";
+import { BlockType, ItemType } from "../../thing-type";
 import { BLOCK_DROP_WAIT_MS } from "../../constants";
 
 // TODO: Add optional 'with' (tool) argument
@@ -48,7 +47,7 @@ export class MineBlocks extends Skill {
   private activeSubskill?: PathfindToCoordinates | PickupItem;
   private shouldBeDoingStuff: boolean = true;
   private shouldTerminateSubskillWaiting: boolean = false;
-  private blockTypeToMine?: Block;
+  private blockTypeToMine?: BlockType;
   private numBlocksToMine?: number;
   private numBlocksBroken: number = 0;
   private numDropPickupsAttempted: number = 0;
@@ -68,7 +67,7 @@ export class MineBlocks extends Skill {
   private get blockToMineDrop(): null | {
     minCount: number;
     maxCount: number;
-    itemEntity: ItemEntity;
+    itemEntity: ItemType;
   } {
     if (!this.blockTypeToMine) {
       return null;
@@ -119,7 +118,7 @@ export class MineBlocks extends Skill {
     return {
       minCount: minCount,
       maxCount: maxCount,
-      itemEntity: new ItemEntity(this.bot, undefined, itemID),
+      itemEntity: new ItemType(this.bot, undefined, itemID),
     };
   }
 
@@ -204,7 +203,7 @@ export class MineBlocks extends Skill {
     assert(this.blockTypeToMine);
 
     const [canMine, bestToolID] =
-      this.blockTypeToMine.assessCurrentMineability();
+      this.blockTypeToMine.assessMineabilityWithCurrentTools();
 
     if (!canMine) {
       // NOTE: Reason = 'tool consumed' since we started w/ a viable tool
@@ -347,7 +346,7 @@ export class MineBlocks extends Skill {
     if (
       this.numBlocksBroken < this.numDropPickupsAttempted &&
       this.blockToMineDrop &&
-      this.blockToMineDrop.itemEntity.isVisibleInImmediateSurroundings()
+      (await this.blockToMineDrop.itemEntity.isVisibleInImmediateSurroundings())
     ) {
       await this.attemptDropPickup();
     }
@@ -368,18 +367,19 @@ export class MineBlocks extends Skill {
   public async doInvoke(block: string, quantity: number = 1): Promise<void> {
     this.status = SkillStatus.ACTIVE_RUNNING;
     try {
-      this.blockTypeToMine = new Block(this.bot, block);
+      this.blockTypeToMine = new BlockType(this.bot, block);
     } catch (err) {
       return this.resolve(new MineBlocksResults.InvalidBlock(block));
     }
 
-    if (!this.blockTypeToMine.isVisibleInImmediateSurroundings()) {
+    if (!(await this.blockTypeToMine.isVisibleInImmediateSurroundings())) {
       return this.resolve(
         new MineBlocksResults.BlockNotInImmediateSurroundings(block),
       );
     }
 
-    const [canMine, _] = this.blockTypeToMine.assessCurrentMineability();
+    const [canMine, _] =
+      this.blockTypeToMine.assessMineabilityWithCurrentTools();
     if (!canMine) {
       return this.resolve(new MineBlocksResults.MissingNecessaryTool(block));
     }

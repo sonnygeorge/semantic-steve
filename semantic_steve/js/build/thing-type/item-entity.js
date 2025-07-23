@@ -1,83 +1,71 @@
-import { Bot } from "mineflayer";
-import { Thing } from "./thing";
-import { Vec3 } from "vec3";
-import { Direction } from "../env-state/surroundings";
-import { MaybePromise, InvalidThingError } from "../types";
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ItemEntity = void 0;
+const types_1 = require("../types");
 /**
  * An item type that is "dropped", is hovering on the ground, and can be picked up.
  */
-export class ItemEntity implements Thing {
-  bot: Bot;
-  name: string; // "dirt", "diamond_pickaxe", etc.
-  id: number; // 1, 2, etc. (item id)
-
-  constructor(bot: Bot, name?: string, id?: number) {
+class ItemEntity {
+  constructor(bot, name, id) {
     if (name) {
       const itemEntityNames = Object.values(bot.registry.itemsByName).map(
-        (i) => i.name,
+        (i) => i.name
       );
       if (!itemEntityNames.includes(name)) {
-        throw new InvalidThingError(`Invalid item entity type: ${name}.`);
+        throw new types_1.InvalidThingError(
+          `Invalid item entity type: ${name}.`
+        );
       }
       this.name = name;
       this.id = bot.registry.itemsByName[name].id;
     } else if (id) {
       const itemEntityIds = Object.values(bot.registry.items).map((i) => i.id);
       if (!itemEntityIds.includes(id)) {
-        throw new InvalidThingError(`Invalid item entity id: ${id}.`);
+        throw new types_1.InvalidThingError(`Invalid item entity id: ${id}.`);
       }
       this.id = id;
       this.name = bot.registry.items[id].name;
     } else {
       throw new Error(
-        "Either name or id must be provided to create an ItemEntity.",
+        "Either name or id must be provided to create an ItemEntity."
       );
     }
     this.bot = bot;
   }
-
   // ======================
   // Item-specific methods
   // ======================
-
-  getTotalCountInInventory(): number {
+  getTotalCountInInventory() {
     // ASSUMPTION: While ItemEntity represents to a type of dropped/floating item entity,
     // its name should(?) correspond the item as it would be if picked up and in inventory.
     return this.bot.envState.inventory.itemsToTotalCounts.get(this.name) || 0;
   }
-
   // ============================
-  // Implementation of Thing API
+  // Implementation of ThingType API
   // ============================
-
-  public isVisibleInImmediateSurroundings(): boolean {
+  isVisibleInImmediateSurroundings() {
     return this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.has(
-      this.name,
+      this.name
     );
   }
-
-  public isVisibleInDistantSurroundings(): boolean {
+  isVisibleInDistantSurroundings() {
     return [...this.bot.envState.surroundings.distant.values()].some((dir) =>
-      dir.itemEntitiesToCounts.has(this.name),
+      dir.itemEntitiesToCounts.has(this.name)
     );
   }
-
-  locateNearest(): Vec3 | undefined {
+  locateNearest() {
     // Try immediate surroundings first
     const immediateResult = this.locateNearestInImmediateSurroundings();
     if (immediateResult) {
       return immediateResult;
     }
-
     // If not found in immediate surroundings, try distant surroundings
     return this.locateNearestInDistantSurroundings();
   }
-
-  locateNearestInImmediateSurroundings(): Vec3 | undefined {
+  locateNearestInImmediateSurroundings() {
     const immediate =
       this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
-        this.name,
+        this.name
       );
     if (immediate && immediate.length > 0) {
       // Sort the coordinates by distance to the bot's position
@@ -90,32 +78,29 @@ export class ItemEntity implements Thing {
       return immediate[0];
     }
   }
-
-  locateNearestInDistantSurroundings(direction?: Direction): Vec3 | undefined {
+  locateNearestInDistantSurroundings(direction) {
     // If a specific direction is provided, check only that direction
     if (direction) {
       const surroundingsInDirection =
         this.bot.envState.surroundings.distant.get(direction);
       if (surroundingsInDirection) {
         const count = surroundingsInDirection.itemEntitiesToCounts.get(
-          this.name,
+          this.name
         );
         if (count && count > 0) {
           return surroundingsInDirection.itemEntitiesToClosestCoords.get(
-            this.name,
+            this.name
           );
         }
       }
       return undefined; // No item entities found in the specified direction
     }
-
     // If no direction specified, check all directions
     const directions = Array.from(
-      this.bot.envState.surroundings.distant.keys(),
+      this.bot.envState.surroundings.distant.keys()
     );
-
     // Find the closest coordinates across all directions
-    let closestCoords: Vec3 | undefined = undefined;
+    let closestCoords = undefined;
     let minDistance = Infinity;
     for (const dir of directions) {
       const surroundingsInDir = this.bot.envState.surroundings.distant.get(dir);
@@ -123,7 +108,7 @@ export class ItemEntity implements Thing {
         const count = surroundingsInDir.itemEntitiesToCounts.get(this.name);
         if (count && count > 0) {
           const coords = surroundingsInDir.itemEntitiesToClosestCoords.get(
-            this.name,
+            this.name
           );
           if (coords) {
             const distance = coords.distanceTo(this.bot.entity.position);
@@ -135,14 +120,12 @@ export class ItemEntity implements Thing {
         }
       }
     }
-
     return closestCoords;
   }
-
-  oneIsVisableInImmediateSurroundingsAt(coords: Vec3): boolean {
+  isVisibleInImmediateSurroundingsAt(coords) {
     const immediate =
       this.bot.envState.surroundings.immediate.itemEntitiesToAllCoords.get(
-        this.name,
+        this.name
       );
     if (immediate) {
       return immediate.some((coord) => coord.equals(coords));
@@ -150,3 +133,4 @@ export class ItemEntity implements Thing {
     return false;
   }
 }
+exports.ItemEntity = ItemEntity;

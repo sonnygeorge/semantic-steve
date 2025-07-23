@@ -1,4 +1,8 @@
 "use strict";
+/**
+ * Main code/abstraction for program flow of SemanticSteve.
+ * NOTE: See README.md of src/js for a diagrams of the program flow.
+ */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -52,6 +56,7 @@ const self_preserver_1 = require("./self-preserver");
 const skill_1 = require("./skill");
 const types_1 = require("./types");
 const inventory_changes_1 = require("./utils/inventory-changes");
+const generic_1 = require("./utils/generic");
 class SemanticSteve {
     constructor(bot, config = new types_1.SemanticSteveConfig()) {
         this.hasDiedWhileAwaitingInvocation = false;
@@ -95,7 +100,7 @@ class SemanticSteve {
             if (!this.skills[skillInvocation.skillName]) {
                 const result = new skill_1.GenericSkillResults.SkillNotFound(skillInvocation.skillName);
                 // NOTE: Faux skill-resolution w/out ever ever having an active skill
-                this.handleSkillResolution(result);
+                yield this.handleSkillResolution(result);
                 return;
             }
             const skillToInvoke = this.skills[skillInvocation.skillName];
@@ -125,28 +130,38 @@ class SemanticSteve {
             }
         }), 0);
     }
-    handleSkillResolution(result, 
-    // NOTE: Although worrying about this isn't their responsability, `Skill`s can
-    // propogate this flag if they have _just barely_ hydrated the envState
-    envStateIsHydrated) {
-        var _a;
-        // Unset fields that are only to be set while skills are running
-        console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
-        this.activeSkill = undefined;
-        this.timeOfLastSkillInvocation = undefined;
-        // Hydrate the envState if it wasn't just hydrated by a skill
-        if (!envStateIsHydrated) {
-            this.bot.envState.hydrate();
-        }
-        // Get Inventory changes since the skill was invoked
-        const invChanges = this.getInventoryChanges();
-        // Prepare the data to send to Python
-        const toSendToPython = {
-            envState: this.bot.envState.getDTO(),
-            skillInvocationResults: result.message,
-            inventoryChanges: (0, inventory_changes_1.getInventoryChangesDTO)(this.bot, invChanges),
-        };
-        this.sendDataToPython(toSendToPython);
+    handleSkillResolution(result) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            // Unset fields that are only to be set while skills are running
+            console.log(`Skill ${(_a = this.activeSkill) === null || _a === void 0 ? void 0 : _a.constructor.name} resolved with result: ${result.message}`);
+            this.activeSkill = undefined;
+            this.timeOfLastSkillInvocation = undefined;
+            // Get Inventory changes since the skill was invoked
+            const invChanges = this.getInventoryChanges();
+            // Wait for the running observation cycle to complete
+            this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+                "I'm going to wait for this to be null and indicate the observation cycle has completed";
+            while (this.bot.envState.surroundings.vicinitiesObserver
+                .thisGetsSetToNullAtEndOfObservationCycle !== null) {
+                yield (0, generic_1.asyncSleep)(10);
+            }
+            // Wait for the next observation cycle that we know started after the skill resolved to complete
+            // (ensuring surroundings DTO will be up-to-date from the bot's POV after the skill resolved)
+            this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+                "I'm going to wait for this to be null and indicate the observation cycle has completed";
+            while (this.bot.envState.surroundings.vicinitiesObserver
+                .thisGetsSetToNullAtEndOfObservationCycle !== null) {
+                yield (0, generic_1.asyncSleep)(10);
+            }
+            // Prepare the data to send to Python
+            const toSendToPython = {
+                envState: yield this.bot.envState.getDTO(),
+                skillInvocationResults: result.message,
+                inventoryChanges: (0, inventory_changes_1.getInventoryChangesDTO)(this.bot, invChanges),
+            };
+            this.sendDataToPython(toSendToPython);
+        });
     }
     // ==============
     // Other helpers
@@ -215,9 +230,15 @@ class SemanticSteve {
     }
     getAndSendInitialState() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.bot.envState.surroundings.hydrate();
+            // Wait for the running observation cycle to complete
+            this.bot.envState.surroundings.vicinitiesObserver.thisGetsSetToNullAtEndOfObservationCycle =
+                "I'm going to wait for this to be null and indicate the observation cycle has completed";
+            while (this.bot.envState.surroundings.vicinitiesObserver
+                .thisGetsSetToNullAtEndOfObservationCycle !== null) {
+                yield (0, generic_1.asyncSleep)(10);
+            }
             let toSendToPython = {
-                envState: this.bot.envState.getDTO(),
+                envState: yield this.bot.envState.getDTO(),
                 // NOTE: No skill invocation results yet
                 // NOTE: No inventory changes yet
             };
@@ -243,7 +264,7 @@ class SemanticSteve {
                         this.hasDiedWhileAwaitingInvocation = false; // Reset the flag
                         const result = new skill_1.GenericSkillResults.DeathWhileAwaitingInvocation(skillInvocation.skillName);
                         // NOTE: Faux skill-resolution w/out ever ever having an active skill
-                        this.handleSkillResolution(result);
+                        yield this.handleSkillResolution(result);
                     }
                     else {
                         this.invokeSkill(skillInvocation);

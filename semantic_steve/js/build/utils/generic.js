@@ -1,12 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.asyncSleep = void 0;
+exports.isValidEmail = isValidEmail;
 exports.bilinearInterpolate = bilinearInterpolate;
+exports.serializeVec3 = serializeVec3;
+exports.deserializeVec3 = deserializeVec3;
 const vec3_1 = require("vec3");
 const asyncSleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
 };
 exports.asyncSleep = asyncSleep;
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
 /**
  * Calculates a point on a quadrilateral face using bilinear interpolation.
  * P = (1-u)(1-v)P₁ + u(1-v)P₂ + (1-u)vP₃ + uvP₄
@@ -33,4 +40,11 @@ function bilinearInterpolate(u, v, c1, c2, c3, c4) {
         return term1 + term2 + term3 + term4;
     }
     return new vec3_1.Vec3(interpolateComponent("x"), interpolateComponent("y"), interpolateComponent("z"));
+}
+function serializeVec3(vec) {
+    return `${vec.x},${vec.y},${vec.z}`;
+}
+function deserializeVec3(str) {
+    const [x, y, z] = str.split(",").map(Number);
+    return new vec3_1.Vec3(x, y, z);
 }

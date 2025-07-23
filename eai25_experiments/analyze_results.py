@@ -1,19 +1,14 @@
 import os
+from collections import Counter
 from typing import Literal, TypeAlias
 
-import pandas as pd
-import numpy as np
-from scipy.stats import pearsonr
-import seaborn as sns
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.image import imread
-from collections import Counter
+import matplotlib.pyplot as plt
 import numpy as np
-
-
-from constants import SCORE_MAP, DATA_DIR
-
+import pandas as pd
+from constants import DATA_DIR, SCORE_MAP
+from matplotlib.image import imread
+from scipy.stats import pearsonr
 
 Scores: TypeAlias = dict[str, dict[Literal["human_scores", "gpt_scores"], list[float]]]
 
@@ -275,7 +270,10 @@ if __name__ == "__main__":
     df = summarize_scores(scores)
     df.to_csv(os.path.join(DATA_DIR, "summary.csv"), index=False)
     plot_histogram_with_rug(
-        {subject: score for subject, score in zip(df["subject"], df["abs_diff_of_means"])}
+        {
+            subject: score
+            for subject, score in zip(df["subject"], df["abs_diff_of_means"], strict=False)
+        }
     )
     dist1 = "something organic and orange"
     dist2 = "an animal whose enclosure gives it a reason to be happy"

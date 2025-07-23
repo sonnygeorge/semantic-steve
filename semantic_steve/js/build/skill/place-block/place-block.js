@@ -18,7 +18,7 @@ const skill_1 = require("../skill");
 const vec3_1 = require("vec3");
 const results_1 = require("./results");
 const results_2 = require("../get-placeable-coordinates/results");
-const thing_1 = require("../../thing");
+const thing_type_1 = require("../../thing-type");
 const types_1 = require("../../types");
 const generic_1 = require("../../utils/generic");
 const placing_1 = require("../../utils/placing");
@@ -88,7 +88,7 @@ class PlaceBlock extends skill_1.Skill {
         return __awaiter(this, void 0, void 0, function* () {
             if (typeof block === "string") {
                 try {
-                    this.blockToPlace = new thing_1.Block(this.bot, block);
+                    this.blockToPlace = new thing_type_1.BlockType(this.bot, block);
                 }
                 catch (err) {
                     if (err instanceof types_1.InvalidThingError) {

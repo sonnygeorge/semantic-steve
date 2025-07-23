@@ -1,11 +1,8 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import type { Item as PItem } from "prismarine-item";
-import {
-  Surroundings,
-  SurroundingsRadii,
-  SurroundingsDTO,
-} from "./surroundings";
+import { Surroundings, SurroundingsDTO } from "./surroundings";
+import { SurroundingsRadii } from "../types";
 import { Inventory, InventoryItemDTO } from "./inventory";
 
 // TODO: Daytime/nightime?
@@ -75,13 +72,7 @@ export class EnvState {
     return equipped;
   }
 
-  public hydrate(throttleMS?: number): void {
-    // For now, we just pass the throttleMS through to the surroundings
-    // since there's nothing computationally expensive to retrieve here.
-    this.surroundings.hydrate(throttleMS);
-  }
-
-  public getDTO(): EnvStateDTO {
+  public async getDTO(): Promise<EnvStateDTO> {
     return {
       playerCoordinates: [
         // Round to 1 decimal place
@@ -98,7 +89,7 @@ export class EnvState {
           item?.name ?? null,
         ]),
       ) as Map<EquipmentDestination, string | undefined>,
-      surroundings: this.surroundings.getDTO(),
+      surroundings: await this.surroundings.getDTO(),
     };
   }
 }

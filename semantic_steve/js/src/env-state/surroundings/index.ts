@@ -1,23 +1,25 @@
-import { Surroundings } from "./surroundings";
 import {
-  Direction,
-  Vicinity,
-  SurroundingsRadii,
-  SurroundingsDTO,
   ImmediateSurroundingsDTO,
-  DistantSurroundingsDTO,
-  DistantSurroundings,
+  DistantSurroundingsInADirectionDTO,
+} from "./dto";
+import {
+  VisibleVicinityContents,
   ImmediateSurroundings,
-} from "./types";
+  DistantSurroundingsInADirection,
+  Vicinity,
+  VicinitiesObserver,
+} from "./vicinity";
+import { SurroundingsDTO } from "./dto";
+import { Surroundings } from "./surroundings";
 
 export {
-  Surroundings,
-  Direction,
+  ImmediateSurroundingsDTO,
+  DistantSurroundingsInADirectionDTO,
+  VisibleVicinityContents,
+  ImmediateSurroundings,
+  DistantSurroundingsInADirection,
+  VicinitiesObserver,
   Vicinity,
   SurroundingsDTO,
-  SurroundingsRadii,
-  ImmediateSurroundingsDTO,
-  DistantSurroundingsDTO,
-  DistantSurroundings,
-  ImmediateSurroundings,
+  Surroundings,
 };

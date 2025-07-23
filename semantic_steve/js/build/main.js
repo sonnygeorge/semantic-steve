@@ -14,6 +14,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mineflayer_1 = require("mineflayer");
+const mineflayer_pathfinder_1 = require("mineflayer-pathfinder");
 const _1 = require(".");
 const prismarine_viewer_1 = require("prismarine-viewer");
 const semantic_steve_1 = require("./semantic-steve");
@@ -47,6 +48,11 @@ bot.once("login", () => {
 });
 // Initialize and run SemanticSteve once the bot has spawned and chunks have loaded
 bot.once("spawn", () => __awaiter(void 0, void 0, void 0, function* () {
+    const movements = new mineflayer_pathfinder_1.Movements(bot);
+    movements.allow1by1towers = false; // Do not build 1x1 towers when going up
+    movements.placeCost = 2.5; // W/ default of 1.0, bot always tries to bridge places (wasting blocks)
+    movements.digCost = 1.5;
+    bot.pathfinder.setMovements(movements);
     // Set the max time used by pathfinder for thinking to a low value to allow more frequent
     // interleaving between pathfinding and visibility raycasting.
     bot.pathfinder.tickTimeout = 10; // 10 milliseconds

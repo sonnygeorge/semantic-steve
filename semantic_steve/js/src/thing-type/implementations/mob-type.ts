@@ -67,7 +67,7 @@ export class MobType implements ThingType {
   }
 
   public async locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {
@@ -105,11 +105,11 @@ export class MobType implements ThingType {
   }
 
   public async isVisibleInImmediateSurroundingsAt(
-    position: Vec3
+    position: Vec3,
   ): Promise<boolean> {
     throw new Error(
       "Writing code that relies on constantly-moving mobs being in a specific " +
-        "position probably shouldn't be written."
+        "position probably shouldn't be written.",
     );
   }
 }

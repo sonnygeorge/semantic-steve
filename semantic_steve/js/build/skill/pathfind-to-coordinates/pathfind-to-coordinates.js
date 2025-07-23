@@ -46,6 +46,7 @@ class PathfindToCoordinates extends skill_1.Skill {
     beginPathfinding() {
         (0, assert_1.default)(this.pathingParams, "Shouldn't be called w/out set pathing params");
         this.setupListeners();
+        this.bot.pathfinder.stopPathing = false; // Ensure this flag won't stop the pathfinder
         this.bot.pathfinder.setGoal(this.pathingParams.goal);
         console.log("Goal set. Beginning pathfinding...");
     }

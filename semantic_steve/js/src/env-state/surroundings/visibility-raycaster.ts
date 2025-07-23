@@ -48,7 +48,7 @@ export class VisibilityRaycaster {
     this.getOrientationsAndPenetrations();
     this.visibleBlocks = new OffsetBased3DArray<PBlock | null>(
       this.radius,
-      null
+      null,
     );
     this.visibilityMask = new OffsetBased3DArray<boolean>(this.radius, false);
   }
@@ -84,7 +84,7 @@ export class VisibilityRaycaster {
    * @returns Set of face identifiers penetrated by the raycast
    */
   private getFacesPenetratedByCast(
-    rayDirection: Vec3
+    rayDirection: Vec3,
   ): Set<SerializedVoxelOffset> {
     const penetratedFaces = new Set<SerializedVoxelOffset>();
     const maxDistance = this.radius + 0.5; // Slightly beyond sphere radius
@@ -92,7 +92,7 @@ export class VisibilityRaycaster {
     const raycastIterator = new iterators.RaycastIterator(
       rayOrigin,
       rayDirection,
-      maxDistance
+      maxDistance,
     );
     let currentBlock = raycastIterator.next();
     while (currentBlock !== null) {
@@ -105,7 +105,7 @@ export class VisibilityRaycaster {
         const voxelPos = new Vec3(
           currentBlock.x,
           currentBlock.y,
-          currentBlock.z
+          currentBlock.z,
         );
         const faceKey = serializeVoxelOffsetFace(voxelPos, currentBlock.face);
         penetratedFaces.add(faceKey);
@@ -142,7 +142,7 @@ export class VisibilityRaycaster {
         const faceCenter = new Vec3(
           voxelOffset.x + faceOffset.x,
           voxelOffset.y + faceOffset.y,
-          voxelOffset.z + faceOffset.z
+          voxelOffset.z + faceOffset.z,
         );
         const faceKey = serializeVoxelOffsetFace(voxelOffset, face);
         if (alreadyPenetrated.has(faceKey)) {
@@ -154,12 +154,12 @@ export class VisibilityRaycaster {
         const orientationKey = orientation.serialize();
         this.orientations.set(orientationKey, orientation);
         const facesPenetratedByOrientation = this.getFacesPenetratedByCast(
-          orientation.vecNorm
+          orientation.vecNorm,
         );
         // Store this in th map of cast orientations to their penetrated faces
         this.castOrientationsToPenetratedFaces.set(
           orientationKey,
-          facesPenetratedByOrientation
+          facesPenetratedByOrientation,
         );
         // We shouldn't add more orientations to reach faces that we already reach
         for (const penetratedFace of facesPenetratedByOrientation) {
@@ -199,12 +199,12 @@ export class VisibilityRaycaster {
     direction: Vec3,
     alreadyAscertainedVoxels: Set<SerializedVoxelOffset>,
     visibleBlocks: OffsetBased3DArray<PBlock | null>,
-    visibilityMask: OffsetBased3DArray<boolean>
+    visibilityMask: OffsetBased3DArray<boolean>,
   ): [PBlock | null, number | null] {
     const iter = new iterators.RaycastIterator(
       from,
       direction,
-      this.radius + 0.5
+      this.radius + 0.5,
     );
     let pos = iter.next();
     while (pos) {
@@ -237,7 +237,7 @@ export class VisibilityRaycaster {
    *          is the block hit by the raycast, or null if no block was hit.
    */
   public async *doRaycasting(
-    fromVoxel: Vec3
+    fromVoxel: Vec3,
   ): AsyncGenerator<[Vec3 | null, PBlock | null]> {
     assert(isVoxel(fromVoxel));
 
@@ -253,11 +253,11 @@ export class VisibilityRaycaster {
     const alreadyAscertainedVoxels: Set<SerializedVoxelOffset> = new Set();
     const newVisibleBlocks = new OffsetBased3DArray<PBlock | null>(
       this.visibleBlocks.radiusOfInterest,
-      null
+      null,
     );
     const newVisibilityMask = new OffsetBased3DArray<boolean>(
       this.visibilityMask.radiusOfInterest,
-      false
+      false,
     );
 
     // Inner helper function to release event loop every N raycasts
@@ -281,7 +281,7 @@ export class VisibilityRaycaster {
         OriginalRayOrientation.vecNorm,
         alreadyAscertainedVoxels,
         newVisibleBlocks,
-        newVisibilityMask
+        newVisibilityMask,
       );
       nRaycastsPerformed++;
       yield [OriginalRayOrientation.vecNorm, hit];
@@ -292,7 +292,7 @@ export class VisibilityRaycaster {
         const hitBlockOffset = hit.position.minus(fromVoxel);
         const faceKey = serializeVoxelOffsetFace(
           hitBlockOffset,
-          face
+          face,
         ) as SerializedVoxelOffset;
         const castOrientationsThatPenetrateHitBlockFace =
           this.facesToCastOrientationsThatPenetrateThem.get(faceKey);

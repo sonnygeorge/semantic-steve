@@ -25,7 +25,7 @@ export class BiomeType implements ThingType {
     }
     assert(
       this.id !== -1,
-      `This should be impossible. We should have thrown an error above.`
+      `This should be impossible. We should have thrown an error above.`,
     );
   }
 
@@ -78,7 +78,7 @@ export class BiomeType implements ThingType {
   }
 
   public async locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {
@@ -116,10 +116,10 @@ export class BiomeType implements ThingType {
   }
 
   public async isVisibleInImmediateSurroundingsAt(
-    coords: Vec3
+    coords: Vec3,
   ): Promise<boolean> {
     throw new Error(
-      "Method not implemented. This method doesn't really make sense for biomes."
+      "Method not implemented. This method doesn't really make sense for biomes.",
     );
   }
 }

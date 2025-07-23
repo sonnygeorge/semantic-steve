@@ -4,6 +4,7 @@
  */
 
 import { createBot } from "mineflayer";
+import { Movements } from "mineflayer-pathfinder";
 import { createPlugin } from ".";
 import { mineflayer as mfViewer } from "prismarine-viewer";
 
@@ -21,10 +22,10 @@ const config = new SemanticSteveConfig({
   mfViewerPort: parseInt(process.env.SEMANTIC_STEVE_MF_VIEWER_PORT || "3000"),
   zmqPort: parseInt(process.env.SEMANTIC_STEVE_ZMQ_PORT || "5555"),
   immediateSurroundingsRadius: parseInt(
-    process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4"
+    process.env.SEMANTIC_STEVE_IMMEDIATE_SURROUNDINGS_RADIUS || "4",
   ),
   distantSurroundingsRadius: parseInt(
-    process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "27"
+    process.env.SEMANTIC_STEVE_DISTANT_SURROUNDINGS_RADIUS || "27",
   ),
   username: process.env.SEMANTIC_STEVE_MC_USERNAME || "SemanticSteve",
 } as SemanticSteveConfigOptions);
@@ -43,12 +44,17 @@ bot.once("login", () => {
     createPlugin({
       immediateSurroundingsRadius: config.immediateSurroundingsRadius,
       distantSurroundingsRadius: config.distantSurroundingsRadius,
-    })
+    }),
   );
 });
 
 // Initialize and run SemanticSteve once the bot has spawned and chunks have loaded
 bot.once("spawn", async () => {
+  const movements = new Movements(bot);
+  movements.allow1by1towers = false; // Do not build 1x1 towers when going up
+  movements.placeCost = 2.5; // W/ default of 1.0, bot always tries to bridge places (wasting blocks)
+  movements.digCost = 1.5;
+  bot.pathfinder.setMovements(movements);
   // Set the max time used by pathfinder for thinking to a low value to allow more frequent
   // interleaving between pathfinding and visibility raycasting.
   bot.pathfinder.tickTimeout = 10; // 10 milliseconds

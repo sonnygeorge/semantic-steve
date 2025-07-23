@@ -372,14 +372,20 @@ class SmeltItems extends skill_1.Skill {
                 return;
             }
             // Check if we have enough of the item to smelt
-            const itemCount = this.itemToSmelt.getTotalCountInInventory();
-            if (itemCount < quantityToSmelt) {
+            const numSmeltItemInInventory = this.itemToSmelt.getTotalCountInInventory();
+            if (numSmeltItemInInventory < quantityToSmelt) {
                 this.resolve(new results_1.SmeltItemsResults.InsufficientToSmeltItems(quantityToSmelt, this.itemToSmelt.name));
                 return;
             }
-            this.fuelItem.getTotalCountInInventory();
-            if (this.fuelItem.getTotalCountInInventory() < 1) {
-                this.resolve(new results_1.SmeltItemsResults.FuelItemNotInventory(this.fuelItem, this.itemToSmelt.name));
+            // Check if we have at least one available fuel item
+            const numFuelItemInInventory = this.fuelItem.getTotalCountInInventory();
+            if (
+            // no fuel item in inventory
+            numFuelItemInInventory < 1 ||
+                // Or, we want to smelt a # of the fuelItem that leaves none leftover for fuel
+                (this.fuelItem.name === this.itemToSmelt.name &&
+                    numFuelItemInInventory < quantityToSmelt + 1)) {
+                this.resolve(new results_1.SmeltItemsResults.NoAvailableFuelItem(this.fuelItem));
                 return;
             }
             this.quantityToSmelt = quantityToSmelt;

@@ -12,7 +12,7 @@ export class ItemType implements ThingType {
   constructor(bot: Bot, name?: string, id?: number) {
     if (name) {
       const itemEntityNames = Object.values(bot.registry.itemsByName).map(
-        (i) => i.name
+        (i) => i.name,
       );
       if (!itemEntityNames.includes(name)) {
         throw new InvalidThingError(`Invalid item entity type: ${name}.`);
@@ -28,7 +28,7 @@ export class ItemType implements ThingType {
       this.name = bot.registry.items[id].name;
     } else {
       throw new Error(
-        "Either name or id must be provided to create an ItemEntity."
+        "Either name or id must be provided to create an ItemEntity.",
       );
     }
     this.bot = bot;
@@ -88,7 +88,7 @@ export class ItemType implements ThingType {
   }
 
   async locateNearestInDistantSurroundings(
-    direction?: DirectionName
+    direction?: DirectionName,
   ): Promise<Vec3 | undefined> {
     // If a specific direction is provided, check only that direction
     if (direction) {

@@ -1,4 +1,30 @@
-"""Minimal code examples for using SemanticSteve."""
+"""
+Minimal code examples for using SemanticSteve.
+
+This file demonstrates different ways to interact with SemanticSteve:
+1. Direct Python API usage (llm_example)
+2. CLI mode (cli_example)
+3. MCP (Model Context Protocol) client examples:
+   - STDIO transport (mcp_client_example) - recommended for local desktop apps
+   - HTTP transport (mcp_http_client_example) - for remote/web integrations
+
+## MCP Transport Types Explained:
+
+### STDIO Transport (Used by Claude Desktop)
+- Communication via standard input/output streams
+- Server runs as a subprocess of the client
+- Benefits: No network setup, lower latency, more secure
+- Use cases: Desktop applications, local CLI tools, development
+
+### HTTP Transport
+- Communication via HTTP requests over a network
+- Server runs independently on a specific port
+- Benefits: Remote access, web integration, multiple clients
+- Use cases: Web applications, remote access, production deployments
+
+Claude Desktop specifically uses STDIO transport because it provides a secure,
+efficient way to communicate with MCP servers without network exposure.
+"""
 
 import asyncio
 import os
@@ -48,11 +74,25 @@ async def llm_example():
 
 
 async def cli_example():
-    semantic_steve = SemanticSteve()
+    semantic_steve = SemanticSteve(_should_rebuild_typescript=True)
     await run_as_cli(semantic_steve)
+
+
+async def mcp_client_example():
+    from fastmcp import Client
+
+    from semantic_steve.py.constants import MCP_PORT
+
+    client = Client(f"http://localhost:{MCP_PORT}/mcp")
+    async with client:
+        result = await client.call_tool(
+            "pathfind_to_coordinates", {"coordinates": [100, 65, 23]}
+        )
+        print(result)
 
 
 if __name__ == "__main__":
     # Uncomment the example you want to run
     # asyncio.run(llm_example())
-    asyncio.run(cli_example())
+    # asyncio.run(cli_example())
+    asyncio.run(mcp_client_example())

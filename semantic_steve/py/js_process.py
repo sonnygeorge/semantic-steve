@@ -27,6 +27,7 @@ class SemanticSteveJsProcessManager:
         self.js_process = subprocess.Popen(
             CMD_TO_START_JS_PROCESS,
             stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,  # FIXME: log?
             cwd=PATH_TO_JS_DIR,
             text=True,
         )
@@ -41,17 +42,19 @@ class SemanticSteveJsProcessManager:
     #####################
 
     def rebuild_typescript(self) -> None:
-        print("Rebuilding typescript...")
+        # print("Rebuilding typescript...")
         try:
             subprocess.run(
                 CMD_TO_REBUILD_TYPESCRIPT,
                 cwd=PATH_TO_JS_DIR,
                 check=True,
+                stdout=subprocess.DEVNULL,  # FIXME: log?
                 stderr=subprocess.PIPE,
                 text=True,
             )
         except subprocess.CalledProcessError as e:
-            print(e.stderr)  # Print the JS process error message to the console
+            # FIXME
+            # print(e.stderr)  # Print the JS process error message to the console
             raise e
 
     def _cleanup_process_if_needed(self, js_process: subprocess.Popen) -> None:

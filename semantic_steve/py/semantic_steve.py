@@ -84,14 +84,14 @@ class SemanticSteve:
         self.socket = self.context.socket(zmq.PAIR)
         self.socket.connect(f"tcp://localhost:{self.zmq_port}")
         self.socket.setsockopt(zmq.RCVTIMEO, 0)
-        print(f"SemanticSteve python connected to tcp://localhost:{self.zmq_port}.")
+        # print(f"SemanticSteve python connected to tcp://localhost:{self.zmq_port}.")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.socket is not None:
             self.socket.close()
             self.context.term()
-            print(f"Python disconnected from tcp://localhost:{self.zmq_port}.")
+            # print(f"Python disconnected from tcp://localhost:{self.zmq_port}.")
         self.js_process_manager.__exit__(exc_type, exc_value, traceback)
 
     #####################
@@ -121,8 +121,9 @@ class SemanticSteve:
                 await asyncio.sleep(0.1)  # Sleep for a short time to avoid busy waiting
         return DataFromMinecraft(**data_from_minecraft_dict)
 
-    async def invoke(self, skill_invocation: str) -> DataFromMinecraft:
+    async def invoke(self, skill_invocation: str | SkillInvocation) -> DataFromMinecraft:
         self._assert_called_in_context_manager_context(method_name="invoke_skill")
-        parsed_skill_invocation = SkillInvocation.from_str(skill_invocation)
-        self.socket.send_json(parsed_skill_invocation.model_dump())
+        if not isinstance(skill_invocation, SkillInvocation):
+            skill_invocation = SkillInvocation.from_str(skill_invocation)
+        self.socket.send_json(skill_invocation.model_dump())
         return await self.wait_for_data_from_minecraft()

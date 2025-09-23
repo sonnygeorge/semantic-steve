@@ -14,6 +14,16 @@
       "skipFiles": ["<node_internals>/**", "node_modules/**"],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/semantic_steve/js"
+    },
+   {
+      "name": "Python current file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
     }
+
   ]
 }
